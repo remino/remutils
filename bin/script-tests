@@ -38,7 +38,11 @@ script_tests_main() {
 	REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 	cd "$REPO_ROOT" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $REPO_ROOT"
 
-	bats "$SCRIPT_NAME/tests/"
+	TEST_DIR="$SCRIPT_NAME/tests/"
+
+	[ ! -d "$TEST_DIR" ] && _fatal $E_MISSING_FILE "Missing test directory: $TEST_DIR"
+
+	bats "$TEST_DIR"
 }
 
 _fatal() {
