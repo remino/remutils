@@ -28,7 +28,7 @@ version_release_main() {
 
 	[ ! -f "$SCRIPT_FILE" ] && _fatal $E_MISSING_FILE "Missing or not a file: $SCRIPT_FILE"
 
-	_require awk gh git sed version version-tarball
+	_require awk gh git prettier version version-tarball
 
 	VERSION="$(version show "$SCRIPT_FILE")"
 
@@ -56,7 +56,7 @@ _changelog() {
   /^##[[:space:]]/ {f=0}
   f
 ' "$changelog" |
-		sed -e '1{/^[[:space:]]*$/d;}' -e '${/^[[:space:]]*$/d;}'
+		prettier --prose-wrap never --stdin-filepath CHANGELOG.md
 }
 
 _fatal() {
