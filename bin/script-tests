@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+_usage() {
+	echo "USAGE: $(basename "$0") <script_dir>"
+}
+
+script_tests_main() {
+	# export PS4='+ ${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}() '
+	# set -x
+	set -euo pipefail
+
+	E_ARGS=16
+	E_MISSING_FILE=17
+	E_NOT_CLEAN=18
+	E_MISSING_APP=19
+
+	[ $# -eq 0 ] && _usage && return
+
+	SELF_SCRIPT="$(realpath "${BASH_SOURCE[0]}")"
+	SELF_DIR="$(dirname "$SELF_SCRIPT")"
+	PATH="$SELF_DIR:$PATH"
+
+	SCRIPT_DIR="$1"
+	shift
+
+	[ ! -d "$SCRIPT_DIR" ] && _fatal $E_MISSING_FILE "Missing or not a directory: $SCRIPT_DIR"
+
+	SCRIPT_NAME="$(basename "$SCRIPT_DIR")"
+	SCRIPT_FILE="$SCRIPT_DIR/$SCRIPT_NAME"
+
+	[ ! -f "$SCRIPT_FILE" ] && _fatal $E_MISSING_FILE "Missing or not a file: $SCRIPT_FILE"
+
+	_require bats
+
+	VERSION="$(version show "$SCRIPT_FILE")"
+	INIT_PWD="$(pwd)"
+
+	REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+	cd "$REPO_ROOT" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $REPO_ROOT"
+
+	bats "$SCRIPT_NAME/tests/"
+}
+
+_fatal() {
+	local exit_code=$1
+	shift
+	echo "FATAL: $*" >&2
+	exit "$exit_code"
+}
+
+_require() {
+	missing_bin=0
+
+	for bin in "$@"; do
+		if ! which "$bin" >/dev/null 2>&1; then
+			missing_bin=1
+			_error "Required: $bin"
+		fi
+	done
+
+	if [ $missing_bin -ne 0 ]; then
+		_fatal "$E_MISSING_APP" "One or more executables or apps are missing."
+	fi
+}
+
+script_tests_main "$@"
