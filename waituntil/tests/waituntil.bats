@@ -39,7 +39,7 @@ teardown() {
 
 	run "$BATS_TEST_DIRNAME/../waituntil" "$PAST_TIME"
 	[ "$status" -eq 0 ]
-	[[ "$output" == *"Already past"* ]]	
+	[[ "$output" == *"Already past"* ]]
 }
 
 @test "waituntil waits until a specific time" {
@@ -111,4 +111,3 @@ teardown() {
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"Already past"* ]]
 }
-
