@@ -39,7 +39,7 @@ version_commit_main() {
 	*) _fatal $E_ARGS "Invalid version type: $TYPE. Must be one of: major, minor, patch." ;;
 	esac
 
-	_require version
+	_require git version
 
 	version "$TYPE" "$SCRIPT_FILE"
 
