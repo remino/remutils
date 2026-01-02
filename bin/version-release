@@ -35,6 +35,7 @@ version_release_main() {
 	REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 	cd "$REPO_ROOT" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $REPO_ROOT"
 
+	TAG="$SCRIPT_NAME@$VERSION"
 	TARBALL="$(version-tarball "$SCRIPT_NAME" | tail -1)"
 
 	_changelog | gh release create "$TAG" --notes-file -
@@ -48,7 +49,7 @@ _changelog() {
 	local changelog
 	changelog="$SCRIPT_DIR/CHANGELOG.md"
 
-	[ ! -f "$CHANGELOG" ] && return
+	[ ! -f "$changelog" ] && return
 
 	awk -v ver="v$VERSION" '
   $0 ~ "^##[[:space:]]+" ver "$" {f=1; next}
