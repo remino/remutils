@@ -22,8 +22,8 @@ downloading its tarball, or the script itself.
 
 ## Development
 
-Every directory except `bin` and `lib` houses a script of its own, along with
-documentation and a test suite. For example:
+Every directory except `bin`, `lib`, and `tests` houses a script of its own,
+along with documentation and a test suite. For example:
 
 - `hello`
     - `CHANGELOG.md`
