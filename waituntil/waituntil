@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # waituntil
 
-VERSION='1.1.0'
+VERSION='1.1.1'
 
 waituntil_main() {
 	trap _exit INT TERM
