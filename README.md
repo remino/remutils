@@ -8,7 +8,7 @@ Rémino Rem <https://remino.net/>, 2026
 
 - [Installation & Usage](#installation--usage)
 - [Development](#development)
-    - [Scripts](#scripts)
+  - [Scripts](#scripts)
 - [Licence](#licence)
 
 <!-- mtoc-end -->
@@ -29,6 +29,7 @@ along with documentation and a test suite. For example:
     - `CHANGELOG.md`
     - `hello`: executable script named the same than its parent directory.
     - `formula.rb.mustache`: Mustache template of the script's Homebrew formula.
+    - `man/hello.1`
     - `README.md`
     - `tests/`: Bats test suite directory.
 
