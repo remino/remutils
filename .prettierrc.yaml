@@ -1,0 +1,24 @@
+arrowParens: 'avoid'
+bracketSameLine: true
+bracketSpacing: true
+jsxSingleQuote: false
+printWidth: 80
+proseWrap: 'always'
+quoteProps: 'as-needed'
+semi: false
+singleQuote: true
+tabWidth: 2
+trailingComma: 'es5'
+useTabs: true
+
+overrides:
+  - files: '*.md'
+    options:
+      parser: 'markdown'
+      proseWrap: 'always'
+      tabWidth: 4
+      useTabs: false
+  - files: ['*.yaml', '*.yml']
+    options:
+      parser: 'yaml'
+      useTabs: false
