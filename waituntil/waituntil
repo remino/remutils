@@ -1,0 +1,359 @@
+#!/bin/sh
+# waituntil
+
+VERSION='1.1.0'
+
+waituntil_main() {
+	trap _exit INT TERM
+
+	scriptinv="$(basename "$0")"
+	scriptpath="$(realpath "$0")"
+	scriptname="$(basename "$scriptpath")"
+
+	e_args=16
+	e_invalid_format=17
+	e_no_random=18
+	e_missing_app=19
+
+	cmd=
+	mode="$scriptinv"
+	max_add=0
+
+	while getopts hr:v opt; do
+		case $opt in
+			h) cmd=help ;;
+			r) max_add="$OPTARG" ;;
+			v) cmd=version ;;
+			*) _invalid_opt ;;
+		esac
+	done
+
+	[ $# -gt 0 ] && shift $((OPTIND - 1))
+
+	[ -z "$cmd" ] && cmd="process"
+
+	case "$cmd" in
+		help | process | version) "waituntil_$cmd" "$@" ;;
+		*) _invalid_cmd ;;
+	esac
+
+	return $?
+}
+
+waituntil_process() {
+	[ $# -lt 1 ] && waituntil_help && return
+
+	iso_format="%Y-%m-%d %H:%M:%S"
+
+	_init_date
+
+	run_date="$1"
+	shift
+
+	_mode_is_runat && [ $# -lt 1 ] && _fatal $e_args 'Missing command.'
+
+	run_date="$(_convert_seconds_to_time "$run_date")"
+	run_date="$(_add_date_to_time "$run_date")"
+
+	_require_valid_date_format "$run_date"
+
+	start_time_ts_ms="$(_format_date_to_epoch_ms "$run_date")"
+	[ -z "$start_time_ts_ms" ] && _fatal $e_invalid_format "Invalid date format: $run_date"
+
+	now="$(_format_now_to_epoch_ms)"
+	[ -z "$now" ] && _fatal $e_invalid_format "Could not convert date to Epoch ms."
+
+	_is_number "$max_add" || _fatal $e_args "Max value must be an integer."
+
+	if [ "$max_add" -eq 0 ]; then
+		add_secs=0
+	else
+		add_secs="$(_rand "$max_add")"
+		[ -z "$add_secs" ] && _fatal $e_no_random "Could not generate random number."
+	fi
+
+	[ "$add_secs" -gt 0 ] \
+		&& start_time_ts_ms="$((start_time_ts_ms + add_secs * 1000))"
+
+	diff="$((start_time_ts_ms - now))"
+
+	start_time="$(_format_epoch_ms_to_date "$start_time_ts_ms")"
+
+	if [ "$diff" -gt 0 ]; then
+		wait_time="$(echo "scale=3; $diff / 1000" | bc)"
+		echo "Waiting until $start_time ($wait_time s)..."
+		sleep "$wait_time"
+	else
+		echo "Already past $start_time"
+	fi
+
+	[ $# -lt 1 ] || "$@"
+}
+
+waituntil_help() {
+	_mode_is_runat && waituntil_help_runat && return
+
+	cat << HELP
+$scriptname $VERSION
+
+Usage: $scriptinv [-hv] [-r <ss>] <start_time> [<command> [<args>]]
+
+Wait until a specified time.
+
+Run <command> at that specified time if one is specified.
+If not, simply exit with code 0.
+
+The <start_time> must be specified in certain formats.
+See TIME FORMATS.
+
+Time zone can be set with TZ environment variable.
+
+Will try to locate Homebrew gdate (GNU date) on macOS.
+If not present, will adapt to use BSD date, which has
+less precision due to lack of millisecond output.
+
+EXAMPLES:
+
+	# Wait until 2022-07-07 10:00:00 local time then run echo:
+	waituntil '2022-07-07 10:00:00' && echo Hi
+
+	# Wait until 2022-07-07 10:00:00 Tokyo time then run echo:
+	TZ=Asia/Tokyo waituntil '2022-07-07 10:00:00' && echo Hi
+
+	# or
+	TZ=Asia/Tokyo waituntil '2022-07-07 10:00:00' echo Hi
+
+TIME FORMATS:
+
+  %Y-%m-%d %H:%M:%S
+		ISO 8601 date and time format. Example: 2022-07-07 10:00:00.
+
+	%H:%M:%S
+		ISO 8601 time format. Example: 10:00:00.
+		In this case, today will be used for the date.
+
+	<seconds>
+		Number of seconds from now. Example: 3600.
+
+OPTIONS:
+
+	-h          Show this help screen.
+	-r <ss>     Add random delay between 0 and <ss> seconds.
+	-v          Show script name and version number.
+
+HELP
+}
+
+waituntil_help_runat() {
+	cat << HELP
+$scriptname $VERSION
+
+USAGE: $scriptinv [-hv] [-r <ss>] <start_time> <command> [<args>]
+
+Wait until a specified time then run <command>.
+
+The <start_time> must be specified in certain formats.
+See TIME FORMATS.
+
+Time zone can be set with TZ environment variable.
+
+Will try to locate Homebrew gdate (GNU date) on macOS.
+If not present, will adapt to use BSD date, which has
+less precision due to lack of millisecond output.
+
+EXAMPLES:
+
+	# Wait until 2022-07-07 10:00:00 local time then run echo:
+	runat '2022-07-07 10:00:00' echo Hi
+
+	# Wait until 2022-07-07 10:00:00 Tokyo time then run echo:
+	TZ=Asia/Tokyo runat '2022-07-07 10:00:00' echo Hi
+
+TIME FORMATS:
+
+  %Y-%m-%d %H:%M:%S
+		ISO 8601 date and time format. Example: 2022-07-07 10:00:00.
+
+	%H:%M:%S
+		ISO 8601 time format. Example: 10:00:00.
+		In this case, today will be used for the date.
+
+	<seconds>
+		Number of seconds from now. Example: 3600.
+
+OPTIONS:
+
+	-h          Show this help screen.
+	-r <ss>     Add random delay between 0 and <ss> seconds.
+	-v          Show script name and version number.
+
+HELP
+}
+
+waituntil_version() {
+	_echo "$scriptname $VERSION"
+}
+
+_add_date_to_time() {
+	time="$1"
+
+	if echo "$time" | grep -E '^[0-9]{2}(:[0-9]{2}){2}$' > /dev/null 2>&1; then
+		echo "$(_date +"%Y-%m-%d") $time"
+		return
+	fi
+
+	echo "$time"
+}
+
+_bsd_date() {
+	_date -j 2> /dev/null > /dev/null
+}
+
+_convert_seconds_to_time() {
+	time="$1"
+
+	if echo "$time" | grep -E '^[0-9]+$' > /dev/null 2>&1; then
+		epoch="$(_date +"%s")"
+		added="$((epoch + time))"
+		_format_epoch_to_date "$added"
+		return
+	fi
+
+	echo "$time"
+}
+
+_date() {
+	"$date" "$@"
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_exit() {
+	exit_code=$?
+	exit $exit_code
+}
+
+_fatal() {
+	exit_code=$1
+	shift
+	_error "$@"
+	exit "$exit_code"
+}
+
+_format_date_to_epoch_ms() {
+	input_date="$1"
+
+	if _bsd_date; then
+		_date -j -f "$iso_format" "$input_date" +"%s000" 2> /dev/null
+	else
+		_date -d "$input_date" +"%s%3N" 2> /dev/null
+	fi
+}
+
+_format_epoch_ms_to_date() {
+	format="+$iso_format %Z"
+	epoch_ms="$1"
+	epoch_s="$(echo "$epoch_ms / 1000" | bc)"
+
+	if _bsd_date; then
+		_date -j -f "%s" "$epoch_s" "$format"
+	else
+		_date -d "@$epoch_s" "$format"
+	fi
+}
+
+_format_epoch_to_date() {
+	format="+$iso_format %Z"
+	epoch_s="$1"
+
+	if _bsd_date; then
+		_date -j -f "%s" "$epoch_s" "$format"
+	else
+		_date -d "@$epoch_s" "$format"
+	fi
+}
+
+_format_now_to_epoch_ms() {
+	if _bsd_date; then
+		_date +"%s000"
+	else
+		_date +"%s%3N"
+	fi
+}
+
+_gnu_date() {
+	! _bsd_date
+}
+
+_init_date() {
+	gdate="$(which gdate)"
+	result=$?
+	[ $result -eq 0 ] && date="$gdate"
+	[ -z "$date" ] && date="$(which date)"
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $cmd"
+	_echo
+	waituntil_help
+	exit $e_args
+}
+
+_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	waituntil_help
+	exit $e_args
+}
+
+_is_number() {
+	echo "$1" | grep -Eo '^\d+$' > /dev/null 2>&1
+}
+
+_mode_is_runat() {
+	[ "$mode" = "runat" ]
+}
+
+_rand() {
+	_require head od grep
+
+	max="$1"
+
+	[ -z "$max" ] && _fatal $e_args "Missing max value for random number."
+	_is_number "$max" || _fatal $e_args "Max value must be an integer."
+	[ "$max" -lt 1 ] && _fatal $e_args "Max value must be a 1 or higher."
+
+	max="$((max + 1))"
+	seed="$(od /dev/urandom | head -n 1 | grep -Eo '\d+$')"
+
+	awk "BEGIN { srand($seed); print int(rand() * $max) }"
+}
+
+_require() {
+	missing_bin=0
+
+	for bin in "$@"; do
+		if ! which "$bin" > /dev/null 2>&1; then
+			missing_bin=1
+			_error "Required: $bin"
+		fi
+	done
+
+	if [ $missing_bin -ne 0 ]; then
+		_fatal "$e_missing_app" "One or more executables or apps are missing."
+	fi
+}
+
+_require_valid_date_format() {
+	input_date="$1"
+	echo "$input_date" | grep -E '[0-9]{4}(-[0-9]{2}){2} ([0-9]{2}:){2}[0-9]{2}' > /dev/null 2>&1 && return
+	_fatal $e_invalid_format "Invalid date format: $input_date"
+}
+
+waituntil_main "$@"
