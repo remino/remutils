@@ -4,5 +4,12 @@ clean:
 list:
 	find . -depth 1 -type d -print0 | while read -r -d '' dir; do name="$(basename "$dir")"; [ -f "$dir/$name" ] && echo "$name" || true; done
 
-tests name:
-	bin/script-tests {{name}}
+tests name="":
+	if [ -n "{{name}}" ]; then \
+		bin/script-tests {{name}}; \
+	else \
+		just tests-all; \
+	fi
+
+tests-all:
+	just list | while read -r name; do just tests "$name"; done
