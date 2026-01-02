@@ -2,7 +2,7 @@
 class Hello < Formula
   desc "Just saying hello!"
   version "{{version}}"
-  url "{{url}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
@@ -20,6 +20,6 @@ class Hello < Formula
 
   test do
     out = shell_output("#{bin}/{{name}}")
-    assert_match "hello", out
+    assert_match "{{name}}", out
   end
 end
