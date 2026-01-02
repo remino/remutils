@@ -1,0 +1,32 @@
+# vim: set ft=ruby :
+class Hello < Formula
+  desc "Wrapper for hdiutil to make an ISO volume file out of a directory."
+  version "{{version}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
+  sha256 "{{sha256}}"
+  license "ISC"
+  homepage "https://github.com/remino/remutils"
+
+  depends_on "bash"
+  uses_from_macos "hdiutil"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  def install
+    bin.install "{{name}}"
+  end
+
+  test do
+    (testpath / "input").mkpath
+    (testpath / "input/hello.txt").write("hello")
+
+    system bin / "mkiso", "input", "out.iso"
+
+    assert_predicate testpath / "out.iso", :exist?
+    assert_predicate testpath / "out.iso", :file?
+    assert (testpath / "out.iso").size > 0
+  end
+end
