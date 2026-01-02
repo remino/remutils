@@ -12,4 +12,4 @@ tests name="":
 	fi
 
 tests-all:
-	bats */tests/*
+	bats -r .
