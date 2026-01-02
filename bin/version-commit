@@ -43,6 +43,7 @@ version_commit_main() {
 
 	version "$TYPE" "$SCRIPT_FILE"
 
+	NEW_VERSION="$(version show "$SCRIPT_FILE")"
 	INIT_PWD="$(pwd)"
 
 	git add "$SCRIPT_FILE"
