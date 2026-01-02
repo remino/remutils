@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 _usage() {
-	echo "USAGE: $(basename "$0") <script_dir> <major|minor|patch>"
+	echo "USAGE: $(basename "$0") <script_dir>"
 }
 
-version_commit_main() {
+version_tarball_main() {
 	# export PS4='+ ${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}() '
 	# set -x
 	set -euo pipefail
@@ -15,7 +15,6 @@ version_commit_main() {
 	E_MISSING_APP=19
 
 	[ $# -eq 0 ] && _usage && return
-	[ $# -lt 2 ] && _fatal $E_ARGS "Missing arguments."
 
 	SELF_SCRIPT="$(realpath "${BASH_SOURCE[0]}")"
 	SELF_DIR="$(dirname "$SELF_SCRIPT")"
@@ -29,31 +28,31 @@ version_commit_main() {
 
 	[ ! -f "$SCRIPT_FILE" ] && _fatal $E_MISSING_FILE "Missing or not a file: $SCRIPT_FILE"
 
-	if ! git diff --quiet || ! git diff --cached --quiet; then
-		_fatal $E_NOT_CLEAN "Git working directory is not clean. Please commit or stash changes before running this script." >&2
-	fi
+	_require git sha256sum version
 
-	TYPE="$2"
-	case "$TYPE" in
-	major | minor | patch) ;;
-	*) _fatal $E_ARGS "Invalid version type: $TYPE. Must be one of: major, minor, patch." ;;
-	esac
-
-	_require git version
-
-	version "$TYPE" "$SCRIPT_FILE"
-
-	NEW_VERSION="$(version show "$SCRIPT_FILE")"
+	VERSION="$(version show "$SCRIPT_FILE")"
 	INIT_PWD="$(pwd)"
 
-	git add "$SCRIPT_FILE"
-
-	# detect git repo root of file
 	REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 	cd "$REPO_ROOT" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $REPO_ROOT"
 
-	git commit -m "Bump $SCRIPT_NAME to v$NEW_VERSION"
-	git tag -a "$SCRIPT_NAME@$NEW_VERSION" -m "$SCRIPT_NAME v$NEW_VERSION"
+	TAG="$SCRIPT_NAME@$VERSION"
+	TARBALL="$SCRIPT_NAME@$VERSION.tar.gz"
+	SUMFILE="$TARBALL.sha256"
+
+	if [ -f "$TARBALL" ]; then
+		echo "File already exists: $TARBALL" >&2
+	else
+		git archive --format tar.gz --prefix "$TAG/" -o "$TAG.tar.gz" "$TAG:$SCRIPT_NAME/"
+	fi
+
+	if [ -f "$SUMFILE" ]; then
+		echo "File already exists: $SUMFILE" >&2
+	else
+		sha256sum "$TARBALL" >"$SUMFILE"
+	fi
+
+	echo "$TARBALL"
 }
 
 _fatal() {
@@ -78,4 +77,4 @@ _require() {
 	fi
 }
 
-version_commit_main "$@"
+version_tarball_main "$@"
