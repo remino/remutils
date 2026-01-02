@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 _usage() {
 	echo "USAGE: $(basename "$0") [-v] <filename>"
