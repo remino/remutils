@@ -17,5 +17,5 @@ teardown() {
 @test "liverename shows version with -v" {
 	run "$BATS_TEST_DIRNAME/../liverename" -v
 	[ "$status" -eq 0 ]
-	[[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+	[[ "$output" =~ ^liverename' '[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }

@@ -15,7 +15,7 @@ teardown() {
 @test "waituntil shows version with -v" {
 	run "$BATS_TEST_DIRNAME/../waituntil" -v
 	[ "$status" -eq 0 ]
-	[[ "$output" =~ ' '[0-9]+\.[0-9]+\.[0-9]+$ ]]
+	[[ "$output" =~ ^waituntil' '[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
 @test "waituntil shows help with -h" {

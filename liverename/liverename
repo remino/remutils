@@ -16,7 +16,7 @@ liverename_main() {
 	E_MISSING_APP=18
 
 	[ $# -eq 0 ] && _usage && return
-	[ $1 == "-v" ] && echo "$VERSION" && return
+	[ $1 == "-v" ] && echo "$(basename "$0") $VERSION" && return
 
 	_require watchexec
 

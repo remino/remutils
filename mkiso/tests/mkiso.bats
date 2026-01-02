@@ -15,7 +15,7 @@ teardown() {
 @test "mkiso shows version with -v" {
 	run "$BATS_TEST_DIRNAME/../mkiso" -v
 	[ "$status" -eq 0 ]
-	[[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+	[[ "$output" =~ ^mkiso' '[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
 @test "mkiso fails with missing arguments" {
