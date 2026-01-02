@@ -12,4 +12,4 @@ tests name="":
 	fi
 
 tests-all:
-	just list | while read -r name; do just tests "$name"; done
+	bats */tests/*
