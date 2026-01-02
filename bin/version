@@ -18,7 +18,7 @@ version_main() {
 
 	[ ! -f "$FILE" ] && echo "Missing file: $FILE" >&2 && return $E_NO_FILE
 
-	VERSION="$(grep -m1 -E '^VERSION=(\d+\.){2}(\d+)$' "$FILE" | cut -d = -f 2 || true)"
+	VERSION="$(grep -m1 -E "^VERSION=['\"]?(\d+\.){2}(\d+)" "$FILE" | grep -o -E '(\d+\.){2}(\d+)' || true)"
 
 	[ -z "$VERSION" ] && echo "No VERSION found." >&2 && return $E_NO_VERSION
 
@@ -59,7 +59,7 @@ _update() {
 	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$FILE"
 
 	export NEW_VERSION
-	perl -pi -e 's/^(VERSION=)(\d+\.){2}(\d+)$/$1$ENV{NEW_VERSION}/' "$FILE"
+	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$FILE"
 }
 
 _usage() {
