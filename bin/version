@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Update or show version of a script.
+
+version_main() {
+	# export PS4='+ ${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}() '
+	# set -x
+	set -euo pipefail
+
+	E_ARGS=16
+	E_NO_FILE=17
+	E_NO_VERSION=18
+
+	[ $# -eq 0 ] && _usage && return
+	[ $# -lt 2 ] && _usage && return $E_ARGS
+
+	CMD="$1"
+	FILE="$2"
+
+	[ ! -f "$FILE" ] && echo "Missing file: $FILE" >&2 && return $E_NO_FILE
+
+	VERSION="$(grep -m1 -E '^VERSION=(\d+\.){2}(\d+)$' "$FILE" | cut -d = -f 2 || true)"
+
+	[ -z "$VERSION" ] && echo "No VERSION found." >&2 && return $E_NO_VERSION
+
+	case "$CMD" in
+	show)
+		echo "$VERSION"
+		;;
+	major | minor | patch)
+		_update
+		;;
+	*)
+		echo "Invalid command: $CMD" >&2 && return $E_ARGS
+		;;
+	esac
+}
+
+_update() {
+	local major
+	local minor
+	local patch
+
+	IFS=. read -r major minor patch <<<"$VERSION"
+
+	case "$CMD" in
+	major)
+		major="$((major + 1))"
+		;;
+	minor)
+		minor="$((minor + 1))"
+		;;
+	patch)
+		patch="$((patch + 1))"
+		;;
+	esac
+
+	NEW_VERSION="$major.$minor.$patch"
+
+	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$FILE"
+
+	export NEW_VERSION
+	perl -pi -e 's/^(VERSION=)(\d+\.){2}(\d+)$/$1$ENV{NEW_VERSION}/' "$FILE"
+}
+
+_usage() {
+	echo "USAGE: $(basename "$0") [<major|minor|patch|show>] <scriptfile>"
+}
+
+version_main "$@"
