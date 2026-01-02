@@ -26,6 +26,7 @@ Every directory except `bin` and `lib` houses a script of its own, along with
 documentation and a test suite. For example:
 
 - `hello`
+    - `CHANGELOG.md`
     - `hello`: executable script named the same than its parent directory.
     - `formula.rb.mustache`: Mustache template of the script's Homebrew formula.
     - `README.md`
