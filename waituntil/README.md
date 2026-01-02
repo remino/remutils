@@ -7,9 +7,9 @@ Rémino Rem <https://remino.net/>, 2022
 <!-- mtoc-start -->
 
 - [Installation](#installation)
-  - [Homebrew](#homebrew)
-  - [Download](#download)
-  - [Git clone](#git-clone)
+    - [Homebrew](#homebrew)
+    - [Download](#download)
+    - [Git clone](#git-clone)
 - [Usage](#usage)
 
 <!-- mtoc-end -->

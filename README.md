@@ -8,7 +8,7 @@ Rémino Rem <https://remino.net/>, 2026
 
 - [Installation & Usage](#installation--usage)
 - [Development](#development)
-  - [Scripts](#scripts)
+    - [Scripts](#scripts)
 - [Licence](#licence)
 
 <!-- mtoc-end -->
