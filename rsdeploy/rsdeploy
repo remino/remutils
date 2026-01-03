@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# rsdeploy
+# Deploy directory to remote server by using rsync.
+# Rémino Rem <https://remino.net/>
+# shellcheck disable=SC2317
+
+VERSION="1.1.0"
+
+rsdeploy_main() {
+	trap _exit INT TERM
+
+	E_ARGS=16
+	E_MISSING_APP=17
+	E_MISSING_ENV=18
+	E_MISSING_FILE=19
+	E_CD_FAILED=20
+
+	SCRIPT_INT="$(basename "$0")"
+	SCRIPT_PATH="$(readlink -f "$0")"
+	SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+	ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+	RSDEPLOY_CONFIG=""
+	DRY_RUN_ARG='-n'
+
+	while getopts c:d:f:hrs:vw opt; do
+		case $opt in
+			c) _load_config "$OPTARG" ;;
+			d) RSDEPLOY_DEST="$OPTARG" ;;
+			f) RSDEPLOY_FILTER="$OPTARG" ;;
+			h) CMD=help ;;
+			r | w) DRY_RUN_ARG= ;;
+			s) RSDEPLOY_SRC="$OPTARG" ;;
+			v) CMD=version ;;
+			*) _invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ -z "$CMD" ] && CMD="process"
+
+	case "$CMD" in
+		help | process | version) "rsdeploy_$CMD" "$@" ;;
+		*) _invalid_cmd ;;
+	esac
+
+	_exit
+}
+
+rsdeploy_help() {
+	cat << USAGE
+$SCRIPT_INT $VERSION
+
+USAGE: $SCRIPT_INT [<options>] -c <file> [<rsync_args>]
+
+Deploy directory to remote server by using rsync.
+
+OPTIONS:
+
+	-c <file>   Specify config file location. Can be set multiple times.
+	            Source directory will be relative to the directory of the last
+	            found config file.
+
+	-d          Destination host and directory to deploy.
+	            Can be set with RSDEPLOY_DEST.
+
+	-f          Filter file to use for rsync. Can be set with RSDEPLOY_FILTER.
+
+	-h          Show this help screen.
+
+	-r          Alias to -w.
+
+	-s <src>    Source directory to deploy. Can be set with RSDEPLOY_SRC.
+
+	-v          Show version.
+
+	-w          Wet run. When not specified, a dry run is performed by default.
+
+USAGE
+}
+
+rsdeploy_process() {
+	_require rsync
+	_load_config
+	_init
+
+	FILTER_ARG=""
+
+	if [ -n "$RSDEPLOY_FILTER" ]; then
+		[ ! -f "$RSDEPLOY_FILTER" ] && _fatal "$E_MISSING_APP" "Filter file not found: $RSDEPLOY_FILTER"
+		FILTER="merge $RSDEPLOY_FILTER"
+	fi
+
+	if [ -n "$RSDEPLOY_CONFIG" ] && [ -f "$RSDEPLOY_CONFIG" ]; then
+		cd "$(dirname "$RSDEPLOY_CONFIG")" || _fatal "$E_CD_FAILED" "Cannot change to config file directory."
+	fi
+
+	# shellcheck disable=SC2086
+	rsync \
+		-aOJvz \
+		--delete-after \
+		--no-perms \
+		--progress \
+		--filter="$FILTER" \
+		$DRY_RUN_ARG \
+		"$@" \
+		"$RSDEPLOY_SRC" \
+		"$RSDEPLOY_DEST" \
+		;
+}
+
+rsdeploy_version() {
+	_echo "$SCRIPT_INT $VERSION"
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_exit() {
+	exit_code=$?
+	exit $exit_code
+}
+
+_fatal() {
+	exit_code="$1"
+	shift
+	_error "$@"
+	exit "$exit_code"
+}
+
+_find_config_file() {
+	dirpath="$PWD"
+
+	while [ "$dirpath" != "/" ]; do
+		conffile="$dirpath/.env"
+		[ -f "$conffile" ] && echo "$conffile" && return
+		dirpath="$(dirname "$dirpath")"
+	done
+
+	echo ""
+}
+
+_init() {
+	missing=""
+
+	[ -z "$RSDEPLOY_DEST" ] && missing="${missing}RSDEPLOY_DEST "
+	[ -z "$RSDEPLOY_SRC" ] && missing="${missing}RSDEPLOY_SRC "
+
+	echo "RSDEPLOY_DEST=$RSDEPLOY_DEST"
+	echo "RSDEPLOY_FILTER=$RSDEPLOY_FILTER"
+	echo "RSDEPLOY_SRC=$RSDEPLOY_SRC"
+
+	[ -n "$missing" ] && _fatal "$E_MISSING_ENV" "Missing env vars: $missing"
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $CMD"
+	_echo
+	rsdeploy_help
+	exit $E_ARGS
+}
+
+_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	rsdeploy_help
+	exit $E_ARGS
+}
+
+_load_config() {
+	rc="$1"
+
+	if [ -z "$rc" ]; then
+		rc="$(_find_config_file)"
+	else
+		[ ! -f "$rc" ] && return
+	fi
+
+	export RSDEPLOY_CONFIG="$rc"
+
+	eval "$(
+		# shellcheck source=/dev/null
+		. "$RSDEPLOY_CONFIG"
+		echo "DEPLOY_DEST=$DEPLOY_DEST"
+		echo "DEPLOY_FILTER=$DEPLOY_FILTER"
+		echo "DEPLOY_SRC=$DEPLOY_SRC"
+		echo "RSDEPLOY_DEST=$RSDEPLOY_DEST"
+		echo "RSDEPLOY_FILTER=$RSDEPLOY_FILTER"
+		echo "RSDEPLOY_SRC=$RSDEPLOY_SRC"
+	)"
+
+	# Legacy support for DEPLOY_* env vars.
+	[ -n "$DEPLOY_DEST" ] && export RSDEPLOY_DEST="$DEPLOY_DEST"
+	[ -n "$DEPLOY_FILTER" ] && export RSDEPLOY_FILTER="$DEPLOY_FILTER"
+	[ -n "$DEPLOY_SRC" ] && export RSDEPLOY_SRC="$DEPLOY_SRC"
+
+	[ -n "$RSDEPLOY_DEST" ] && export RSDEPLOY_DEST
+	[ -n "$RSDEPLOY_FILTER" ] && export RSDEPLOY_FILTER
+	[ -n "$RSDEPLOY_SRC" ] && export RSDEPLOY_SRC
+}
+
+_require() {
+	missing_bin=0
+
+	for bin in "$@"; do
+		if ! which "$bin" > /dev/null 2>&1; then
+			missing_bin=1
+			_error "Required: $bin"
+		fi
+	done
+
+	if [ "$missing_bin" -ne 0 ]; then
+		_fatal "$E_MISSING_APP" "One or more executables or apps are missing."
+	fi
+}
+
+rsdeploy_main "$@"
