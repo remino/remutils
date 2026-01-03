@@ -13,3 +13,15 @@ tests name="":
 
 tests-all:
 	bats -r .
+
+version name="":
+	if [ -n "{{name}}" ]; then \
+		bin/version show "{{name}}/{{name}}"; \
+	else \
+		just version-all; \
+	fi
+
+version-all:
+	just list | while read -r name; do \
+		printf "%s %s\n" "$name" "$( bin/version show "$name/$name" )"; \
+	done
