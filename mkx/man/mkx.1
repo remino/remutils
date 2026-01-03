@@ -1,0 +1,63 @@
+.TH WAITUNTIL 1 "September 2022" "mkx 1.1.0"
+.SH NAME
+mkx \- Wait until a specified time and optionally execute a command
+.SH SYNOPSIS
+.B mkx
+[\fI-hv\fR] [\fI-r <ss>\fR] \fI<start_time>\fR [\fI<command>\fR [\fI<args>\fR]]
+.SH DESCRIPTION
+.B mkx
+waits until a specified time, optionally running a command at that time. If no command is specified, the script exits with code 0.
+
+The \fI<start_time>\fR must be specified in certain formats (see TIME FORMATS).
+
+Time zone can be set using the \fBTZ\fR environment variable.
+
+The script adapts automatically:
+.IP -
+On macOS, it tries to locate Homebrew \fBgdate\fR (GNU date).
+.IP -
+If not available, it uses BSD date, which has less precision due to lack of millisecond output.
+.SH EXAMPLES
+.TP
+Wait until 2022-07-07 10:00:00 local time, then run \fBecho\fR:
+.nf
+.B mkx '2022-07-07 10:00:00' && echo Hi
+.fi
+.TP
+Wait until 2022-07-07 10:00:00 Tokyo time, then run \fBecho\fR:
+.nf
+.B TZ=Asia/Tokyo mkx '2022-07-07 10:00:00' && echo Hi
+.fi
+.TP
+Alternatively:
+.nf
+.B TZ=Asia/Tokyo mkx '2022-07-07 10:00:00' echo Hi
+.fi
+.SH TIME FORMATS
+.TP
+\fB%Y-%m-%d %H:%M:%S\fR
+ISO 8601 date and time format. Example: \fI2022-07-07 10:00:00\fR.
+.TP
+\fB%H:%M:%S\fR
+ISO 8601 time format. Example: \fI10:00:00\fR. In this case, today will be used for the date.
+.TP
+\fB<seconds>\fR
+Number of seconds from now. Example: \fI3600\fR.
+.SH OPTIONS
+.TP
+\fB-h\fR
+Show this help screen.
+.TP
+\fB-r <ss>\fR
+Add random delay between 0 and \fI<ss>\fR seconds.
+.TP
+\fB-v\fR
+Show script name and version number.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright © 2022-2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
