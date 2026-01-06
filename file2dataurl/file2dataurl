@@ -9,33 +9,32 @@ file2dataurl_main() {
 	e_args=16
 	e_no_file=17
 
-	scriptinv="$( basename "$0" )"
-	scriptpath="$( readlink -f "$0" )"
-	scriptname="$( basename "$scriptpath" )"
+	scriptinv="$(basename "$0")"
+	scriptpath="$(readlink -f "$0")"
+	scriptname="$(basename "$scriptpath")"
 
-	while getopts hv opt
-	do
+	while getopts hv opt; do
 		case $opt in
-			h) cmd=help ;;
-			v) cmd=version ;;
-			*) _invalid_opt ;;
+		h) cmd=help ;;
+		v) cmd=version ;;
+		*) _invalid_opt ;;
 		esac
 	done
 
-	shift "$(( OPTIND - 1 ))"
+	shift "$((OPTIND - 1))"
 
 	[ -z "$cmd" ] && cmd="process"
 
 	case "$cmd" in
-		help|process|version) "file2dataurl_$cmd" "$@" ;;
-		*) _invalid_cmd ;;
+	help | process | version) "file2dataurl_$cmd" "$@" ;;
+	*) _invalid_cmd ;;
 	esac
 
 	_exit
 }
 
 file2dataurl_help() {
-cat <<USAGE
+	cat <<USAGE
 $scriptname $VERSION
 
 USAGE: $scriptinv [<options>] <file>
@@ -53,8 +52,8 @@ USAGE
 file2dataurl_process() {
 	file="$1"
 	[ ! -f "$file" ] && _fatal $e_no_file "No such file: $file"
-	mime="$( file -b --mime-type "$file" )"
-	_echo "data:${mime};base64,$( base64 < "$file" | sed -E 's/=+$//' )"
+	mime="$(file -b --mime-type "$file")"
+	_echo "data:${mime};base64,$(base64 <"$file" | sed -E 's/=+$//')"
 }
 
 file2dataurl_version() {
