@@ -13,6 +13,8 @@ file2dataurl_main() {
 	scriptpath="$(readlink -f "$0")"
 	scriptname="$(basename "$scriptpath")"
 
+	[ $# -lt 1 ] && cmd="help"
+
 	while getopts hv opt; do
 		case $opt in
 		h) cmd=help ;;

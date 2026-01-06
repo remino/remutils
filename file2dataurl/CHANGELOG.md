@@ -10,6 +10,7 @@
 ## v1.0.2
 
 - Preserve padding in data URLs.
+- Show usage help when run without arguments.
 
 ## v1.0.1
 

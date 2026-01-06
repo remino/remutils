@@ -7,7 +7,6 @@ teardown() {
 }
 
 @test "file2dataurl shows usage with no arguments" {
-	skip "FIXME Broken in 1.0.1"
 	run "$BATS_TEST_DIRNAME/../file2dataurl"
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"USAGE:"* ]]
