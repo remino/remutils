@@ -2,7 +2,7 @@
 
 Convert file to base64 data URL.
 
-Rémino Rem <https://remino.net/>, 2022
+Rémino Rem <https://remino.net/>, 2022-2026
 
 <!-- mtoc-start -->
 
