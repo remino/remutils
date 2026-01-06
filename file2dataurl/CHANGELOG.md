@@ -2,9 +2,14 @@
 
 <!-- mtoc-start -->
 
+- [v1.0.2](#v102)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## v1.0.2
+
+- Preserve padding in data URLs.
 
 ## v1.0.1
 

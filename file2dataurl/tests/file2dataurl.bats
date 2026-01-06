@@ -31,6 +31,15 @@ teardown() {
 
 	run "$BATS_TEST_DIRNAME/../file2dataurl" "$TMP_DIR/hello.txt"
 	[ "$status" -eq 0 ]
-	expected_output="data:text/plain;base64,SGVsbG8sIFdvcmxkIQo"
+	expected_output="data:text/plain;base64,SGVsbG8sIFdvcmxkIQo="
+	[[ "$output" == "$expected_output" ]]
+}
+
+@test "file2dataurl converts a binary file to data URL" {
+	TMP_DIR=$(mktemp -d)
+	printf '\x00\xFF\xAA\x55' >"$TMP_DIR/binary.bin"
+	run "$BATS_TEST_DIRNAME/../file2dataurl" "$TMP_DIR/binary.bin"
+	[ "$status" -eq 0 ]
+	expected_output="data:application/octet-stream;base64,AP+qVQ=="
 	[[ "$output" == "$expected_output" ]]
 }
