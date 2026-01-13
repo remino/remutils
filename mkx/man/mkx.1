@@ -1,63 +1,76 @@
-.TH WAITUNTIL 1 "September 2022" "mkx 1.1.0"
+.TH MKX 1 "August 2025" "mkx"
 .SH NAME
-mkx \- Wait until a specified time and optionally execute a command
+mkx \- Make new exectuable shell script file from template
 .SH SYNOPSIS
 .B mkx
-[\fI-hv\fR] [\fI-r <ss>\fR] \fI<start_time>\fR [\fI<command>\fR [\fI<args>\fR]]
+[\fI-bhsvx\fR] [\fI-i\fR \fIINTERPRETER\fR] [\fI-t\fR \fITEMPLATE\fR] [\fIFILE\fR]
 .SH DESCRIPTION
 .B mkx
-waits until a specified time, optionally running a command at that time. If no command is specified, the script exits with code 0.
-
-The \fI<start_time>\fR must be specified in certain formats (see TIME FORMATS).
-
-Time zone can be set using the \fBTZ\fR environment variable.
-
-The script adapts automatically:
-.IP -
-On macOS, it tries to locate Homebrew \fBgdate\fR (GNU date).
-.IP -
-If not available, it uses BSD date, which has less precision due to lack of millisecond output.
-.SH EXAMPLES
-.TP
-Wait until 2022-07-07 10:00:00 local time, then run \fBecho\fR:
-.nf
-.B mkx '2022-07-07 10:00:00' && echo Hi
-.fi
-.TP
-Wait until 2022-07-07 10:00:00 Tokyo time, then run \fBecho\fR:
-.nf
-.B TZ=Asia/Tokyo mkx '2022-07-07 10:00:00' && echo Hi
-.fi
-.TP
-Alternatively:
-.nf
-.B TZ=Asia/Tokyo mkx '2022-07-07 10:00:00' echo Hi
-.fi
-.SH TIME FORMATS
-.TP
-\fB%Y-%m-%d %H:%M:%S\fR
-ISO 8601 date and time format. Example: \fI2022-07-07 10:00:00\fR.
-.TP
-\fB%H:%M:%S\fR
-ISO 8601 time format. Example: \fI10:00:00\fR. In this case, today will be used for the date.
-.TP
-\fB<seconds>\fR
-Number of seconds from now. Example: \fI3600\fR.
+creates a new executable shell script file from a template.
 .SH OPTIONS
 .TP
-\fB-h\fR
-Show this help screen.
+.B \-b
+Only write a bare script with only the shebang line, without template.
 .TP
-\fB-r <ss>\fR
-Add random delay between 0 and \fI<ss>\fR seconds.
+.B \-f
+Force overwriting the file if it already exists.
 .TP
-\fB-v\fR
-Show script name and version number.
+.B \-h
+Show help screen.
+.TP
+.B \-i \fIINTERPRETER\fR
+Specify the interpreter to use in the shebang line. Defaults to \fI/usr/bin/env bash\fR.
+.TP
+.B \-s
+Use /bin/sh as interpreter in the shebang line. Implies \-b.
+.TP
+.B \-t \fITEMPLATE\fR
+Specify the template to use.
+.TP
+.B \-v
+Show the version number.
+.TP
+.B \-x
+Make existing file executable, like doing \fIchmod a+x\fT. This is only provided as a convenience and will not output new files or change any existing ones.
+.SH TEMPLATES
+mkx uses Mustache templates to generate scripts. The templates have the extension of \fI.mustache\fR
+and they are looked for in the following directories:
+.TP
+.B \fI$MKX_TEMPLATES_DIR\fR
+The directory specified by the environment variable \fI$MKX_TEMPLATES_DIR\fR. Defaults to \fItemplates\fR in the script directory.
+.TP
+.B \fI$SCRIPT_DIR/templates\fR
+The directory \fItemplates\fR in the script directory, where the script is located.
+.TP
+.B \fI$SCRIPT_DIR/../share/mkx/templates\fR
+The directory \fI../share/mkx/templates\fR relative to the script directory.
+.TP
+.B \fI$XDG_CONFIG_HOME/mkx/templates\fR
+The directory \fI$XDG_CONFIG_HOME/mkx/templates\fR if the environment variable \fI$XDG_CONFIG_HOME\fR is set. If not, it defaults to \fI$HOME/.config/mkx/templates\fR.
+.TP
+The following variables are available:
+.TP
+.B \fIdate\fR
+The date when the script was created in format \fI%Y-%m-%d %H:%M:%S %Z\fR.
+.TP
+.B \fIinterpreter\fR
+The interpreter specified with the \fI-i\fR option or the default interpreter.
+.TP
+.B \fImkx_version\fR
+The version of mkx.
+.TP
+.B \fImkx_version\fR
+The version of mkx.
+.TP
+.B \fIscript_name\fR
+The name of the script.
+.TP
+.B \fIscript_name_sc\fR
+The name of the script in lowercase.
 .SH AUTHOR
 Written by Rémino Rem: <https://remino.net/>
-.SH ISSUES
-GitHub: <https://github.com/remino/remutils>
+.SH "ISSUES"
+GitHub: <https://github.com/remino/mkx>
 .SH COPYRIGHT
-Copyright © 2022-2026 Rémino Rem.
-
-License ISC: <https://opensource.org/licenses/ISC>
+Copyright © 2022-2025 Rémino Rem.
+Licence ISC: <https://opensource.org/licenses/ISC>
