@@ -40,7 +40,7 @@ cd remutils/cb2pdf
 
 ## Usage
 
-Run `cb2pdf -h` to see how to use it.
+Run `man cb2pdf` or `cb2pdf -h` to see how to use it.
 
 Example:
 

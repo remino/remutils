@@ -1,0 +1,85 @@
+.TH CB2PDF 1 "February 2026" "cb2pdf 1.0.0"
+.SH NAME
+cb2pdf \- Convert .cbz/.cbr comic archives to PDF
+.SH SYNOPSIS
+.B cb2pdf
+[\fI-hvE\fR] [\fI-d\fR \fIDPI\fR] [\fI-e\fR \fIGLOB\fR] \fIINPUT.cbr|INPUT.cbz\fR [\fIOUTPUT.pdf\fR]
+.SH DESCRIPTION
+.B cb2pdf
+extracts images from a \fI.cbz\fR or \fI.cbr\fR archive and writes a PDF.
+
+The script prints the input filename when processing starts.
+
+By default, each image becomes one PDF page, and page layout is normalized to a fixed DPI to avoid inconsistent embedded image metadata causing unexpected page sizing.
+.SH OPTIONS
+.TP
+.B \-d, --dpi \fIDPI\fR
+Set output layout DPI. Defaults to \fI300\fR.
+.TP
+.B \-e, --exclude \fIGLOB\fR
+Exclude extracted image paths matching shell glob pattern. Repeatable.
+.TP
+.B \-E, --no-default-excludes
+Disable built-in excludes.
+.TP
+.B \-h, --help
+Show usage help.
+.TP
+.B \-v, --version
+Show script name and version number.
+.SH DEFAULT EXCLUDES
+Unless \fB-E\fR is set, these path patterns are excluded:
+.TP
+.B __MACOSX/*
+macOS archive metadata directory.
+.TP
+.B ._*
+AppleDouble files.
+.TP
+.B .* and */.*
+Hidden files and files within hidden directories.
+.SH ENVIRONMENT
+.TP
+.B CB2PDF_DPI
+Default DPI when \fB-d\fR is not given.
+.SH DEPENDENCIES
+.TP
+.B 7z
+Used to extract \fI.cbz\fR/\fI.cbr\fR archives.
+.TP
+.B img2pdf
+Used to generate PDF output.
+.SH EXAMPLES
+.TP
+Convert and write next to input:
+.nf
+.B cb2pdf issue-001.cbz
+.fi
+.TP
+Convert with explicit output path:
+.nf
+.B cb2pdf issue-001.cbr output.pdf
+.fi
+.TP
+Set custom DPI:
+.nf
+.B cb2pdf -d 400 issue-001.cbz output.pdf
+.fi
+.TP
+Add custom excludes:
+.nf
+.B cb2pdf -e 'extras/*' -e 'ads/*' issue-001.cbz
+.fi
+.TP
+Disable default excludes:
+.nf
+.B cb2pdf -E issue-001.cbz
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -18,6 +18,7 @@ class Cb2pdf < Formula
 
   def install
     bin.install "{{name}}"
+    man1.install "man/{{name}}.1"
   end
 
   test do
