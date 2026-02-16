@@ -1,0 +1,434 @@
+#!/usr/bin/env bash
+#
+# rrrr - Reliable Recursive Redundant RSync
+#
+set -euo pipefail
+
+VERSION="1.0.0"
+
+DEFAULT_FILTERS_CONTENT=$'- /dev/**\n- /proc/**\n- /sys/**\n- /run/**\n- /tmp/**\n- /mnt/**\n- /media/**\n- /lost+found\n- /swapfile'
+DEFAULT_FILTERS_FILE=""
+
+HOST_ARG=""
+HOST_CONFIG_DIR=""
+HOST_FILTER_FILE=""
+
+DATE_TODAY=""
+SNAP_DIR=""
+SNAPS_DIR=""
+LATEST_LINK=""
+LOG_DIR=""
+LOG_FILE=""
+SSH_CMD=""
+
+HOSTNAME_REMOTE=""
+REMOTE_USER=""
+REMOTE_SSH_HOST=""
+REMOTE_SSH_PORT="22"
+SSH_KEY=""
+BACKUP_ROOT=""
+REMOTE_ROOT="/"
+KEEP_DAILY=7
+KEEP_WEEKLY=4
+KEEP_MONTHLY=6
+
+declare -a RSYNC_FILTER_ARGS=()
+declare -a LINK_DEST_ARGS=()
+
+rrrr_cleanup() {
+	if [ -n "${DEFAULT_FILTERS_FILE:-}" ] && [ -f "${DEFAULT_FILTERS_FILE}" ]; then
+		rm -f "${DEFAULT_FILTERS_FILE}"
+	fi
+}
+
+trap rrrr_cleanup EXIT
+
+log() {
+	local timestamp message
+	timestamp="$(date '+%F %T')"
+	message="[$timestamp] $*"
+
+	if [ -n "${LOG_FILE:-}" ]; then
+		printf "%s\n" "${message}" | tee -a "${LOG_FILE}"
+	else
+		printf "%s\n" "${message}"
+	fi
+}
+
+die() {
+	log "ERROR: $*"
+	exit 1
+}
+
+require_cmd() {
+	command -v "$1" > /dev/null 2>&1 || die "Missing required command: $1"
+}
+
+rrrr_main() {
+	local opt host
+	while getopts ":hV" opt; do
+		case "${opt}" in
+			h)
+				rrrr_usage
+				return 0
+				;;
+			V)
+				printf "rrrr %s\n" "${VERSION}"
+				return 0
+				;;
+			\?) die "Unknown option: -${OPTARG}" ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+
+	if [ "$#" -lt 1 ]; then
+		rrrr_usage >&2
+		return 1
+	fi
+
+	host="$1"
+	HOST_ARG="${host}"
+
+	HOST_CONFIG_DIR="$(rrrr_find_host_config_dir "${host}")" || die "No host config directory found for ${host}"
+
+	rrrr_reset_config_to_defaults
+	rrrr_source_host_config "${HOST_CONFIG_DIR}"
+	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
+	rrrr_set_derived_defaults
+	rrrr_validate_config
+	rrrr_prepare_runtime
+	rrrr_check_requirements
+
+	rrrr_run_backup
+}
+
+rrrr_usage() {
+	cat << 'USAGE'
+Usage: rrrr [-hV] <hostname>
+
+Reliable Recursive Redundant RSync backup runner.
+
+<hostname> corresponds to a host-specific directory that lives in one of:
+  $XDG_CONFIG_HOME/rrrr/<hostname>
+  $XDG_CONFIG_DIRS/rrrr/<hostname> (searched in order)
+  /etc/rrrr/<hostname>
+
+Each directory must contain a "config" file that exports the variables needed
+to reach the host (user, SSH key, backup root, etc). If a "filters" file is
+present (or FILTERS_FILE points elsewhere) it will be merged into rsync using
+--filter.
+
+Options:
+  -h    Show this help text.
+  -V    Print version.
+USAGE
+}
+
+rrrr_reset_config_to_defaults() {
+	HOSTNAME_REMOTE=""
+	REMOTE_USER=""
+	REMOTE_SSH_HOST=""
+	REMOTE_SSH_PORT="22"
+	SSH_KEY=""
+	BACKUP_ROOT=""
+	REMOTE_ROOT="/"
+	KEEP_DAILY=7
+	KEEP_WEEKLY=4
+	KEEP_MONTHLY=6
+	SNAPS_DIR=""
+	LOG_DIR=""
+	LATEST_LINK=""
+	LOG_FILE=""
+	FILTERS_FILE=""
+	HOST_FILTER_FILE=""
+}
+
+rrrr_find_host_config_dir() {
+	local host="$1"
+	local config_home="${XDG_CONFIG_HOME:-${HOME}/.config}"
+	local -a search_dirs=()
+	local -a xdg_dirs=()
+	local IFS=':'
+
+	if [ -n "${XDG_CONFIG_DIRS:-}" ]; then
+		read -r -a xdg_dirs <<< "${XDG_CONFIG_DIRS}"
+	else
+		xdg_dirs=("/etc/xdg")
+	fi
+
+	search_dirs+=("${config_home}")
+	search_dirs+=("${xdg_dirs[@]}")
+
+	for dir in "${search_dirs[@]}"; do
+		[ -n "${dir}" ] || continue
+		if [ -d "${dir}/rrrr/${host}" ]; then
+			rrrr_abspath "${dir}/rrrr/${host}"
+			return 0
+		fi
+	done
+
+	if [ -d "/etc/rrrr/${host}" ]; then
+		rrrr_abspath "/etc/rrrr/${host}"
+		return 0
+	fi
+
+	return 1
+}
+
+rrrr_abspath() {
+	local path="$1"
+
+	if command -v realpath > /dev/null 2>&1; then
+		if realpath "${path}"; then
+			return 0
+		fi
+	fi
+
+	if command -v python3 > /dev/null 2>&1; then
+		python3 - "${path}" << 'PY'
+import os
+import sys
+print(os.path.realpath(sys.argv[1]))
+PY
+		return 0
+	fi
+
+	if command -v perl > /dev/null 2>&1; then
+		perl -MCwd=abs_path -e 'print abs_path(shift)' "${path}"
+		return 0
+	fi
+
+	(
+		cd "$(dirname "${path}")" > /dev/null 2>&1 || exit 1
+		printf "%s/%s\n" "$(pwd)" "$(basename "${path}")"
+	)
+}
+
+rrrr_source_host_config() {
+	local dir="$1"
+	local config_file="${dir}/config"
+
+	[ -f "${config_file}" ] || die "Config file not found: ${config_file}"
+
+	# shellcheck source=/dev/null
+	source "${config_file}"
+}
+
+rrrr_prepare_filters() {
+	local dir="$1"
+	local candidate=""
+
+	if [ -f "${dir}/filters" ]; then
+		candidate="${dir}/filters"
+	elif [ -n "${FILTERS_FILE:-}" ]; then
+		if [[ "${FILTERS_FILE}" = /* ]]; then
+			candidate="${FILTERS_FILE}"
+		else
+			candidate="${dir}/${FILTERS_FILE}"
+		fi
+	fi
+
+	if [ -n "${candidate}" ]; then
+		[ -f "${candidate}" ] || die "Filters file not found: ${candidate}"
+		HOST_FILTER_FILE="$(rrrr_abspath "${candidate}")"
+	else
+		HOST_FILTER_FILE="$(rrrr_create_default_filters_file)"
+	fi
+}
+
+rrrr_create_default_filters_file() {
+	require_cmd mktemp
+	local tmp
+	tmp="$(mktemp)"
+	printf "%s\n" "${DEFAULT_FILTERS_CONTENT}" > "${tmp}"
+	DEFAULT_FILTERS_FILE="${tmp}"
+	printf "%s\n" "${DEFAULT_FILTERS_FILE}"
+}
+
+rrrr_set_derived_defaults() {
+	HOSTNAME_REMOTE="${HOSTNAME_REMOTE:-${HOST_ARG}}"
+	REMOTE_SSH_HOST="${REMOTE_SSH_HOST:-${HOST_ARG}}"
+	REMOTE_ROOT="${REMOTE_ROOT:-/}"
+}
+
+rrrr_validate_config() {
+	[ -n "${REMOTE_USER}" ] || die "REMOTE_USER must be set in host config"
+	[ -n "${SSH_KEY}" ] || die "SSH_KEY must be set in host config"
+	[ -n "${BACKUP_ROOT}" ] || die "BACKUP_ROOT must be set in host config"
+}
+
+rrrr_prepare_runtime() {
+	DATE_TODAY="$(date +%F)"
+	SNAPS_DIR="${SNAPS_DIR:-${BACKUP_ROOT}/snapshots}"
+	SNAP_DIR="${SNAPS_DIR}/${DATE_TODAY}"
+	LATEST_LINK="${LATEST_LINK:-${BACKUP_ROOT}/latest}"
+	LOG_DIR="${LOG_DIR:-${BACKUP_ROOT}/logs}"
+	LOG_FILE="${LOG_FILE:-${LOG_DIR}/${DATE_TODAY}.log}"
+
+	mkdir -p "${SNAPS_DIR}" "${LOG_DIR}"
+}
+
+rrrr_check_requirements() {
+	require_cmd rsync
+	require_cmd ssh
+	require_cmd find
+	require_cmd sort
+	require_cmd head
+	require_cmd tail
+	require_cmd date
+	require_cmd rm
+	require_cmd ln
+	require_cmd mkdir
+	require_cmd readlink
+	require_cmd awk
+	require_cmd mktemp
+
+	[ -f "${SSH_KEY}" ] || die "SSH key not found: ${SSH_KEY}"
+
+	if [ -n "${HOST_FILTER_FILE}" ] && [ ! -f "${HOST_FILTER_FILE}" ]; then
+		die "Filter file not found: ${HOST_FILTER_FILE}"
+	fi
+}
+
+rrrr_run_backup() {
+	log "=== Backup start (${HOSTNAME_REMOTE}) ==="
+	log "Backup root: ${BACKUP_ROOT}"
+	log "Snapshot dir: ${SNAP_DIR}"
+
+	rrrr_prepare_snapshot_dir
+	rrrr_build_link_dest_args
+	rrrr_build_filter_args
+	rrrr_build_ssh_command
+
+	rrrr_run_rsync
+	rrrr_update_latest
+	rrrr_apply_retention
+
+	log "=== Backup complete (${HOSTNAME_REMOTE}) ==="
+}
+
+rrrr_prepare_snapshot_dir() {
+	if [ -e "${SNAP_DIR}" ]; then
+		die "Snapshot already exists for today: ${SNAP_DIR}"
+	fi
+	mkdir -p "${SNAP_DIR}"
+}
+
+rrrr_build_link_dest_args() {
+	LINK_DEST_ARGS=()
+
+	if [ -L "${LATEST_LINK}" ]; then
+		local prev
+		prev="$(rrrr_resolve_link_target "${LATEST_LINK}")"
+		if [ -n "${prev}" ] && [ -d "${prev}" ]; then
+			log "Using --link-dest from previous snapshot: ${prev}"
+			LINK_DEST_ARGS=(--link-dest "${prev}")
+		else
+			log "latest symlink exists but target is invalid; ignoring --link-dest"
+		fi
+	else
+		log "No previous snapshot found (no latest symlink). Full copy run."
+	fi
+}
+
+rrrr_resolve_link_target() {
+	local link="$1"
+	local target
+
+	target="$(readlink "${link}")" || return 1
+
+	if [[ "${target}" = /* ]]; then
+		printf "%s\n" "${target}"
+	else
+		(
+			cd "$(dirname "${link}")" > /dev/null 2>&1 || exit 1
+			printf "%s/%s\n" "$(pwd)" "${target}"
+		)
+	fi
+}
+
+rrrr_build_filter_args() {
+	RSYNC_FILTER_ARGS=()
+	if [ -n "${HOST_FILTER_FILE}" ]; then
+		RSYNC_FILTER_ARGS+=(--filter="merge ${HOST_FILTER_FILE}")
+	fi
+}
+
+rrrr_build_ssh_command() {
+	SSH_CMD="ssh -p ${REMOTE_SSH_PORT} -i ${SSH_KEY} -o BatchMode=yes -o StrictHostKeyChecking=accept-new"
+}
+
+rrrr_run_rsync() {
+	log "Running rsync..."
+	log "Remote: ${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}"
+	log "Log: ${LOG_FILE}"
+
+	rsync -aHAX --numeric-ids --delete \
+		--info=stats2,progress2 \
+		"${RSYNC_FILTER_ARGS[@]}" \
+		"${LINK_DEST_ARGS[@]}" \
+		-e "${SSH_CMD}" \
+		"${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}" \
+		"${SNAP_DIR}/" \
+		| tee -a "${LOG_FILE}"
+
+	log "rsync finished."
+}
+
+rrrr_update_latest() {
+	rm -f "${LATEST_LINK}"
+	ln -s "${SNAP_DIR}" "${LATEST_LINK}"
+	log "Updated latest -> ${SNAP_DIR}"
+}
+
+rrrr_apply_retention() {
+	log "Applying retention: daily=${KEEP_DAILY}, weekly=${KEEP_WEEKLY}, monthly=${KEEP_MONTHLY}"
+
+	local -a ALL_SNAPS=()
+	mapfile -t ALL_SNAPS < <(find "${SNAPS_DIR}" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort)
+	if [ "${#ALL_SNAPS[@]}" -eq 0 ]; then
+		log "No snapshots found. Skipping retention."
+		return
+	fi
+
+	local -A KEEP=()
+
+	if [ "${KEEP_DAILY}" -gt 0 ]; then
+		while read -r d; do
+			[ -n "${d}" ] && KEEP["$d"]=1
+		done < <(printf "%s\n" "${ALL_SNAPS[@]}" | tail -n "${KEEP_DAILY}")
+	fi
+
+	if [ "${KEEP_WEEKLY}" -gt 0 ]; then
+		while read -r d; do
+			[ -n "${d}" ] && KEEP["$d"]=1
+		done < <(
+			for d in "${ALL_SNAPS[@]}"; do
+				if [ "$(date -d "${d}" +%u 2> /dev/null || echo "0")" = "7" ]; then
+					printf "%s\n" "${d}"
+				fi
+			done | tail -n "${KEEP_WEEKLY}"
+		)
+	fi
+
+	if [ "${KEEP_MONTHLY}" -gt 0 ]; then
+		while read -r d; do
+			[ -n "${d}" ] && KEEP["$d"]=1
+		done < <(printf "%s\n" "${ALL_SNAPS[@]}" | awk -F- '$3=="01"{print $0}' | tail -n "${KEEP_MONTHLY}")
+	fi
+
+	local deleted=0
+	for d in "${ALL_SNAPS[@]}"; do
+		if [ "${KEEP[$d]+x}" = "x" ]; then
+			log "Keep: ${d}"
+		else
+			log "Delete: ${d}"
+			rm -rf -- "${SNAPS_DIR:?}/${d}"
+			deleted=$((deleted + 1))
+		fi
+	done
+
+	log "Retention done. Deleted ${deleted} snapshots."
+}
+
+rrrr_main "$@"

@@ -1,0 +1,114 @@
+.TH rrrr 1 "September 2023" "remutils" "User Commands"
+.SH NAME
+rrrr \- Reliable Recursive Redundant RSync
+.SH SYNOPSIS
+.B rrrr
+.RB [ \-hV ]
+.I hostname
+.SH DESCRIPTION
+\fBrrrr\fR orchestrates snapshot-style backups via \fBrsync\fR over SSH.
+Each run pulls a fresh copy of a remote filesystem, reuses unchanged data with
+\fB\-\-link\-dest\fR, updates a \fBlatest\fR symlink, and prunes snapshots based
+on daily/weekly/monthly retention counts.
+.PP
+The tool is host-driven: the \fIhostname\fR argument selects a directory that
+describes how to reach the remote server and where to store the snapshots.
+.SH CONFIGURATION
+The script inspects the following locations in order until it finds a matching
+directory named after the specified hostname:
+.IP "1." 4
+\fB$XDG_CONFIG_HOME\fR/\fBrrrr\fR/\fIhostname\fR (default: \fB~/.config\fR)
+.IP "2." 4
+Each entry in \fB$XDG_CONFIG_DIRS\fR (default: \fB/etc/xdg\fR), under
+\fBrrrr\fR/\fIhostname\fR
+.IP "3." 4
+\fB/etc/rrrr\fR/\fIhostname\fR
+.PP
+Every host directory must provide a readable \fBconfig\fR file which is sourced
+by the shell. Optionally, a \fBfilters\fR file may be present; when found it is
+merged into rsync via \fB\-\-filter="merge <path>"\fR to fine-tune inclusion and
+exclusion rules beyond the builtin defaults. If neither a host-local file nor a
+\fBFILTERS_FILE\fR override is available, rrrr writes a temporary merge file
+containing the typical runtime filesystem exclusions.
+.SS Required variables
+.TP
+\fBREMOTE_USER\fR
+SSH user that owns the remote data.
+.TP
+\fBSSH_KEY\fR
+Private key on the backup host used to authenticate as \fBREMOTE_USER\fR.
+.TP
+\fBBACKUP_ROOT\fR
+Local directory containing \fBsnapshots\fR, \fBlatest\fR, and \fBlogs\fR.
+.SS Optional variables
+.TP
+\fBHOSTNAME_REMOTE\fR
+Label used in logs. Defaults to the supplied hostname.
+.TP
+\fBREMOTE_SSH_HOST\fR, \fBREMOTE_SSH_PORT\fR
+Actual address and port of the remote SSH service. Defaults: hostname argument
+and 22 respectively.
+.TP
+\fBREMOTE_ROOT\fR
+Remote path to sync (default: \fB/\fR).
+.TP
+\fBKEEP_DAILY\fR, \fBKEEP_WEEKLY\fR, \fBKEEP_MONTHLY\fR
+Retention counts (defaults: 7, 4, 6).
+.TP
+\fBFILTERS_FILE\fR
+Path to a custom rsync filter file (used when a host-local \fBfilters\fR file is
+not present).
+.TP
+\fBSNAPS_DIR\fR, \fBLOG_DIR\fR, \fBLATEST_LINK\fR
+Override the default locations inside \fBBACKUP_ROOT\fR.
+.SH OPERATION
+The workflow is:
+.IP "1." 4
+Validate required commands and confirm the SSH key/filter file exist.
+.IP "2." 4
+Create \fBsnapshots/YYYY\-MM\-DD\fR and compute a prior snapshot for
+\fB\-\-link\-dest\fR when the \fBlatest\fR symlink points to a valid directory.
+.IP "3." 4
+Run \fBrsync -aHAX --numeric-ids --delete\fR with the configured filter file.
+Output is mirrored to
+\fBLOG_DIR\fR/\fBYYYY\-MM\-DD.log\fR.
+.IP "4." 4
+Update \fBlatest\fR to the new snapshot and prune old snapshots based on the
+retention policy:
+.PD 0
+.RS
+.IP \- 4
+Keep the newest \fBKEEP_DAILY\fR snapshots.
+.IP \- 4
+Keep the newest \fBKEEP_WEEKLY\fR whose date is a Sunday.
+.IP \- 4
+Keep the newest \fBKEEP_MONTHLY\fR whose day is 01.
+.RE
+.PD
+.SH FILES
+.TP
+\fB$XDG_CONFIG_HOME/rrrr\fR, \fB$XDG_CONFIG_DIRS/rrrr\fR, \fB/etc/rrrr\fR
+Host configuration directories.
+.TP
+\fBBACKUP_ROOT/snapshots\fR
+Daily snapshot directories (\fBYYYY\-MM\-DD\fR).
+.TP
+\fBBACKUP_ROOT/latest\fR
+Symlink to the most recent snapshot.
+.TP
+\fBBACKUP_ROOT/logs/YYYY\-MM\-DD.log\fR
+Captured stdout/stderr for each run.
+.SH ENVIRONMENT
+.TP
+\fB$XDG_CONFIG_HOME\fR
+Primary location for per-user configuration (defaults to \fB~/.config\fR).
+.TP
+\fB$XDG_CONFIG_DIRS\fR
+Colon-separated list of additional configuration roots (defaults to
+\fB/etc/xdg\fR).
+.SH EXIT STATUS
+Returns 0 on success. Exits non-zero if configuration is missing, the SSH
+connection or rsync invocation fails, or retention processing encounters an
+error.
+.SH SEE ALSO
+\fBrsync\fR(1), \fBssh\fR(1)
