@@ -56,9 +56,10 @@ cb2pdf -E issue-001.cbz output.pdf
 override this default). This avoids inconsistent embedded image DPI metadata
 causing spread pages to be shrunk.
 
-By default, `cb2pdf` excludes hidden paths, AppleDouble files (`._*`), and
-`__MACOSX` paths from extracted images. You can add more excludes with
-`-e/--exclude` (repeatable), or disable defaults with `-E`.
+By default, `cb2pdf` excludes hidden paths, AppleDouble files (`._*`),
+`.DS_Store`, `Thumbs.db`, and `__MACOSX` paths from extracted images. You can
+add more excludes with `-e/--exclude` (repeatable), or disable defaults with
+`-E`.
 
 ## Dependencies
 

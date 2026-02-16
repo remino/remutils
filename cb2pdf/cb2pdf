@@ -165,7 +165,7 @@ _is_excluded() {
 
 	if [ "$USE_DEFAULT_EXCLUDES" -ne 0 ]; then
 		case "$relative_path" in
-		__MACOSX/* | */__MACOSX/* | ._* | */._* | .DS_Store | */.DS_Store | .* | */.*)
+		__MACOSX/* | */__MACOSX/* | ._* | */._* | .DS_Store | */.DS_Store | Thumbs.db | */Thumbs.db | .* | */.*)
 			return 0
 			;;
 		esac
