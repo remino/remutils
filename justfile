@@ -14,6 +14,28 @@ tests name="":
 tests-all:
 	bats -r .
 
+format name="":
+	if [ -n "{{name}}" ]; then \
+		just format-all "{{name}}"; \
+	else \
+		just format-all .; \
+	fi
+
+format-all dir=".":
+	prettier --ignore-unknown --write "{{dir}}"
+	shfmt -w "{{dir}}"
+
+lint name="":
+	if [ -n "{{name}}" ]; then \
+		just lint-all "{{name}}"; \
+	else \
+		just lint-all .; \
+	fi
+
+lint-all dir=".":
+	prettier --ignore-unknown --check "{{dir}}"
+	shfmt -d "{{dir}}"
+
 version name="":
 	if [ -n "{{name}}" ]; then \
 		bin/version show "{{name}}/{{name}}"; \

@@ -12,9 +12,6 @@ trailingComma: 'es5'
 useTabs: true
 
 overrides:
-  - files: '*.bats'
-    options:
-      parser: 'bash'
   - files: '*.md'
     options:
       parser: 'markdown'
