@@ -142,3 +142,29 @@ _make_png() {
 	pages="$(pdfinfo "$output_pdf" | awk '/^Pages:/ {print $2}')"
 	[ "$pages" -eq 2 ]
 }
+
+@test "cb2pdf converts images stored in a subdirectory" {
+	for bin in 7z img2pdf zip magick pdfinfo; do
+		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages/chapter1"
+
+	_make_png "$TMP_DIR/pages/chapter1/001.png"
+	_make_png "$TMP_DIR/pages/chapter1/002.png"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q -r "$archive" .
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	run "$BATS_TEST_DIRNAME/../cb2pdf" "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+	[ -f "$output_pdf" ]
+
+	pages="$(pdfinfo "$output_pdf" | awk '/^Pages:/ {print $2}')"
+	[ "$pages" -eq 2 ]
+}
