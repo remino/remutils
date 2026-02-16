@@ -27,6 +27,7 @@ cb2pdf_main() {
 	E_MISSING_APP=18
 	E_UNSUPPORTED_EXT=19
 	E_NO_IMAGES=20
+	E_EXTRACT=21
 
 	[ $# -eq 0 ] && _usage && return
 
@@ -93,14 +94,15 @@ cb2pdf_main() {
 	*) _fatal $E_UNSUPPORTED_EXT "Unsupported input extension: .$input_ext (expected .cbz or .cbr)" ;;
 	esac
 
-	_require 7z img2pdf
+	_require img2pdf
+	_require_extractor "$input_ext"
 
 	echo "Processing $(basename "$INPUT")"
 
 	TMP_DIR="$(mktemp -d)"
 	trap _cleanup EXIT INT TERM
 
-	7z x -bd -y -o"$TMP_DIR" "$INPUT" >/dev/null
+	_extract_archive "$INPUT" "$TMP_DIR" "$input_ext"
 
 	IMAGE_FILES=()
 	while IFS= read -r -d '' filepath; do
@@ -147,6 +149,79 @@ _require() {
 	if [ $missing_bin -ne 0 ]; then
 		_fatal "$E_MISSING_APP" "One or more executables or apps are missing."
 	fi
+}
+
+_require_extractor() {
+	local ext="$1"
+
+	if [ "$ext" = "cbz" ]; then
+		command -v 7z >/dev/null 2>&1 || _fatal "$E_MISSING_APP" "Required for .cbz: 7z"
+		return
+	fi
+
+	if command -v 7z >/dev/null 2>&1 || command -v unrar >/dev/null 2>&1 || command -v unar >/dev/null 2>&1; then
+		return
+	fi
+
+	_fatal "$E_MISSING_APP" "Required for .cbr: one of 7z, unrar, or unar"
+}
+
+_extract_archive() {
+	local input="$1"
+	local out_dir="$2"
+	local ext="$3"
+	local err_file
+
+	err_file="$(mktemp)"
+
+	if [ "$ext" = "cbz" ]; then
+		if command -v 7z >/dev/null 2>&1; then
+			if 7z x -bd -y -o"$out_dir" "$input" >/dev/null 2>"$err_file"; then
+				rm -f "$err_file"
+				return
+			fi
+		fi
+
+		rm -f "$err_file"
+		_fatal "$E_EXTRACT" "Failed to extract archive: $input"
+	fi
+
+	# CBR: try 7z first, then fall back to unrar/unar for methods unsupported by 7z.
+	if command -v 7z >/dev/null 2>&1; then
+		if 7z x -bd -y -o"$out_dir" "$input" >/dev/null 2>"$err_file"; then
+			rm -f "$err_file"
+			return
+		fi
+	fi
+
+	_clear_dir "$out_dir"
+	if command -v unrar >/dev/null 2>&1; then
+		if unrar x -idq -o+ "$input" "$out_dir/" >/dev/null 2>"$err_file"; then
+			rm -f "$err_file"
+			return
+		fi
+	fi
+
+	_clear_dir "$out_dir"
+	if command -v unar >/dev/null 2>&1; then
+		if unar -quiet -force-overwrite -output-directory "$out_dir" "$input" >/dev/null 2>"$err_file"; then
+			rm -f "$err_file"
+			return
+		fi
+	fi
+
+	if grep -qi 'Unsupported Method' "$err_file" 2>/dev/null; then
+		rm -f "$err_file"
+		_fatal "$E_EXTRACT" "Extractor cannot handle archive method in: $input. Install/use unrar or unar."
+	fi
+
+	rm -f "$err_file"
+	_fatal "$E_EXTRACT" "Failed to extract archive: $input"
+}
+
+_clear_dir() {
+	local dir="$1"
+	find "$dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 }
 
 _sort_files() {

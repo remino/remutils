@@ -63,5 +63,6 @@ add more excludes with `-e/--exclude` (repeatable), or disable defaults with
 
 ## Dependencies
 
-- `7z` for archive extraction
+- `7z` for `.cbz` extraction
+- For `.cbr`: `7z`, `unrar`, or `unar` (`cb2pdf` falls back to `unrar`/`unar` if needed)
 - `img2pdf` for PDF generation

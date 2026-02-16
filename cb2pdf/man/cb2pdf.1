@@ -48,7 +48,10 @@ Default DPI when \fB-d\fR is not given.
 .SH DEPENDENCIES
 .TP
 .B 7z
-Used to extract \fI.cbz\fR/\fI.cbr\fR archives.
+Used to extract \fI.cbz\fR archives and attempted first for \fI.cbr\fR.
+.TP
+.B unrar or unar
+Fallback extractors for \fI.cbr\fR when 7z cannot handle a RAR method.
 .TP
 .B img2pdf
 Used to generate PDF output.
