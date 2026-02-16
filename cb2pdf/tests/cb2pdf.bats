@@ -60,6 +60,7 @@ _make_png() {
 	[ "$status" -eq 0 ]
 	[ -f "$output_pdf" ]
 	[ "$(wc -c <"$output_pdf")" -gt 0 ]
+	[[ "$output" == *"Processing book.cbz"* ]]
 	[[ "$output" == *"Created $output_pdf"* ]]
 }
 
@@ -88,4 +89,56 @@ _make_png() {
 	page2_width="$(pdfinfo -f 2 -l 2 "$output_pdf" | awk '/Page[[:space:]]+2 size:/ {print $4}')"
 
 	[ "${page1_width%.*}" -lt "${page2_width%.*}" ]
+}
+
+@test "cb2pdf excludes hidden and __MACOSX image paths by default" {
+	for bin in 7z img2pdf zip magick pdfinfo; do
+		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages/.hidden"
+	mkdir -p "$TMP_DIR/pages/__MACOSX"
+
+	_make_png "$TMP_DIR/pages/001.png"
+	_make_png "$TMP_DIR/pages/.hidden/002.png"
+	_make_png "$TMP_DIR/pages/__MACOSX/003.png"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q -r "$archive" .
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	run "$BATS_TEST_DIRNAME/../cb2pdf" "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+
+	pages="$(pdfinfo "$output_pdf" | awk '/^Pages:/ {print $2}')"
+	[ "$pages" -eq 1 ]
+}
+
+@test "cb2pdf can disable default excludes with -E" {
+	for bin in 7z img2pdf zip magick pdfinfo; do
+		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages/.hidden"
+
+	_make_png "$TMP_DIR/pages/001.png"
+	_make_png "$TMP_DIR/pages/.hidden/002.png"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q -r "$archive" .
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	run "$BATS_TEST_DIRNAME/../cb2pdf" -E "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+
+	pages="$(pdfinfo "$output_pdf" | awk '/^Pages:/ {print $2}')"
+	[ "$pages" -eq 2 ]
 }

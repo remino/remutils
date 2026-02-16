@@ -48,11 +48,17 @@ Example:
 cb2pdf issue-001.cbz
 cb2pdf issue-001.cbr output.pdf
 cb2pdf -d 300 issue-001.cbz output.pdf
+cb2pdf -e 'extras/*' issue-001.cbz output.pdf
+cb2pdf -E issue-001.cbz output.pdf
 ```
 
 `cb2pdf` defaults to `300` DPI when laying out pages (`CB2PDF_DPI` env var can
 override this default). This avoids inconsistent embedded image DPI metadata
 causing spread pages to be shrunk.
+
+By default, `cb2pdf` excludes hidden paths, AppleDouble files (`._*`), and
+`__MACOSX` paths from extracted images. You can add more excludes with
+`-e/--exclude` (repeatable), or disable defaults with `-E`.
 
 ## Dependencies
 

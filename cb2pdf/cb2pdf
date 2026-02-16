@@ -3,7 +3,18 @@
 VERSION='1.0.0'
 
 _usage() {
-	echo "USAGE: $(basename "$0") [-hv] [-d <dpi>] <input.cbr|input.cbz> [output.pdf]"
+	cat <<USAGE
+USAGE: $(basename "$0") [-hvE] [-d <dpi>] [-e <glob>] <input.cbr|input.cbz> [output.pdf]
+
+OPTIONS:
+  -d, --dpi <dpi>                 Set output layout DPI. Default: 300
+  -e, --exclude <glob>            Exclude extracted image paths matching glob.
+                                  Can be repeated.
+  -E, --no-default-excludes       Disable default excludes for hidden files,
+                                  AppleDouble files, and __MACOSX paths.
+  -h, --help                      Show this help.
+  -v, --version                   Show version.
+USAGE
 }
 
 cb2pdf_main() {
@@ -20,45 +31,53 @@ cb2pdf_main() {
 	[ $# -eq 0 ] && _usage && return
 
 	DPI="${CB2PDF_DPI:-300}"
+	USE_DEFAULT_EXCLUDES=1
+	EXCLUDE_PATTERNS=()
 
-	while getopts ":hd:v-:" opt; do
-		case "$opt" in
-		h)
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		-h | --help)
 			_usage
 			return
 			;;
-		v)
+		-v | --version)
 			echo "$(basename "$0") $VERSION"
 			return
 			;;
-		d)
-			DPI="$OPTARG"
+		-d | --dpi)
+			[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
+			DPI="$2"
+			shift 2
 			;;
-		-)
-			case "$OPTARG" in
-			help)
-				_usage
-				return
-				;;
-			version)
-				echo "$(basename "$0") $VERSION"
-				return
-				;;
-			*)
-				_fatal $E_ARGS "Unknown option: --$OPTARG"
-				;;
-			esac
+		--dpi=*)
+			DPI="${1#*=}"
+			shift
 			;;
-		:)
-			_fatal $E_ARGS "Option requires an argument: -$OPTARG"
+		-e | --exclude)
+			[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
+			EXCLUDE_PATTERNS+=("$2")
+			shift 2
 			;;
-		\?)
-			_fatal $E_ARGS "Unknown option: -$OPTARG"
+		--exclude=*)
+			EXCLUDE_PATTERNS+=("${1#*=}")
+			shift
+			;;
+		-E | --no-default-excludes)
+			USE_DEFAULT_EXCLUDES=0
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			_fatal $E_ARGS "Unknown option: $1"
+			;;
+		*)
+			break
 			;;
 		esac
 	done
-
-	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && _fatal $E_ARGS "Missing arguments."
 
@@ -66,6 +85,7 @@ cb2pdf_main() {
 	OUTPUT="${2:-${INPUT%.*}.pdf}"
 
 	[ ! -f "$INPUT" ] && _fatal $E_MISSING_FILE "Missing or not a file: $INPUT"
+	[[ "$DPI" =~ ^[1-9][0-9]*$ ]] || _fatal $E_ARGS "Invalid DPI: $DPI"
 
 	input_ext="$(echo "${INPUT##*.}" | tr '[:upper:]' '[:lower:]')"
 	case "$input_ext" in
@@ -75,12 +95,21 @@ cb2pdf_main() {
 
 	_require 7z img2pdf
 
+	echo "Processing $(basename "$INPUT")"
+
 	TMP_DIR="$(mktemp -d)"
 	trap _cleanup EXIT INT TERM
 
 	7z x -bd -y -o"$TMP_DIR" "$INPUT" >/dev/null
 
-	mapfile -d '' -t IMAGE_FILES < <(
+	IMAGE_FILES=()
+	while IFS= read -r -d '' filepath; do
+		relative_path="${filepath#"$TMP_DIR"/}"
+		if _is_excluded "$relative_path"; then
+			continue
+		fi
+		IMAGE_FILES+=("$filepath")
+	done < <(
 		find "$TMP_DIR" -type f \
 			\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) \
 			-print0 | _sort_files
@@ -128,6 +157,27 @@ _sort_files() {
 	else
 		tr '\0' '\n' | sort | tr '\n' '\0'
 	fi
+}
+
+_is_excluded() {
+	local relative_path="$1"
+	local pattern
+
+	if [ "$USE_DEFAULT_EXCLUDES" -ne 0 ]; then
+		case "$relative_path" in
+		__MACOSX/* | */__MACOSX/* | ._* | */._* | .DS_Store | */.DS_Store | .* | */.*)
+			return 0
+			;;
+		esac
+	fi
+
+	for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+		if [[ "$relative_path" == $pattern ]]; then
+			return 0
+		fi
+	done
+
+	return 1
 }
 
 cb2pdf_main "$@"
