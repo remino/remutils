@@ -21,7 +21,7 @@ Rémino Rem <https://remino.net/>, 2022
 
 ```sh
 brew install remino/remino/mkx
-./mkx
+mkx
 ```
 
 ### Download

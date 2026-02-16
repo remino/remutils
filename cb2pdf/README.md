@@ -21,7 +21,7 @@ Rémino Rem <https://remino.net/>, 2026
 
 ```sh
 brew install remino/remino/cb2pdf
-./cb2pdf
+cb2pdf
 ```
 
 ### Download
