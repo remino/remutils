@@ -40,7 +40,7 @@ _make_png() {
 
 @test "cb2pdf converts cbz to pdf" {
 	for bin in 7z img2pdf zip magick; do
-		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
 	done
 
 	TMP_DIR="$(mktemp -d)"
@@ -59,14 +59,14 @@ _make_png() {
 
 	[ "$status" -eq 0 ]
 	[ -f "$output_pdf" ]
-	[ "$(wc -c <"$output_pdf")" -gt 0 ]
+	[ "$(wc -c < "$output_pdf")" -gt 0 ]
 	[[ "$output" == *"Processing book.cbz"* ]]
 	[[ "$output" == *"Created $output_pdf"* ]]
 }
 
 @test "cb2pdf keeps spread page wider even with mismatched image DPI metadata" {
 	for bin in 7z img2pdf zip magick pdfinfo; do
-		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
 	done
 
 	TMP_DIR="$(mktemp -d)"
@@ -93,7 +93,7 @@ _make_png() {
 
 @test "cb2pdf excludes hidden and __MACOSX image paths by default" {
 	for bin in 7z img2pdf zip magick pdfinfo; do
-		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
 	done
 
 	TMP_DIR="$(mktemp -d)"
@@ -120,7 +120,7 @@ _make_png() {
 
 @test "cb2pdf can disable default excludes with -E" {
 	for bin in 7z img2pdf zip magick pdfinfo; do
-		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
 	done
 
 	TMP_DIR="$(mktemp -d)"
@@ -145,7 +145,7 @@ _make_png() {
 
 @test "cb2pdf converts images stored in a subdirectory" {
 	for bin in 7z img2pdf zip magick pdfinfo; do
-		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
 	done
 
 	TMP_DIR="$(mktemp -d)"

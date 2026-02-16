@@ -3,7 +3,7 @@
 VERSION='1.2.0'
 
 _usage() {
-	cat <<USAGE
+	cat << USAGE
 USAGE: $(basename "$0") [-hvE] [-d <dpi>] [-e <glob>] <input.cbr|input.cbz> [output.pdf]
 
 OPTIONS:
@@ -37,46 +37,46 @@ cb2pdf_main() {
 
 	while [ $# -gt 0 ]; do
 		case "$1" in
-		-h | --help)
-			_usage
-			return
-			;;
-		-v | --version)
-			echo "$(basename "$0") $VERSION"
-			return
-			;;
-		-d | --dpi)
-			[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
-			DPI="$2"
-			shift 2
-			;;
-		--dpi=*)
-			DPI="${1#*=}"
-			shift
-			;;
-		-e | --exclude)
-			[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
-			EXCLUDE_PATTERNS+=("$2")
-			shift 2
-			;;
-		--exclude=*)
-			EXCLUDE_PATTERNS+=("${1#*=}")
-			shift
-			;;
-		-E | --no-default-excludes)
-			USE_DEFAULT_EXCLUDES=0
-			shift
-			;;
-		--)
-			shift
-			break
-			;;
-		-*)
-			_fatal $E_ARGS "Unknown option: $1"
-			;;
-		*)
-			break
-			;;
+			-h | --help)
+				_usage
+				return
+				;;
+			-v | --version)
+				echo "$(basename "$0") $VERSION"
+				return
+				;;
+			-d | --dpi)
+				[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
+				DPI="$2"
+				shift 2
+				;;
+			--dpi=*)
+				DPI="${1#*=}"
+				shift
+				;;
+			-e | --exclude)
+				[ $# -lt 2 ] && _fatal $E_ARGS "Option requires an argument: $1"
+				EXCLUDE_PATTERNS+=("$2")
+				shift 2
+				;;
+			--exclude=*)
+				EXCLUDE_PATTERNS+=("${1#*=}")
+				shift
+				;;
+			-E | --no-default-excludes)
+				USE_DEFAULT_EXCLUDES=0
+				shift
+				;;
+			--)
+				shift
+				break
+				;;
+			-*)
+				_fatal $E_ARGS "Unknown option: $1"
+				;;
+			*)
+				break
+				;;
 		esac
 	done
 
@@ -90,8 +90,8 @@ cb2pdf_main() {
 
 	input_ext="$(echo "${INPUT##*.}" | tr '[:upper:]' '[:lower:]')"
 	case "$input_ext" in
-	cbz | cbr) ;;
-	*) _fatal $E_UNSUPPORTED_EXT "Unsupported input extension: .$input_ext (expected .cbz or .cbr)" ;;
+		cbz | cbr) ;;
+		*) _fatal $E_UNSUPPORTED_EXT "Unsupported input extension: .$input_ext (expected .cbz or .cbr)" ;;
 	esac
 
 	_require img2pdf
@@ -140,7 +140,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! command -v "$bin" >/dev/null 2>&1; then
+		if ! command -v "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			echo "Required: $bin" >&2
 		fi
@@ -155,11 +155,11 @@ _require_extractor() {
 	local ext="$1"
 
 	if [ "$ext" = "cbz" ]; then
-		command -v 7z >/dev/null 2>&1 || _fatal "$E_MISSING_APP" "Required for .cbz: 7z"
+		command -v 7z > /dev/null 2>&1 || _fatal "$E_MISSING_APP" "Required for .cbz: 7z"
 		return
 	fi
 
-	if command -v 7z >/dev/null 2>&1 || command -v unrar >/dev/null 2>&1 || command -v unar >/dev/null 2>&1; then
+	if command -v 7z > /dev/null 2>&1 || command -v unrar > /dev/null 2>&1 || command -v unar > /dev/null 2>&1; then
 		return
 	fi
 
@@ -175,8 +175,8 @@ _extract_archive() {
 	err_file="$(mktemp)"
 
 	if [ "$ext" = "cbz" ]; then
-		if command -v 7z >/dev/null 2>&1; then
-			if 7z x -bd -y -o"$out_dir" "$input" >/dev/null 2>"$err_file"; then
+		if command -v 7z > /dev/null 2>&1; then
+			if 7z x -bd -y -o"$out_dir" "$input" > /dev/null 2> "$err_file"; then
 				rm -f "$err_file"
 				return
 			fi
@@ -187,30 +187,30 @@ _extract_archive() {
 	fi
 
 	# CBR: try 7z first, then fall back to unrar/unar for methods unsupported by 7z.
-	if command -v 7z >/dev/null 2>&1; then
-		if 7z x -bd -y -o"$out_dir" "$input" >/dev/null 2>"$err_file"; then
+	if command -v 7z > /dev/null 2>&1; then
+		if 7z x -bd -y -o"$out_dir" "$input" > /dev/null 2> "$err_file"; then
 			rm -f "$err_file"
 			return
 		fi
 	fi
 
 	_clear_dir "$out_dir"
-	if command -v unrar >/dev/null 2>&1; then
-		if unrar x -idq -o+ "$input" "$out_dir/" >/dev/null 2>"$err_file"; then
+	if command -v unrar > /dev/null 2>&1; then
+		if unrar x -idq -o+ "$input" "$out_dir/" > /dev/null 2> "$err_file"; then
 			rm -f "$err_file"
 			return
 		fi
 	fi
 
 	_clear_dir "$out_dir"
-	if command -v unar >/dev/null 2>&1; then
-		if unar -quiet -force-overwrite -output-directory "$out_dir" "$input" >/dev/null 2>"$err_file"; then
+	if command -v unar > /dev/null 2>&1; then
+		if unar -quiet -force-overwrite -output-directory "$out_dir" "$input" > /dev/null 2> "$err_file"; then
 			rm -f "$err_file"
 			return
 		fi
 	fi
 
-	if grep -qi 'Unsupported Method' "$err_file" 2>/dev/null; then
+	if grep -qi 'Unsupported Method' "$err_file" 2> /dev/null; then
 		rm -f "$err_file"
 		_fatal "$E_EXTRACT" "Extractor cannot handle archive method in: $input. Install/use unrar or unar."
 	fi
@@ -225,9 +225,9 @@ _clear_dir() {
 }
 
 _sort_files() {
-	if sort -zV </dev/null >/dev/null 2>&1; then
+	if sort -zV < /dev/null > /dev/null 2>&1; then
 		sort -zV
-	elif sort -z </dev/null >/dev/null 2>&1; then
+	elif sort -z < /dev/null > /dev/null 2>&1; then
 		sort -z
 	else
 		tr '\0' '\n' | sort | tr '\n' '\0'
@@ -240,9 +240,9 @@ _is_excluded() {
 
 	if [ "$USE_DEFAULT_EXCLUDES" -ne 0 ]; then
 		case "$relative_path" in
-		__MACOSX/* | */__MACOSX/* | ._* | */._* | .DS_Store | */.DS_Store | Thumbs.db | */Thumbs.db | .* | */.*)
-			return 0
-			;;
+			__MACOSX/* | */__MACOSX/* | ._* | */._* | .DS_Store | */.DS_Store | Thumbs.db | */Thumbs.db | .* | */.*)
+				return 0
+				;;
 		esac
 	fi
 
