@@ -168,3 +168,52 @@ _make_png() {
 	pages="$(pdfinfo "$output_pdf" | awk '/^Pages:/ {print $2}')"
 	[ "$pages" -eq 2 ]
 }
+
+@test "cb2pdf asks before overwriting existing output and cancels by default" {
+	for bin in 7z img2pdf zip magick; do
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages"
+	_make_png "$TMP_DIR/pages/001.png"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q "$archive" ./*.png
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	printf "sentinel" > "$output_pdf"
+
+	run bash -c 'printf "n\n" | "$1" "$2" "$3"' _ "$BATS_TEST_DIRNAME/../cb2pdf" "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"File exists. Overwrite?"* ]]
+	[[ "$output" == *"Cancelled."* ]]
+	[ "$(cat "$output_pdf")" = "sentinel" ]
+}
+
+@test "cb2pdf overwrites existing output with -f" {
+	for bin in 7z img2pdf zip magick; do
+		command -v "$bin" > /dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages"
+	_make_png "$TMP_DIR/pages/001.png"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q "$archive" ./*.png
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	printf "sentinel" > "$output_pdf"
+
+	run "$BATS_TEST_DIRNAME/../cb2pdf" -f "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+	[[ "$output" != *"File exists. Overwrite?"* ]]
+	[ "$(wc -c < "$output_pdf")" -gt 8 ]
+}

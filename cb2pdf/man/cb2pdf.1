@@ -1,9 +1,9 @@
-.TH CB2PDF 1 "February 2026" "cb2pdf 1.0.0"
+.TH CB2PDF 1 "February 2026" "cb2pdf 1.2.0"
 .SH NAME
 cb2pdf \- Convert .cbz/.cbr comic archives to PDF
 .SH SYNOPSIS
 .B cb2pdf
-[\fI-hvE\fR] [\fI-d\fR \fIDPI\fR] [\fI-e\fR \fIGLOB\fR] \fIINPUT.cbr|INPUT.cbz\fR [\fIOUTPUT.pdf\fR]
+[\fI-fhvE\fR] [\fI-d\fR \fIDPI\fR] [\fI-e\fR \fIGLOB\fR] \fIINPUT.cbr|INPUT.cbz\fR [\fIOUTPUT.pdf\fR]
 .SH DESCRIPTION
 .B cb2pdf
 extracts images from a \fI.cbz\fR or \fI.cbr\fR archive and writes a PDF.
@@ -11,6 +11,8 @@ extracts images from a \fI.cbz\fR or \fI.cbr\fR archive and writes a PDF.
 The script prints the input filename when processing starts.
 
 By default, each image becomes one PDF page, and page layout is normalized to a fixed DPI to avoid inconsistent embedded image metadata causing unexpected page sizing.
+
+If output PDF already exists, cb2pdf asks before overwriting.
 .SH OPTIONS
 .TP
 .B \-d, --dpi \fIDPI\fR
@@ -21,6 +23,9 @@ Exclude extracted image paths matching shell glob pattern. Repeatable.
 .TP
 .B \-E, --no-default-excludes
 Disable built-in excludes.
+.TP
+.B \-f, --force
+Overwrite output PDF without asking.
 .TP
 .B \-h, --help
 Show usage help.
@@ -80,6 +85,11 @@ Add custom excludes:
 Disable default excludes:
 .nf
 .B cb2pdf -E issue-001.cbz
+.fi
+.TP
+Overwrite existing output without prompt:
+.nf
+.B cb2pdf -f issue-001.cbz output.pdf
 .fi
 .SH AUTHOR
 Written by Rémino Rem: <https://remino.net/>
