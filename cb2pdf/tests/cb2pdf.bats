@@ -62,3 +62,30 @@ _make_png() {
 	[ "$(wc -c <"$output_pdf")" -gt 0 ]
 	[[ "$output" == *"Created $output_pdf"* ]]
 }
+
+@test "cb2pdf keeps spread page wider even with mismatched image DPI metadata" {
+	for bin in 7z img2pdf zip magick pdfinfo; do
+		command -v "$bin" >/dev/null 2>&1 || skip "Missing required test dependency: $bin"
+	done
+
+	TMP_DIR="$(mktemp -d)"
+	mkdir -p "$TMP_DIR/pages"
+
+	magick -size 1000x1500 xc:white -units PixelsPerInch -density 300 "$TMP_DIR/pages/001.jpg"
+	magick -size 2000x1500 xc:black -units PixelsPerInch -density 600 "$TMP_DIR/pages/002.jpg"
+
+	archive="$TMP_DIR/book.cbz"
+	(
+		cd "$TMP_DIR/pages"
+		zip -q "$archive" ./*.jpg
+	)
+
+	output_pdf="$TMP_DIR/book.pdf"
+	run "$BATS_TEST_DIRNAME/../cb2pdf" "$archive" "$output_pdf"
+	[ "$status" -eq 0 ]
+
+	page1_width="$(pdfinfo -f 1 -l 1 "$output_pdf" | awk '/Page[[:space:]]+1 size:/ {print $4}')"
+	page2_width="$(pdfinfo -f 2 -l 2 "$output_pdf" | awk '/Page[[:space:]]+2 size:/ {print $4}')"
+
+	[ "${page1_width%.*}" -lt "${page2_width%.*}" ]
+}

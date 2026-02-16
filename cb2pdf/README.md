@@ -47,7 +47,12 @@ Example:
 ```sh
 cb2pdf issue-001.cbz
 cb2pdf issue-001.cbr output.pdf
+cb2pdf -d 300 issue-001.cbz output.pdf
 ```
+
+`cb2pdf` defaults to `300` DPI when laying out pages (`CB2PDF_DPI` env var can
+override this default). This avoids inconsistent embedded image DPI metadata
+causing spread pages to be shrunk.
 
 ## Dependencies
 

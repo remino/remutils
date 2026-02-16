@@ -3,7 +3,7 @@
 VERSION='1.0.0'
 
 _usage() {
-	echo "USAGE: $(basename "$0") [-hv] <input.cbr|input.cbz> [output.pdf]"
+	echo "USAGE: $(basename "$0") [-hv] [-d <dpi>] <input.cbr|input.cbz> [output.pdf]"
 }
 
 cb2pdf_main() {
@@ -19,16 +19,46 @@ cb2pdf_main() {
 
 	[ $# -eq 0 ] && _usage && return
 
-	case "${1:-}" in
-	-h | --help)
-		_usage
-		return
-		;;
-	-v | --version)
-		echo "$(basename "$0") $VERSION"
-		return
-		;;
-	esac
+	DPI="${CB2PDF_DPI:-300}"
+
+	while getopts ":hd:v-:" opt; do
+		case "$opt" in
+		h)
+			_usage
+			return
+			;;
+		v)
+			echo "$(basename "$0") $VERSION"
+			return
+			;;
+		d)
+			DPI="$OPTARG"
+			;;
+		-)
+			case "$OPTARG" in
+			help)
+				_usage
+				return
+				;;
+			version)
+				echo "$(basename "$0") $VERSION"
+				return
+				;;
+			*)
+				_fatal $E_ARGS "Unknown option: --$OPTARG"
+				;;
+			esac
+			;;
+		:)
+			_fatal $E_ARGS "Option requires an argument: -$OPTARG"
+			;;
+		\?)
+			_fatal $E_ARGS "Unknown option: -$OPTARG"
+			;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && _fatal $E_ARGS "Missing arguments."
 
@@ -58,7 +88,7 @@ cb2pdf_main() {
 
 	[ "${#IMAGE_FILES[@]}" -eq 0 ] && _fatal $E_NO_IMAGES "No image files found in archive."
 
-	img2pdf -o "$OUTPUT" "${IMAGE_FILES[@]}"
+	img2pdf -s "${DPI}dpi" -o "$OUTPUT" "${IMAGE_FILES[@]}"
 	echo "Created $OUTPUT"
 }
 
