@@ -1,0 +1,86 @@
+.TH WEBSHOT 1 "April 2026" "webshot 0.1.0"
+.SH NAME
+webshot \- Capture a webpage as an image
+.SH SYNOPSIS
+.B webshot
+[\fI-h\fR] [\fI-v\fR] [\fI-W\fR \fIPIXELS\fR] [\fI-H\fR \fIPIXELS\fR] [\fI-w\fR \fISECONDS\fR] [\fI-z\fR \fIFACTOR\fR] [\fI-d\fR \fIDPI\fR] [\fI-f\fR \fIFORMAT\fR] [\fI-c\fR \fICSS_FILE\fR] [\fI-j\fR \fIJS_FILE\fR] \fIURL\fR \fIIMAGE_FILE\fR
+.SH DESCRIPTION
+.B webshot
+opens a webpage with Puppeteer and saves a viewport screenshot as an image.
+
+The output image format is inferred from the extension of \fIIMAGE_FILE\fR unless overridden with \fB-f\fR.
+Supported formats are \fIpng\fR, \fIjpeg\fR, \fIavif\fR, and \fIwebp\fR. The \fIjpg\fR extension maps to \fIjpeg\fR.
+
+When no arguments are supplied,
+.B webshot
+prints the usage screen and exits successfully.
+.SH OPTIONS
+.TP
+.B \-h
+Show the usage screen.
+.TP
+.B \-v
+Show the version.
+.TP
+.B \-W \fIPIXELS\fR
+Set the viewport width. The default is 1200.
+.TP
+.B \-H \fIPIXELS\fR
+Set the viewport height. The default is 630.
+.TP
+.B \-w \fISECONDS\fR
+Wait this many seconds after the page loads before capturing. Fractional values are allowed. The default is 0.
+.TP
+.B \-z \fIFACTOR\fR
+Set the page zoom factor. The default is 1.
+.TP
+.B \-d \fIDPI\fR
+Set the screenshot density in DPI. The default is 96, which maps to a device scale factor of 1.
+.TP
+.B \-f \fIFORMAT\fR
+Override the image format. Valid formats are \fIpng\fR, \fIjpeg\fR, \fIavif\fR, and \fIwebp\fR.
+.TP
+.B \-c \fICSS_FILE\fR
+Embed the contents of a CSS file before capture.
+.TP
+.B \-j \fIJS_FILE\fR
+Run the contents of a JavaScript file before capture.
+.SH EXAMPLES
+.TP
+Capture the page to a PNG file:
+.nf
+.B webshot https://example.com share.png
+.fi
+.TP
+Capture a 1200 by 630 WebP image after a short delay:
+.nf
+.B webshot -W 1200 -H 630 -w 0.5 https://example.com og.webp
+.fi
+.TP
+Capture with larger page zoom and 2x pixel density:
+.nf
+.B webshot -z 1.25 -d 192 https://example.com og@2x.png
+.fi
+.TP
+Inject CSS and JavaScript before capturing a JPEG image:
+.nf
+.B webshot -c share.css -j prepare.js https://example.com card.jpg
+.fi
+.SH DEPENDENCIES
+.TP
+.B Node.js
+Used to run the command-line tool.
+.TP
+.B Puppeteer
+Used to automate the browser capture.
+.TP
+.B sharp
+Used to write AVIF output.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

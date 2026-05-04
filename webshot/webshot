@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Version number in package.json
+
+webshot_main() {
+  local self_dir
+  local self_script
+
+  self_script="$(realpath "${BASH_SOURCE[0]}")"
+  self_dir="$(dirname "$self_script")"
+  exec node "$self_dir/bin/webshot.js" "$@"
+}
+
+webshot_main "$@"

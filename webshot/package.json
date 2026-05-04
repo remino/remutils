@@ -1,0 +1,59 @@
+{
+  "name": "@remino/webshot",
+  "version": "0.1.0",
+  "description": "Capture a webpage as an image.",
+  "type": "module",
+  "bin": {
+    "webshot": "./webshot"
+  },
+  "man": "./man/webshot.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "webshot",
+    "bin",
+    "man"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "jasmine",
+    "version:show": "../bin/version show ./webshot"
+  },
+  "keywords": [
+    "opengraph",
+    "screenshot",
+    "social",
+    "twitter",
+    "puppeteer"
+  ],
+  "author": {
+    "name": "Rémino Rem",
+    "url": "https://remino.net/"
+  },
+  "license": "ISC",
+  "homepage": "https://github.com/remino/remutils/tree/main/webshot",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remino/remutils.git",
+    "directory": "webshot"
+  },
+  "bugs": {
+    "url": "https://github.com/remino/remutils/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "puppeteer": "24.7.2",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "eslint": "^9.25.0",
+    "jasmine": "6.2.0",
+    "prettier": "^3.5.3"
+  }
+}
