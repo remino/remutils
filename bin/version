@@ -18,7 +18,15 @@ version_main() {
 
 	[ ! -f "$FILE" ] && echo "Missing file: $FILE" >&2 && return $E_NO_FILE
 
-	VERSION="$(grep -m1 -E "^VERSION=['\"]?(\d+\.){2}(\d+)" "$FILE" | grep -o -E '(\d+\.){2}(\d+)' || true)"
+	PACKAGE_JSON="$(_package_json_for "$FILE")"
+	VERSION_SOURCE="shell"
+
+	if [ -f "$PACKAGE_JSON" ]; then
+		VERSION="$(_read_package_version "$PACKAGE_JSON")"
+		VERSION_SOURCE="package"
+	else
+		VERSION="$(_read_shell_version "$FILE")"
+	fi
 
 	[ -z "$VERSION" ] && echo "No VERSION found." >&2 && return $E_NO_VERSION
 
@@ -27,7 +35,7 @@ version_main() {
 		echo "$VERSION"
 		;;
 	major | minor | patch)
-		_update
+		_update "$VERSION_SOURCE" "$FILE" "$PACKAGE_JSON"
 		;;
 	*)
 		echo "Invalid command: $CMD" >&2 && return $E_ARGS
@@ -35,7 +43,38 @@ version_main() {
 	esac
 }
 
+_package_json_for() {
+	local file=$1
+	local dir
+
+	dir="$(dirname "$file")"
+	echo "$dir/package.json"
+}
+
+_read_package_version() {
+	local package_json=$1
+
+	node -e '
+const fs = require("node:fs");
+const file = process.argv[1];
+const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+if (typeof pkg.version !== "string") {
+  process.exit(1);
+}
+process.stdout.write(pkg.version);
+' "$package_json"
+}
+
+_read_shell_version() {
+	local file=$1
+
+	grep -m1 -E "^VERSION=['\"]?(\d+\.){2}(\d+)" "$file" | grep -o -E '(\d+\.){2}(\d+)' || true
+}
+
 _update() {
+	local source=$1
+	local file=$2
+	local package_json=$3
 	local major
 	local minor
 	local patch
@@ -56,10 +95,38 @@ _update() {
 
 	NEW_VERSION="$major.$minor.$patch"
 
-	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$FILE"
+	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$file"
 
-	export NEW_VERSION
-	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$FILE"
+	case "$source" in
+	package)
+		_write_package_version "$package_json" "$NEW_VERSION"
+		;;
+	shell)
+		_write_shell_version "$file" "$NEW_VERSION"
+		;;
+	esac
+}
+
+_write_package_version() {
+	local package_json=$1
+	local new_version=$2
+
+	node -e '
+const fs = require("node:fs");
+const file = process.argv[1];
+const version = process.argv[2];
+const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+pkg.version = version;
+fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+' "$package_json" "$new_version"
+}
+
+_write_shell_version() {
+	local file=$1
+	local new_version=$2
+
+	export NEW_VERSION="$new_version"
+	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$file"
 }
 
 _usage() {
