@@ -4,7 +4,7 @@
   "description": "Capture a webpage as an image.",
   "type": "module",
   "bin": {
-    "webshot": "./webshot"
+    "webshot": "webshot"
   },
   "man": "./man/webshot.1",
   "publishConfig": {
