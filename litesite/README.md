@@ -7,16 +7,37 @@ Rémino Rem <https://remino.net/>, 2026
 
 <!-- mtoc-start -->
 
-- [Installation & Usage](#installation--usage)
+- [Installation](#installation)
+    - [Homebrew](#homebrew)
+    - [Git clone](#git-clone)
+- [Usage](#usage)
 - [Development](#development)
 - [Licence](#licence)
 
 <!-- mtoc-end -->
 
-## Installation & Usage
+## Installation
 
-Install the `litesite` script from this directory, or clone `remutils` and run
-it from the repo root.
+### Homebrew
+
+```sh
+brew install remino/remino/litesite
+litesite
+```
+
+### Git clone
+
+```sh
+git clone git@github.com:remino/remutils.git
+cd remutils/litesite
+./litesite
+```
+
+## Usage
+
+Run `man litesite` or `litesite --help` to see how to use it.
+
+With no arguments, `litesite` prints the usage screen.
 
 The command expects a site root with:
 
@@ -24,10 +45,6 @@ The command expects a site root with:
 - `.deploy-filter`
 - `justfile`
 - `.editorconfig`
-
-See `man litesite` or `litesite --help` for the full command list.
-
-With no arguments, `litesite` prints the usage screen.
 
 The site `.env` can disable build-time extras:
 
@@ -38,8 +55,8 @@ The site `.env` can disable build-time extras:
 
 `rsdeploy` is required only for `litesite deploy`.
 
-`litesite new <slug>` creates `./<slug>` by default. `init` remains available
-as an alias.
+`litesite new <slug>` creates `./<slug>` by default. `init` remains available as
+an alias.
 
 AVIF derivatives are written as sibling files:
 
