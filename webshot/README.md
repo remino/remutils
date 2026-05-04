@@ -66,6 +66,7 @@ webshot -f jpeg https://example.com share-image
 With no arguments, `webshot` exits successfully and prints the usage screen.
 If the output file is omitted, `webshot` writes a file based on the URL.
 The default extension is `.png`, unless `-f` sets another format.
+If the URL has no protocol, `http://` is assumed.
 
 The output image format is inferred from the file extension. Supported formats
 are PNG, JPEG, AVIF, and WebP. The `.jpg` extension maps to JPEG.

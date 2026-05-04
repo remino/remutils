@@ -191,7 +191,10 @@ function parseArgs(args) {
 
 function normalizeUrl(value) {
   try {
-    const url = new URL(value);
+    const normalizedValue = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value)
+      ? value
+      : `http://${value}`;
+    const url = new URL(normalizedValue);
     if (!['http:', 'https:'].includes(url.protocol)) {
       throw new UsageError('url must use http or https.');
     }

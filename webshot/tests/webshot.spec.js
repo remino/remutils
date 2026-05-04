@@ -38,6 +38,14 @@ async function startFixtureServer() {
       return;
     }
 
+    if (request.url === '/redirect') {
+      response.writeHead(302, {
+        location: '/page.html',
+      });
+      response.end();
+      return;
+    }
+
     response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     response.end('not found');
   });
@@ -129,13 +137,26 @@ describe('webshot CLI', () => {
 
   it('writes a png file based on the url when no output file is provided', async () => {
     const expectedOutput = path.join(outputDir, '127.0.0.1-page.png');
+    const bareUrl = server.url.replace(/^http:\/\//, '');
 
-    await runWebshot(['-W', '320', '-H', '180', server.url], {
+    await runWebshot(['-W', '320', '-H', '180', bareUrl], {
       cwd: outputDir,
     });
 
     await expectImageToMatch(
       expectedOutput,
+      path.join(expectedDir, 'webshot-320x180.png'),
+    );
+  });
+
+  it('follows redirects when capturing', async () => {
+    const actual = path.join(outputDir, 'redirect.png');
+    const redirectUrl = server.url.replace('/page.html', '/redirect');
+
+    await runWebshot(['-W', '320', '-H', '180', redirectUrl, actual]);
+
+    await expectImageToMatch(
+      actual,
       path.join(expectedDir, 'webshot-320x180.png'),
     );
   });
