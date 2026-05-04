@@ -1,0 +1,84 @@
+.TH LITESITE 1 "May 2026" "litesite 1.0.0"
+.SH NAME
+litesite \- create and work with tiny static sites
+.SH SYNOPSIS
+.B litesite
+[\fB-C\fR \fIDIR\fR] [\fICOMMAND\fR] [\fIARGS...\fR]
+.SH DESCRIPTION
+.B litesite
+works on a site root that contains \fBsrc/\fR, \fB.deploy-filter\fR,
+\fBjustfile\fR, and \fB.editorconfig\fR.
+
+It can build the site into \fBdist/\fR, serve the public directory, deploy the
+output with \fBrsdeploy\fR, regenerate compressed assets and AVIF JPG/WebP
+derivatives, or scaffold a new site.
+
+When no command is supplied,
+.B litesite
+runs the usage screen
+.
+.SH COMMANDS
+.TP
+.B build
+Build \fBdist/\fR from \fBsrc/\fR, minify HTML/CSS/JS, copy public assets,
+generate JPG and WebP derivatives, and write Brotli and gzip variants.
+.TP
+.B clean
+Remove \fBdist/\fR.
+.TP
+.B serve
+Run a local preview server against \fBsrc/public/\fR.
+.TP
+.B deploy
+Build the site and deploy \fBdist/\fR. Pass \fB-n\fR to preview a dry-run
+deployment. \fBrsdeploy\fR is required for this command.
+.TP
+.B compress
+Regenerate Brotli and gzip files for \fBdist/\fR.
+.TP
+.B media
+Regenerate AVIF JPG and WebP derivatives in \fBdist/\fR.
+.TP
+.B new \fISLUG\fR [\fIDEST\fR]
+Create a new site scaffold.
+.TP
+.B init \fISLUG\fR [\fIDEST\fR]
+Alias for \fBnew\fR.
+.TP
+.B jpg \fIFILES...\fR
+Convert AVIF files to JPG beside the source path.
+.TP
+.B webp \fIFILES...\fR
+Convert AVIF files to WebP beside the source path.
+.SH OPTIONS
+.TP
+.B -C \fIDIR\fR
+Run against another site root.
+.TP
+.B -h
+Show help.
+.TP
+.B -v
+Show version.
+.SH ENVIRONMENT
+.TP
+.B LITESITE_BUILD_BROTLI
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip Brotli output.
+.TP
+.B LITESITE_BUILD_GZIP
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip gzip output.
+.TP
+.B LITESITE_BUILD_AVIF_JPEG
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip JPG derivative generation.
+.TP
+.B LITESITE_BUILD_AVIF_WEBP
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip WebP derivative generation.
+.SH NOTES
+When \fBnew\fR or \fBinit\fR is called without \fIDEST\fR, the new site is
+created as \fB./\fISLUG\fR\fR.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
