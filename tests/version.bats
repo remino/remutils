@@ -128,3 +128,120 @@ teardown() {
 	UPDATED_VERSION="$(grep -m1 -E '^VERSION=(\d+\.){2}(\d+)$' "$VERSION_FILE" | cut -d = -f 2)"
 	[ "$UPDATED_VERSION" = "1.2.4" ]
 }
+
+@test "version-commit stages package.json when present" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	BIN_DIR="$WORKDIR/bin"
+	mkdir -p "$SCRIPT_DIR" "$BIN_DIR"
+
+	cat >"$SCRIPT_DIR/demo" <<'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+	chmod +x "$SCRIPT_DIR/demo"
+
+	cat >"$SCRIPT_DIR/package.json" <<'EOF'
+{
+  "name": "demo",
+  "version": "1.2.3"
+}
+EOF
+
+	cp ./bin/version "$BIN_DIR/version"
+	cp ./bin/version-commit "$BIN_DIR/version-commit"
+
+	git -C "$WORKDIR" init -q
+	git -C "$WORKDIR" config user.email "test@example.com"
+	git -C "$WORKDIR" config user.name "Test User"
+	git -C "$WORKDIR" add .
+	git -C "$WORKDIR" commit -q -m "initial"
+
+	pushd "$WORKDIR" >/dev/null
+	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-commit" "$SCRIPT_DIR" patch
+	popd >/dev/null
+
+	[ "$status" -eq 0 ]
+	[ -n "$(git -C "$WORKDIR" log -1 --format=%s)" ]
+	[[ "$(git -C "$WORKDIR" ls-tree --name-only -r HEAD)" == *"demo"* ]]
+	[[ "$(git -C "$WORKDIR" ls-tree --name-only -r HEAD)" == *"package.json"* ]]
+
+	rm -rf "$WORKDIR"
+}
+
+@test "version-commit updates package-lock.json when present" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	BIN_DIR="$WORKDIR/bin"
+	mkdir -p "$SCRIPT_DIR" "$BIN_DIR"
+
+	cat >"$SCRIPT_DIR/demo" <<'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+	chmod +x "$SCRIPT_DIR/demo"
+
+	cat >"$SCRIPT_DIR/package.json" <<'EOF'
+{
+  "name": "demo",
+  "version": "1.2.3"
+}
+EOF
+
+	cat >"$SCRIPT_DIR/package-lock.json" <<'EOF'
+{
+  "name": "demo",
+  "version": "1.2.3",
+  "lockfileVersion": 3,
+  "packages": {
+    "": {
+      "name": "demo",
+      "version": "1.2.3"
+    }
+  }
+}
+EOF
+
+	cp ./bin/version ./bin/version-commit "$BIN_DIR/"
+
+	cat >"$BIN_DIR/npm" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "install" ]]; then
+	package_dir="$PWD"
+	version="$(node -e 'const fs=require("node:fs"); const pkg=JSON.parse(fs.readFileSync("package.json", "utf8")); process.stdout.write(pkg.version);')"
+	node -e '
+const fs = require("node:fs");
+const file = "package-lock.json";
+const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+pkg.version = process.argv[1];
+if (pkg.packages && pkg.packages[""]) {
+  pkg.packages[""].version = process.argv[1];
+}
+fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+' "$version"
+	exit 0
+fi
+
+echo "unexpected npm invocation" >&2
+exit 1
+EOF
+	chmod +x "$BIN_DIR/npm"
+
+	git -C "$WORKDIR" init -q
+	git -C "$WORKDIR" config user.email "test@example.com"
+	git -C "$WORKDIR" config user.name "Test User"
+	git -C "$WORKDIR" add .
+	git -C "$WORKDIR" commit -q -m "initial"
+
+	pushd "$WORKDIR" >/dev/null
+	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-commit" "$SCRIPT_DIR" patch
+	popd >/dev/null
+
+	[ "$status" -eq 0 ]
+	[[ "$(git -C "$WORKDIR" show --name-only --format= HEAD)" == *"package-lock.json"* ]]
+	[[ "$(cat "$SCRIPT_DIR/package-lock.json")" == *'"version": "1.2.4"'* ]]
+
+	rm -rf "$WORKDIR"
+}
