@@ -182,7 +182,7 @@ avif_to_webp() {
 
 	[[ -f "$input" ]] || exit 0
 	mkdir -p "$(dirname "$output")"
-	ffmpeg -y -hide_banner -loglevel error -i "$input" -an -sn -c:v libwebp -lossless 0 -q:v 80 "$output"
+	magick "$input" -auto-orient -background white -alpha remove -strip -quality 82 "$output"
 }
 
 build_media() {

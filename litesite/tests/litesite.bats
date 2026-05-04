@@ -123,20 +123,8 @@ cp "$input" "$output"
 '
 
 	make_stub ffmpeg '
-input=""
-output="${@: -1}"
-while [[ $# -gt 0 ]]; do
-	case "$1" in
-		-i)
-			input="$2"
-			shift 2
-			;;
-		*)
-			shift
-			;;
-	esac
-done
-cp "$input" "$output"
+echo "ffmpeg should not be called" >&2
+exit 1
 '
 
 	make_stub rsdeploy '
