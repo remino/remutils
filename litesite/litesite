@@ -5,8 +5,8 @@ VERSION="1.0.1"
 SCRIPT_NAME="$(basename "$0")"
 
 usage() {
-	cat << 'EOF'
-litesite 1.0.0
+	cat <<EOF
+litesite $VERSION
 
 USAGE: litesite [<options>] [<command> [<args...>]]
 
