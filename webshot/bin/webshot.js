@@ -29,12 +29,13 @@ const { version: VERSION } = JSON.parse(
 function usage() {
   return `webshot ${VERSION}
 
-USAGE: webshot [<options>] <url> <image-file>
+USAGE: webshot [<options>] <url> [<image-file>]
 
 Capture a webpage as an image.
 
 The output image format is inferred from <image-file>, unless -f is set.
 Supported formats: png, jpeg, avif, webp.
+If <image-file> is omitted, the output file defaults to a PNG name derived from the URL.
 
 OPTIONS:
 
@@ -221,6 +222,31 @@ function inferFormat(file, override) {
   return format;
 }
 
+function inferOutputFile(url, format = 'png') {
+  const parsedUrl = new URL(url);
+  const segments = [parsedUrl.hostname];
+  const pathname = parsedUrl.pathname
+    .replace(/\/+/g, '/')
+    .replace(/^\/|\/$/g, '');
+
+  if (pathname.length > 0) {
+    segments.push(
+      ...pathname
+        .split('/')
+        .map((segment) => path.parse(segment).name)
+        .filter(Boolean),
+    );
+  }
+
+  const baseName = segments
+    .join('-')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[.-]+|[.-]+$/g, '');
+
+  return `${baseName || 'webshot'}.${format}`;
+}
+
 async function injectAssets(page, { cssFile, jsFile }) {
   if (cssFile !== undefined) {
     await page.addStyleTag({ content: await fs.readFile(cssFile, 'utf8') });
@@ -306,13 +332,20 @@ async function main() {
     return;
   }
 
-  if (parsed.positional.length !== 2) {
-    throw new UsageError('Expected exactly two arguments: <url> <image-file>.');
+  if (parsed.positional.length < 1 || parsed.positional.length > 2) {
+    throw new UsageError(
+      'Expected one or two arguments: <url> [<image-file>].',
+    );
   }
 
+  const url = normalizeUrl(parsed.positional[0]);
+  const outputFile =
+    parsed.positional[1] ??
+    inferOutputFile(url, parsed.options.format ?? 'png');
+
   await capture({
-    url: normalizeUrl(parsed.positional[0]),
-    outputFile: parsed.positional[1],
+    url,
+    outputFile,
     options: parsed.options,
   });
 }

@@ -55,6 +55,7 @@ Run `man webshot`, `webshot -h`, or `webshot -v` to see how to use it.
 Example:
 
 ```sh
+webshot https://example.com
 webshot https://example.com share.png
 webshot -W 1200 -H 630 -w 0.5 https://example.com og.webp
 webshot -z 1.25 -d 192 https://example.com og@2x.png
@@ -63,6 +64,8 @@ webshot -f jpeg https://example.com share-image
 ```
 
 With no arguments, `webshot` exits successfully and prints the usage screen.
+If the output file is omitted, `webshot` writes a file based on the URL.
+The default extension is `.png`, unless `-f` sets another format.
 
 The output image format is inferred from the file extension. Supported formats
 are PNG, JPEG, AVIF, and WebP. The `.jpg` extension maps to JPEG.
@@ -91,12 +94,8 @@ Run the package tests from the `webshot` directory:
 
 ```sh
 npm test
-```
-
-```sh
 npm run lint
 npm run format:check
-npm test
 ```
 
 The CLI wrapper is [`webshot`](webshot), which runs

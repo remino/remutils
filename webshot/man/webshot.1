@@ -3,7 +3,7 @@
 webshot \- Capture a webpage as an image
 .SH SYNOPSIS
 .B webshot
-[\fI-h\fR] [\fI-v\fR] [\fI-W\fR \fIPIXELS\fR] [\fI-H\fR \fIPIXELS\fR] [\fI-w\fR \fISECONDS\fR] [\fI-z\fR \fIFACTOR\fR] [\fI-d\fR \fIDPI\fR] [\fI-f\fR \fIFORMAT\fR] [\fI-c\fR \fICSS_FILE\fR] [\fI-j\fR \fIJS_FILE\fR] \fIURL\fR \fIIMAGE_FILE\fR
+[\fI-h\fR] [\fI-v\fR] [\fI-W\fR \fIPIXELS\fR] [\fI-H\fR \fIPIXELS\fR] [\fI-w\fR \fISECONDS\fR] [\fI-z\fR \fIFACTOR\fR] [\fI-d\fR \fIDPI\fR] [\fI-f\fR \fIFORMAT\fR] [\fI-c\fR \fICSS_FILE\fR] [\fI-j\fR \fIJS_FILE\fR] \fIURL\fR [\fIIMAGE_FILE\fR]
 .SH DESCRIPTION
 .B webshot
 opens a webpage with Puppeteer and saves a viewport screenshot as an image.
@@ -14,6 +14,8 @@ Supported formats are \fIpng\fR, \fIjpeg\fR, \fIavif\fR, and \fIwebp\fR. The \fI
 When no arguments are supplied,
 .B webshot
 prints the usage screen and exits successfully.
+If \fIIMAGE_FILE\fR is omitted, \fBwebshot\fR writes a file based on the URL.
+The default extension is \fB.png\fR unless \fB-f\fR sets another format.
 .SH OPTIONS
 .TP
 .B \-h
