@@ -165,7 +165,8 @@ create_site() {
 	run "$SCRIPT" -v
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "litesite 1.0.0" ]
+	expected_version="litesite $(sed -n 's/^VERSION="\([^"]*\)"/\1/p' "$SCRIPT" | head -n1)"
+	[ "$output" = "$expected_version" ]
 }
 
 @test "shows help" {
@@ -210,6 +211,19 @@ create_site() {
 	[ -f "$TEST_ROOT/demo/src/nginx/demo.conf" ]
 }
 
+@test "jpg and webp stay as avif siblings" {
+	create_site
+	make_build_stubs
+
+	run "$SCRIPT" -C "$SITE_ROOT" jpg "$SITE_ROOT/src/public/sample.avif"
+	[ "$status" -eq 0 ]
+	[ -f "$SITE_ROOT/src/public/sample.avif.jpg" ]
+
+	run "$SCRIPT" -C "$SITE_ROOT" webp "$SITE_ROOT/src/public/sample.avif"
+	[ "$status" -eq 0 ]
+	[ -f "$SITE_ROOT/src/public/sample.avif.webp" ]
+}
+
 @test "serve rewrites absolute paths to relative" {
 	create_site
 	make_serve_stub
@@ -245,8 +259,8 @@ create_site() {
 	[ -f "$SITE_ROOT/dist/public/favicon.svg" ]
 	[ -f "$SITE_ROOT/dist/public/share.svg" ]
 	[ -f "$SITE_ROOT/dist/public/sample.avif" ]
-	[ -f "$SITE_ROOT/dist/public/sample.jpg" ]
-	[ -f "$SITE_ROOT/dist/public/sample.webp" ]
+	[ -f "$SITE_ROOT/dist/public/sample.avif.jpg" ]
+	[ -f "$SITE_ROOT/dist/public/sample.avif.webp" ]
 }
 
 @test "build can disable optional outputs" {
@@ -261,8 +275,8 @@ create_site() {
 	[ ! -e "$SITE_ROOT/dist/public/index.html.br" ]
 	[ ! -e "$SITE_ROOT/dist/public/index.html.gz" ]
 	[ -f "$SITE_ROOT/dist/public/sample.avif" ]
-	[ ! -e "$SITE_ROOT/dist/public/sample.jpg" ]
-	[ ! -e "$SITE_ROOT/dist/public/sample.webp" ]
+	[ ! -e "$SITE_ROOT/dist/public/sample.avif.jpg" ]
+	[ ! -e "$SITE_ROOT/dist/public/sample.avif.webp" ]
 }
 
 @test "deploy passes wet run flag to rsdeploy" {

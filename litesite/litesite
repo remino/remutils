@@ -169,7 +169,7 @@ copy_file() {
 
 avif_to_jpg() {
 	local input="$1"
-	local output="${2:-${input%.*}.jpg}"
+	local output="${2:-$input.jpg}"
 
 	[[ -f "$input" ]] || exit 0
 	mkdir -p "$(dirname "$output")"
@@ -178,7 +178,7 @@ avif_to_jpg() {
 
 avif_to_webp() {
 	local input="$1"
-	local output="${2:-${input%.*}.webp}"
+	local output="${2:-$input.webp}"
 
 	[[ -f "$input" ]] || exit 0
 	mkdir -p "$(dirname "$output")"
@@ -208,14 +208,11 @@ build_media() {
 	esac
 
 	while IFS= read -r -d '' file; do
-		rel="${file#"$dist"/}"
-		base="${rel%.*}"
-
 		if ((build_jpg)); then
-			avif_to_jpg "$file" "$dist/${base}.jpg"
+			avif_to_jpg "$file"
 		fi
 		if ((build_webp)); then
-			avif_to_webp "$file" "$dist/${base}.webp"
+			avif_to_webp "$file"
 		fi
 	done < <(find "$dist" -type f -name '*.avif' -print0)
 }

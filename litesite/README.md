@@ -41,6 +41,11 @@ The site `.env` can disable build-time extras:
 `litesite new <slug>` creates `./<slug>` by default. `init` remains available
 as an alias.
 
+AVIF derivatives are written as sibling files:
+
+- `*.avif.jpg`
+- `*.avif.webp`
+
 ## Development
 
 ```sh
