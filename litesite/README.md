@@ -11,6 +11,7 @@ Rémino Rem <https://remino.net/>, 2026
     - [Homebrew](#homebrew)
     - [Git clone](#git-clone)
 - [Usage](#usage)
+- ["What about this feature?"](#what-about-this-feature)
 - [Development](#development)
 - [Licence](#licence)
 
@@ -62,6 +63,22 @@ AVIF derivatives are written as sibling files:
 
 - `*.avif.jpg`
 - `*.avif.webp`
+
+## "What about this feature?"
+
+This is by no means a tool made to build a modern website with all the
+tree-shaking, auto-prefixing, pre-rendering, etc.
+
+It's meant to be a simple tool that lets you write your own HTML, CSS, and
+JavaScript, and stay out of your way, with no hand holding.
+
+What it does help you with is to run the site locally with live reload, so you
+don't have to hit the Refresh button of your browser at every change, build the
+files with minification, automatically add Gzip and Brotli derivates, as well as
+JPEG and WebP derivatives for AVIF image files, if you use those. Then, with
+`rsdeploy`, it will help you deploy the site.
+
+That's it.
 
 ## Development
 
