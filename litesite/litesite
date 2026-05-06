@@ -421,7 +421,7 @@ clean:
     litesite clean
 
 serve:
-    litesite
+    litesite serve
 
 deploy:
     litesite deploy
