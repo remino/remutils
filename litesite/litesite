@@ -53,6 +53,7 @@ ensure_site_root() {
 
 load_site_env() {
 	local root="$1"
+	local old_minify="${LITESITE_BUILD_MINIFY-__unset__}"
 	local old_brotli="${LITESITE_BUILD_BROTLI-__unset__}"
 	local old_gzip="${LITESITE_BUILD_GZIP-__unset__}"
 	local old_avif_jpeg="${LITESITE_BUILD_AVIF_JPEG-__unset__}"
@@ -63,6 +64,9 @@ load_site_env() {
 		# shellcheck disable=SC1090
 		. "$root/.env"
 		set +a
+		if [[ "$old_minify" != __unset__ ]]; then
+			export LITESITE_BUILD_MINIFY="$old_minify"
+		fi
 		if [[ "$old_brotli" != __unset__ ]]; then
 			export LITESITE_BUILD_BROTLI="$old_brotli"
 		fi
@@ -271,6 +275,11 @@ build_site() {
 minify_site() {
 	local src="$1"
 	local dist="$2"
+	local minify=1
+
+	if ! env_enabled LITESITE_BUILD_MINIFY; then
+		minify=0
+	fi
 
 	mkdir -p "$dist"
 
@@ -279,32 +288,36 @@ minify_site() {
 		rel="${file#"$src"/}"
 		target="$dist/$rel"
 
-		case "$rel" in
-			public/*.html)
-				minify_html "$file" "$target"
-				;;
-			public/*.js | public/*.mjs | public/*.cjs)
-				minify_js "$file" "$target"
-				;;
-			public/*.css)
-				minify_css "$file" "$target"
-				;;
-			public/*)
-				copy_file "$file" "$target"
-				;;
-			*.html)
-				minify_html "$file" "$target"
-				;;
-			*.js | *.mjs | *.cjs)
-				minify_js "$file" "$target"
-				;;
-			*.css)
-				minify_css "$file" "$target"
-				;;
-			*)
-				copy_file "$file" "$target"
-				;;
-		esac
+		if ((minify)); then
+			case "$rel" in
+				public/*.html)
+					minify_html "$file" "$target"
+					;;
+				public/*.js | public/*.mjs | public/*.cjs)
+					minify_js "$file" "$target"
+					;;
+				public/*.css)
+					minify_css "$file" "$target"
+					;;
+				public/*)
+					copy_file "$file" "$target"
+					;;
+				*.html)
+					minify_html "$file" "$target"
+					;;
+				*.js | *.mjs | *.cjs)
+					minify_js "$file" "$target"
+					;;
+				*.css)
+					minify_css "$file" "$target"
+					;;
+				*)
+					copy_file "$file" "$target"
+					;;
+			esac
+		else
+			copy_file "$file" "$target"
+		fi
 	done < <(find "$src" -type f -print0)
 }
 
@@ -389,6 +402,7 @@ RSDEPLOY_SRC=dist
 RSDEPLOY_FILTER=.deploy-filter
 LITESITE_BUILD_BROTLI=1
 LITESITE_BUILD_GZIP=1
+LITESITE_BUILD_MINIFY=1
 LITESITE_BUILD_AVIF_JPEG=1
 LITESITE_BUILD_AVIF_WEBP=1
 EOF

@@ -51,6 +51,7 @@ The site `.env` can disable build-time extras:
 
 - `LITESITE_BUILD_BROTLI=0` skips Brotli output
 - `LITESITE_BUILD_GZIP=0` skips gzip output
+- `LITESITE_BUILD_MINIFY=0` skips HTML/CSS/JS minification
 - `LITESITE_BUILD_AVIF_JPEG=0` skips JPG derivative generation
 - `LITESITE_BUILD_AVIF_WEBP=0` skips WebP derivative generation
 
@@ -74,9 +75,9 @@ JavaScript, and stay out of your way, with no hand holding.
 
 What it does help you with is to run the site locally with live reload, so you
 don't have to hit the Refresh button of your browser at every change, build the
-files with minification, automatically add Gzip and Brotli derivates, as well as
-JPEG and WebP derivatives for AVIF image files, if you use those. Then, with
-`rsdeploy`, it will help you deploy the site.
+files with minification unless you disable it, automatically add Gzip and
+Brotli derivates, as well as JPEG and WebP derivatives for AVIF image files, if
+you use those. Then, with `rsdeploy`, it will help you deploy the site.
 
 That's it.
 

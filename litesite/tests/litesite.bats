@@ -267,7 +267,7 @@ create_site() {
 	create_site
 	make_build_stubs
 
-	run env LITESITE_BUILD_BROTLI=0 LITESITE_BUILD_GZIP=0 LITESITE_BUILD_AVIF_JPEG=0 LITESITE_BUILD_AVIF_WEBP=0 \
+	run env LITESITE_BUILD_BROTLI=0 LITESITE_BUILD_GZIP=0 LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_AVIF_JPEG=0 LITESITE_BUILD_AVIF_WEBP=0 \
 		"$SCRIPT" -C "$SITE_ROOT" build
 
 	[ "$status" -eq 0 ]
@@ -277,6 +277,19 @@ create_site() {
 	[ -f "$SITE_ROOT/dist/public/sample.avif" ]
 	[ ! -e "$SITE_ROOT/dist/public/sample.avif.jpg" ]
 	[ ! -e "$SITE_ROOT/dist/public/sample.avif.webp" ]
+}
+
+@test "build can disable minification" {
+	create_site
+	make_build_stubs
+	make_minify_fixture
+
+	run env LITESITE_BUILD_MINIFY=0 \
+		"$SCRIPT" -C "$SITE_ROOT" build
+
+	[ "$status" -eq 0 ]
+	cmp "$SITE_ROOT/src/public/index.html" "$SITE_ROOT/dist/public/index.html"
+	cmp "$SITE_ROOT/src/public/main.js" "$SITE_ROOT/dist/public/main.js"
 }
 
 @test "deploy passes wet run flag to rsdeploy" {
