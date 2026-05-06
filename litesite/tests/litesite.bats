@@ -50,10 +50,10 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
-case "${cmd:-}" in
+	case "${cmd:-}" in
 	html-minifier-terser)
 		input="${@: -1}"
-		cat "$input"
+		perl -0pe "s/<!--(?!\\!)[\\s\\S]*?-->//g" "$input"
 		;;
 	terser)
 		input="$1"
@@ -70,7 +70,7 @@ case "${cmd:-}" in
 					;;
 			esac
 		done
-		cp "$input" "$output"
+		perl -0pe "s{/\*(?!\\!)(?:.|\\n)*?\*/}{}gs; s{//(?!\\!)[^\\n]*}{}g" "$input" > "$output"
 		;;
 	lightningcss)
 		input=""
@@ -159,6 +159,36 @@ create_site() {
 	[ -f "$SITE_ROOT/.env" ]
 	[ -f "$SITE_ROOT/src/public/index.html" ]
 	printf 'avif' > "$SITE_ROOT/src/public/sample.avif"
+}
+
+make_minify_fixture() {
+	cat > "$SITE_ROOT/src/public/index.html" <<'EOF'
+<!doctype html>
+<html lang="en">
+	<head>
+		<!--! keep html -->
+		<!-- remove html -->
+		<meta charset="utf-8" />
+		<script src="/main.js" defer></script>
+	</head>
+	<body>
+		<main>
+			<p>Test.</p>
+		</main>
+	</body>
+</html>
+EOF
+
+	cat > "$SITE_ROOT/src/public/main.js" <<'EOF'
+/*! keep js */
+// remove js
+;(function () {
+	'use strict'
+
+	/* remove block */
+	document.documentElement.classList.add('js')
+})()
+EOF
 }
 
 @test "shows version" {
@@ -290,6 +320,21 @@ create_site() {
 	[ "$status" -eq 0 ]
 	cmp "$SITE_ROOT/src/public/index.html" "$SITE_ROOT/dist/public/index.html"
 	cmp "$SITE_ROOT/src/public/main.js" "$SITE_ROOT/dist/public/main.js"
+}
+
+@test "build preserves important comments when minifying" {
+	create_site
+	make_build_stubs
+	make_minify_fixture
+
+	run "$SCRIPT" -C "$SITE_ROOT" build
+
+	[ "$status" -eq 0 ]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"<!--! keep html -->"* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" != *"remove html"* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/main.js")" == *"/*! keep js */"* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/main.js")" != *"remove js"* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/main.js")" != *"remove block"* ]]
 }
 
 @test "deploy passes wet run flag to rsdeploy" {
