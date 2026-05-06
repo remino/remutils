@@ -518,6 +518,8 @@ EOF
 EOF
 
 	cat > "$dest/src/public/style.css" << 'EOF'
+/* @import url('https://unpkg.com/@remino/dress.css'); */
+
 * {
 	box-sizing: border-box;
 }
