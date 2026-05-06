@@ -18,22 +18,22 @@ teardown() {
 
 @test "updates major version in file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' >"$VERSION_FILE"
 
 	run ./bin/version major "$VERSION_FILE"
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "1.2.3 2.2.3 $VERSION_FILE" ]
+	[ "$output" = "1.1.1 2.0.0 $VERSION_FILE" ]
 }
 
 @test "updates minor version in file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' >"$VERSION_FILE"
 
 	run ./bin/version minor "$VERSION_FILE"
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "1.2.3 1.3.3 $VERSION_FILE" ]
+	[ "$output" = "1.1.1 1.2.0 $VERSION_FILE" ]
 }
 
 @test "updates patch version in file" {
@@ -95,26 +95,26 @@ teardown() {
 
 @test "version file is updated correctly after major update" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' >"$VERSION_FILE"
 
 	run ./bin/version major "$VERSION_FILE"
 
 	[ "$status" -eq 0 ]
 
 	UPDATED_VERSION="$(grep -m1 -E '^VERSION=(\d+\.){2}(\d+)$' "$VERSION_FILE" | cut -d = -f 2)"
-	[ "$UPDATED_VERSION" = "2.2.3" ]
+	[ "$UPDATED_VERSION" = "2.0.0" ]
 }
 
 @test "version file is updated correctly after minor update" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' >"$VERSION_FILE"
 
 	run ./bin/version minor "$VERSION_FILE"
 
 	[ "$status" -eq 0 ]
 
 	UPDATED_VERSION="$(grep -m1 -E '^VERSION=(\d+\.){2}(\d+)$' "$VERSION_FILE" | cut -d = -f 2)"
-	[ "$UPDATED_VERSION" = "1.3.3" ]
+	[ "$UPDATED_VERSION" = "1.2.0" ]
 }
 
 @test "version file is updated correctly after patch update" {
