@@ -53,6 +53,7 @@ ensure_site_root() {
 
 load_site_env() {
 	local root="$1"
+	local old_includes="${LITESITE_BUILD_INCLUDES-__unset__}"
 	local old_minify="${LITESITE_BUILD_MINIFY-__unset__}"
 	local old_brotli="${LITESITE_BUILD_BROTLI-__unset__}"
 	local old_gzip="${LITESITE_BUILD_GZIP-__unset__}"
@@ -64,6 +65,9 @@ load_site_env() {
 		# shellcheck disable=SC1090
 		. "$root/.env"
 		set +a
+		if [[ "$old_includes" != __unset__ ]]; then
+			export LITESITE_BUILD_INCLUDES="$old_includes"
+		fi
 		if [[ "$old_minify" != __unset__ ]]; then
 			export LITESITE_BUILD_MINIFY="$old_minify"
 		fi
@@ -94,6 +98,51 @@ env_enabled() {
 			return 0
 			;;
 	esac
+}
+
+env_enabled_includes() {
+	if [[ -n "${LITESITE_BUILD_INCLUDES+x}" ]]; then
+		env_enabled LITESITE_BUILD_INCLUDES
+	else
+		return 0
+	fi
+}
+
+expand_html_includes() {
+	local input="$1"
+	local output="$2"
+
+	mkdir -p "$(dirname "$output")"
+	node - "$input" "$output" << 'NODE'
+const fs = require('node:fs')
+const path = require('node:path')
+
+const [input, output] = process.argv.slice(2)
+const includePattern = /<!--#include\s+file="([^"]+)"\s*-->/g
+
+const render = (file, stack = []) => {
+	const absFile = path.resolve(file)
+
+	if (stack.includes(absFile)) {
+		throw new Error(`circular include detected: ${[...stack, absFile].join(' -> ')}`)
+	}
+
+	const html = fs.readFileSync(absFile, 'utf8')
+	const nextStack = [...stack, absFile]
+
+	return html.replace(includePattern, (_match, includePath) => {
+		const resolved = path.isAbsolute(includePath)
+			? includePath
+			: path.resolve(path.dirname(absFile), includePath)
+
+		return render(resolved, nextStack)
+	})
+}
+
+const rendered = render(input)
+fs.mkdirSync(path.dirname(output), { recursive: true })
+fs.writeFileSync(output, rendered)
+NODE
 }
 
 minify_html() {
@@ -291,7 +340,12 @@ minify_site() {
 		if ((minify)); then
 			case "$rel" in
 				public/*.html)
-					minify_html "$file" "$target"
+					if env_enabled_includes; then
+						expand_html_includes "$file" "$target"
+						minify_html "$target" "$target"
+					else
+						minify_html "$file" "$target"
+					fi
 					;;
 				public/*.js | public/*.mjs | public/*.cjs)
 					minify_js "$file" "$target"
@@ -303,7 +357,12 @@ minify_site() {
 					copy_file "$file" "$target"
 					;;
 				*.html)
-					minify_html "$file" "$target"
+					if env_enabled_includes; then
+						expand_html_includes "$file" "$target"
+						minify_html "$target" "$target"
+					else
+						minify_html "$file" "$target"
+					fi
 					;;
 				*.js | *.mjs | *.cjs)
 					minify_js "$file" "$target"
@@ -316,7 +375,18 @@ minify_site() {
 					;;
 			esac
 		else
-			copy_file "$file" "$target"
+			case "$rel" in
+				public/*.html | *.html)
+					if env_enabled_includes; then
+						expand_html_includes "$file" "$target"
+					else
+						copy_file "$file" "$target"
+					fi
+					;;
+				*)
+					copy_file "$file" "$target"
+					;;
+			esac
 		fi
 	done < <(find "$src" -type f -print0)
 }
@@ -403,6 +473,7 @@ RSDEPLOY_FILTER=.deploy-filter
 LITESITE_BUILD_BROTLI=1
 LITESITE_BUILD_GZIP=1
 LITESITE_BUILD_MINIFY=1
+LITESITE_BUILD_INCLUDES=1
 LITESITE_BUILD_AVIF_JPEG=1
 LITESITE_BUILD_AVIF_WEBP=1
 EOF

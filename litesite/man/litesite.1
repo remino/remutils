@@ -11,7 +11,8 @@ works on a site root that contains \fBsrc/\fR, \fB.deploy-filter\fR,
 
 It can build the site into \fBdist/\fR, serve the public directory, deploy the
 output with \fBrsdeploy\fR, regenerate compressed assets and AVIF JPG/WebP
-derivatives, or scaffold a new site.
+derivatives, expand SSI-style file includes in HTML files, or scaffold a new
+site.
 
 When no command is supplied,
 .B litesite
@@ -20,9 +21,10 @@ runs the usage screen
 .SH COMMANDS
 .TP
 .B build
-Build \fBdist/\fR from \fBsrc/\fR, minify HTML/CSS/JS unless disabled, copy
-public assets, generate sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR
-derivatives, and write Brotli and gzip variants.
+Build \fBdist/\fR from \fBsrc/\fR, expand SSI-style HTML file includes unless
+disabled, minify HTML/CSS/JS unless disabled, copy public assets, generate
+sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives, and write Brotli
+and gzip variants.
 .TP
 .B clean
 Remove \fBdist/\fR.
@@ -69,6 +71,9 @@ Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip Brotli output.
 .TP
 .B LITESITE_BUILD_GZIP
 Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip gzip output.
+.TP
+.B LITESITE_BUILD_INCLUDES
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip HTML file includes.
 .TP
 .B LITESITE_BUILD_MINIFY
 Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip HTML/CSS/JS

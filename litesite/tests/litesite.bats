@@ -187,7 +187,38 @@ EOF
 
 	/* remove block */
 	document.documentElement.classList.add('js')
-})()
+	})()
+EOF
+}
+
+make_include_fixture() {
+	mkdir -p "$TEST_ROOT/includes"
+	local abs_snippet="$TEST_ROOT/includes/snippet.html"
+
+	cat > "$TEST_ROOT/includes/snippet.html" <<'EOF'
+<section class="snippet">
+	<p>Shared snippet.</p>
+	<!--#include file="nested.html" -->
+</section>
+EOF
+
+	cat > "$TEST_ROOT/includes/nested.html" <<'EOF'
+<strong>Nested from outside the site root.</strong>
+EOF
+
+	cat > "$SITE_ROOT/src/public/index.html" <<EOF
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>demo</title>
+	</head>
+	<body>
+		<main>
+			<!--#include file="$abs_snippet" -->
+		</main>
+	</body>
+</html>
 EOF
 }
 
@@ -320,6 +351,32 @@ EOF
 	[ "$status" -eq 0 ]
 	cmp "$SITE_ROOT/src/public/index.html" "$SITE_ROOT/dist/public/index.html"
 	cmp "$SITE_ROOT/src/public/main.js" "$SITE_ROOT/dist/public/main.js"
+}
+
+@test "build expands html includes by default" {
+	create_site
+	make_build_stubs
+	make_include_fixture
+
+	run env LITESITE_BUILD_MINIFY=0 \
+		"$SCRIPT" -C "$SITE_ROOT" build
+
+	[ "$status" -eq 0 ]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"Shared snippet."* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"Nested from outside the site root."* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" != *"#include file="* ]]
+}
+
+@test "build can disable html includes" {
+	create_site
+	make_build_stubs
+	make_include_fixture
+
+	run env LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_INCLUDES=0 \
+		"$SCRIPT" -C "$SITE_ROOT" build
+
+	[ "$status" -eq 0 ]
+	cmp "$SITE_ROOT/src/public/index.html" "$SITE_ROOT/dist/public/index.html"
 }
 
 @test "build preserves important comments when minifying" {

@@ -51,9 +51,19 @@ The site `.env` can disable build-time extras:
 
 - `LITESITE_BUILD_BROTLI=0` skips Brotli output
 - `LITESITE_BUILD_GZIP=0` skips gzip output
+- `LITESITE_BUILD_INCLUDES=0` skips HTML file includes
 - `LITESITE_BUILD_MINIFY=0` skips HTML/CSS/JS minification
 - `LITESITE_BUILD_AVIF_JPEG=0` skips JPG derivative generation
 - `LITESITE_BUILD_AVIF_WEBP=0` skips WebP derivative generation
+
+HTML files can include other files with SSI-style directives:
+
+```html
+<!--#include file="relative/path/to/file" -->
+```
+
+The path is resolved relative to the file being processed. Relative paths,
+absolute paths, and paths outside the site root are all accepted.
 
 `rsdeploy` is required only for `litesite deploy`.
 
