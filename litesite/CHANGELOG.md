@@ -10,4 +10,3 @@
 
 - Add `litesite` to the `remutils` collection as a self-contained site
   scaffolding and build command.
-

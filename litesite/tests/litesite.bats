@@ -18,7 +18,7 @@ make_stub() {
 	local name="$1"
 	local body="$2"
 
-	cat >"$STUB_BIN/$name" <<EOF
+	cat > "$STUB_BIN/$name" << EOF
 #!/usr/bin/env bash
 set -euo pipefail
 $body
@@ -136,7 +136,7 @@ make_serve_stub() {
 	PATH="$STUB_BIN:$PATH"
 	export PATH
 
-make_stub npx '
+	make_stub npx '
 if [[ "${1:-}" == "--yes" && "${2:-}" == "live-server" ]]; then
 	shift 2
 	printf "Serving \"%s\" at http://127.0.0.1:8080\n" "$1"
@@ -162,7 +162,7 @@ create_site() {
 }
 
 make_minify_fixture() {
-	cat > "$SITE_ROOT/src/public/index.html" <<'EOF'
+	cat > "$SITE_ROOT/src/public/index.html" << 'EOF'
 <!doctype html>
 <html lang="en">
 	<head>
@@ -179,7 +179,7 @@ make_minify_fixture() {
 </html>
 EOF
 
-	cat > "$SITE_ROOT/src/public/main.js" <<'EOF'
+	cat > "$SITE_ROOT/src/public/main.js" << 'EOF'
 /*! keep js */
 // remove js
 ;(function () {
@@ -195,18 +195,18 @@ make_include_fixture() {
 	mkdir -p "$TEST_ROOT/includes"
 	local abs_snippet="$TEST_ROOT/includes/snippet.html"
 
-	cat > "$TEST_ROOT/includes/snippet.html" <<'EOF'
+	cat > "$TEST_ROOT/includes/snippet.html" << 'EOF'
 <section class="snippet">
 	<p>Shared snippet.</p>
 	<!--#include file="nested.html" -->
 </section>
 EOF
 
-	cat > "$TEST_ROOT/includes/nested.html" <<'EOF'
+	cat > "$TEST_ROOT/includes/nested.html" << 'EOF'
 <strong>Nested from outside the site root.</strong>
 EOF
 
-	cat > "$SITE_ROOT/src/public/index.html" <<EOF
+	cat > "$SITE_ROOT/src/public/index.html" << EOF
 <!doctype html>
 <html lang="en">
 	<head>
@@ -263,9 +263,9 @@ EOF
 }
 
 @test "new scaffolds in the current directory by default" {
-	pushd "$TEST_ROOT" >/dev/null
+	pushd "$TEST_ROOT" > /dev/null
 	run "$SCRIPT" new demo
-	popd >/dev/null
+	popd > /dev/null
 
 	[ "$status" -eq 0 ]
 	[ -f "$TEST_ROOT/demo/README.md" ]
