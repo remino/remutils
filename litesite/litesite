@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="1.1.1"
+VERSION="1.2.0"
 SCRIPT_NAME="$(basename "$0")"
 
 usage() {
