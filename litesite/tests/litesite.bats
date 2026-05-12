@@ -116,6 +116,11 @@ input="${@: -1}"
 cp "$input" "$input.gz"
 '
 
+	make_stub zstd '
+input="${@: -1}"
+cp "$input" "$input.zst"
+'
+
 	make_stub magick '
 input="$1"
 output="${@: -1}"
@@ -315,6 +320,7 @@ EOF
 	[ -f "$SITE_ROOT/dist/public/index.html" ]
 	[ -f "$SITE_ROOT/dist/public/index.html.br" ]
 	[ -f "$SITE_ROOT/dist/public/index.html.gz" ]
+	[ -f "$SITE_ROOT/dist/public/index.html.zst" ]
 	[ -f "$SITE_ROOT/dist/public/style.css" ]
 	[ -f "$SITE_ROOT/dist/public/main.js" ]
 	[ -f "$SITE_ROOT/dist/public/favicon.svg" ]
@@ -324,17 +330,34 @@ EOF
 	[ -f "$SITE_ROOT/dist/public/sample.avif.webp" ]
 }
 
+@test "compress regenerates compressed outputs" {
+	create_site
+	make_build_stubs
+
+	run "$SCRIPT" -C "$SITE_ROOT" build
+	[ "$status" -eq 0 ]
+	rm "$SITE_ROOT/dist/public/index.html.br" "$SITE_ROOT/dist/public/index.html.gz" "$SITE_ROOT/dist/public/index.html.zst"
+
+	run "$SCRIPT" -C "$SITE_ROOT" compress
+
+	[ "$status" -eq 0 ]
+	[ -f "$SITE_ROOT/dist/public/index.html.br" ]
+	[ -f "$SITE_ROOT/dist/public/index.html.gz" ]
+	[ -f "$SITE_ROOT/dist/public/index.html.zst" ]
+}
+
 @test "build can disable optional outputs" {
 	create_site
 	make_build_stubs
 
-	run env LITESITE_BUILD_BROTLI=0 LITESITE_BUILD_GZIP=0 LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_AVIF_JPEG=0 LITESITE_BUILD_AVIF_WEBP=0 \
+	run env LITESITE_BUILD_BROTLI=0 LITESITE_BUILD_GZIP=0 LITESITE_BUILD_ZSTD=0 LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_AVIF_JPEG=0 LITESITE_BUILD_AVIF_WEBP=0 \
 		"$SCRIPT" -C "$SITE_ROOT" build
 
 	[ "$status" -eq 0 ]
 	[ -f "$SITE_ROOT/dist/public/index.html" ]
 	[ ! -e "$SITE_ROOT/dist/public/index.html.br" ]
 	[ ! -e "$SITE_ROOT/dist/public/index.html.gz" ]
+	[ ! -e "$SITE_ROOT/dist/public/index.html.zst" ]
 	[ -f "$SITE_ROOT/dist/public/sample.avif" ]
 	[ ! -e "$SITE_ROOT/dist/public/sample.avif.jpg" ]
 	[ ! -e "$SITE_ROOT/dist/public/sample.avif.webp" ]

@@ -23,8 +23,8 @@ runs the usage screen
 .B build
 Build \fBdist/\fR from \fBsrc/\fR, expand SSI-style HTML file includes unless
 disabled, minify HTML/CSS/JS unless disabled, copy public assets, generate
-sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives, and write Brotli
-and gzip variants.
+sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives, and write
+compressed Brotli, gzip, and zstd variants.
 .TP
 .B clean
 Remove \fBdist/\fR.
@@ -37,7 +37,7 @@ Build the site and deploy \fBdist/\fR. Pass \fB-n\fR to preview a dry-run
 deployment. \fBrsdeploy\fR is required for this command.
 .TP
 .B compress
-Regenerate Brotli and gzip files for \fBdist/\fR.
+Regenerate Brotli, gzip, and zstd files for \fBdist/\fR.
 .TP
 .B media
 Regenerate sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives in
@@ -71,6 +71,9 @@ Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip Brotli output.
 .TP
 .B LITESITE_BUILD_GZIP
 Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip gzip output.
+.TP
+.B LITESITE_BUILD_ZSTD
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip zstd output.
 .TP
 .B LITESITE_BUILD_INCLUDES
 Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip HTML file includes.
