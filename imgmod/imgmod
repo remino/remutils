@@ -2,7 +2,7 @@
 # imgmod
 # Image modification helpers.
 
-VERSION='1.3.0'
+VERSION='1.4.0'
 
 imgmod_resolve_script_path() {
 	local source=$1
