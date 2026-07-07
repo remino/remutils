@@ -50,6 +50,16 @@ load helpers
 	[ -f "$BATS_TEST_DIRNAME/../completions/fish/vidmod.fish" ]
 }
 
+@test "manpages are bundled for every bundled plugin" {
+	local plugin
+	local command
+
+	for plugin in "$BATS_TEST_DIRNAME"/../plugins/vidmod-*; do
+		command="$(basename "$plugin")"
+		[ -f "$BATS_TEST_DIRNAME/../man/$command.1" ]
+	done
+}
+
 @test "homebrew formula installs shell completions and manpages" {
 	grep -q "bash_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	grep -q "zsh_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"

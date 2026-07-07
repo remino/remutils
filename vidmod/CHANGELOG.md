@@ -12,6 +12,7 @@
 ## Unreleased
 
 - Fix the Homebrew formula template to install bundled manpages from `libexec`.
+- Add manpages for every bundled plugin.
 
 ## v2.4.0
 
