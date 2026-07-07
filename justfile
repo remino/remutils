@@ -49,3 +49,6 @@ version-all:
 	just list | while read -r name; do \
 		printf "%s %s\n" "$name" "$( bin/version show "$name/$name" )"; \
 	done
+
+release name type github="":
+	bin/release "{{name}}" "{{type}}" {{github}}

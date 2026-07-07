@@ -44,6 +44,10 @@ order of execution:
     - To update the version of a script.
 - `version-commit`
     - To commit versioned changes of a script to its containing git repo.
+- `release`
+    - To create the initial commit/tag for a script or delegate later versioned
+      releases to `version-commit`. Pass `--github` to also publish the GitHub
+      release.
 - `version-tarball`
     - To generate a tarball of a versioned release of a script.
 - `version-release`
