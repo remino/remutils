@@ -88,6 +88,10 @@ Do not add Husky, lint-staged, or a root `package.json` for hook management.
 
 - Keep changes scoped to the requested tool unless the user asks for a shared
   release/script change.
+- When adding or changing user-facing behavior, update that tool's
+  `CHANGELOG.md` with an `## Unreleased` section at the top. Add the matching
+  mtoc entry, `- [Unreleased](#unreleased)`, when the changelog has an mtoc
+  block.
 - Do not manually edit release tags or tarballs. Use the scripts in `bin/`.
 - Before a release commit, make sure `git status --short` is clean unless the
   current task is specifically to prepare uncommitted changes.
