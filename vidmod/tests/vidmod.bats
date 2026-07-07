@@ -30,6 +30,7 @@ load helpers
 
 	[ "$status" -eq 0 ]
 	_output_has_line completion
+	_output_has_line fit1080
 	_output_has_line mp4
 	_output_has_line twitter
 }
@@ -54,4 +55,5 @@ load helpers
 	grep -q "zsh_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	grep -q "fish_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	grep -q "man1.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
+	[ -f "$BATS_TEST_DIRNAME/../man/vidmod-fit1080.1" ]
 }

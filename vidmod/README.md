@@ -12,6 +12,7 @@ Vidmod 2 exposes the old vidmod 1 changes as command plugins:
 
 ```sh
 vidmod mp4 input.mov
+vidmod fit1080 input.mov framed.mov
 vidmod rotate90 input.mov rotated.mov
 vidmod twitter input.mov twitter.mp4
 vidmod chain mp4 -- twitter -- input.mov twitter.mp4
@@ -25,8 +26,8 @@ changes in sequence.
 The bundled legacy command plugins are:
 
 ```text
-169 43 60fps audio butter crop219 crossfade hevc loop mono mp4 mute qt reverse
-rotate90 rotate180 rotate270 slowdown twitter
+169 43 60fps audio butter crop219 crossfade fit1080 hevc loop mono mp4 mute
+qt reverse rotate90 rotate180 rotate270 slowdown twitter
 ```
 
 Each legacy command accepts:

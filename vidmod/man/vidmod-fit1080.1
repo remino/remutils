@@ -1,0 +1,24 @@
+.TH VIDMOD-FIT1080 1 "July 7, 2026" "vidmod 2.3.0"
+.SH NAME
+vidmod-fit1080 \- Fit a video into a centered 1920x1080 black frame
+.SH SYNOPSIS
+.B vidmod fit1080
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+.SH DESCRIPTION
+.B vidmod fit1080
+uses ffmpeg to scale a video down to fit inside 1920x1080 while preserving its
+aspect ratio, then pads it into a centered black 1920x1080 frame.
+
+Audio is copied without re-encoding.
+.SH OPTIONS
+.TP
+.B \-f \fIFFMPEG-OPTIONS\fR
+Pass extra ffmpeg options.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH SEE ALSO
+.BR vidmod (1)

@@ -2,10 +2,15 @@
 
 <!-- mtoc-start -->
 
+- [v2.3.0](#v230)
 - [v2.2.0](#v220)
 - [v2.0.0](#v200)
 
 <!-- mtoc-end -->
+
+## v2.3.0
+
+- Add `fit1080` command to fit video into a centered `1920x1080` black frame.
 
 ## v2.2.0
 

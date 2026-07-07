@@ -74,3 +74,13 @@ load helpers
 	[ "$status" -eq 0 ]
 	[ "$(cat "$TOOL_LOG")" = "butterflow <$INPUT_FILE> <-r> <120> <-audio> <--levels> <6> <-o> <$OUTPUT_DIR/source-butter.mov>" ]
 }
+
+@test "fits video into 1080p frame" {
+	_make_fake_video_tools
+
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" fit1080 "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $OUTPUT_DIR/source-fit1080.mov" ]
+	[[ "$(cat "$TOOL_LOG")" == *"<-vf> <scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2> <-c:a> <copy> <$OUTPUT_DIR/source-fit1080.mov>" ]]
+}
