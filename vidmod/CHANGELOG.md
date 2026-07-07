@@ -2,11 +2,16 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.4.0](#v240)
 - [v2.2.0](#v220)
 - [v2.0.0](#v200)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Fix the Homebrew formula template to install bundled manpages from `libexec`.
 
 ## v2.4.0
 

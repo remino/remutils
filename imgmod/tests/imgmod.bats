@@ -125,5 +125,5 @@ load helpers
 }
 
 @test "homebrew formula installs manpages" {
-	grep -q "man1.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
+	grep -q 'man1.install Dir\["#{libexec}/man/\*.1"\]' "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 }

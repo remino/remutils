@@ -54,6 +54,6 @@ load helpers
 	grep -q "bash_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	grep -q "zsh_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	grep -q "fish_completion.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
-	grep -q "man1.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
+	grep -q 'man1.install Dir\["#{libexec}/man/\*.1"\]' "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 	[ -f "$BATS_TEST_DIRNAME/../man/vidmod-fit1080.1" ]
 }

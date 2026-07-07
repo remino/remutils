@@ -21,7 +21,7 @@ class Vidmod < Formula
     bash_completion.install libexec / "completions/bash/{{name}}" => "{{name}}"
     zsh_completion.install libexec / "completions/zsh/_{{name}}" => "_{{name}}"
     fish_completion.install libexec / "completions/fish/{{name}}.fish"
-    man1.install Dir["man/*.1"]
+    man1.install Dir["#{libexec}/man/*.1"]
   end
 
   test do
