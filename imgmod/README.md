@@ -19,6 +19,7 @@ Rémino Rem <https://remino.net/>, 2026
     - [New Plugins](#new-plugins)
     - [Plugins](#plugins)
     - [Plugin Hooks](#plugin-hooks)
+    - [Optim](#optim)
     - [socshare](#socshare)
 
 <!-- mtoc-end -->
@@ -56,6 +57,8 @@ with `image_optim`:
 ```sh
 imgmod -o socshare image.png
 ```
+
+`-o` optimizes the outputs of a normal command.
 
 Plugins report optimizable image output with the shared hook:
 
@@ -134,6 +137,22 @@ Chainable plugins must accept the standard plugin arguments:
 ```
 
 The final output path is required for chains.
+
+### Optim
+
+Optimize an image directly with `image_optim`:
+
+```sh
+imgmod optim image.png
+imgmod optim image.png output.png
+```
+
+When no output is provided, the input is optimized in place. The top-level `-o`
+flag still optimizes a normal command's reported outputs:
+
+```sh
+imgmod -o socshare image.png
+```
 
 ### New Plugins
 

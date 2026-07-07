@@ -23,6 +23,7 @@ load helpers
 	_output_has_line chain
 	_output_has_line completion
 	_output_has_line newplugin
+	_output_has_line optim
 	_output_has_line socshare
 }
 
@@ -129,6 +130,15 @@ PLUGIN
 
 @test "completion options include chain options" {
 	run "$BATS_TEST_DIRNAME/../imgmod" completion options chain
+
+	[ "$status" -eq 0 ]
+	_output_has_line -h
+	_output_has_line -v
+	_output_has_line --version
+}
+
+@test "completion options include optim options" {
+	run "$BATS_TEST_DIRNAME/../imgmod" completion options optim
 
 	[ "$status" -eq 0 ]
 	_output_has_line -h

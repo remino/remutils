@@ -105,13 +105,14 @@ COMMANDS:
 	chain      Run multiple imgmod plugins in sequence.
 	completion Shell completion data.
 	newplugin Create a new imgmod plugin.
+	optim     Optimize an image directly with image_optim.
 	socshare  Crop and resize an image to 1200x630 for social sharing.
 
 OPTIONS:
 
 	-h        Show this help screen.
 	-n        Create a new plugin. Names create XDG plugins; paths create files exactly there.
-	-o        Optimize plugin image output with image_optim.
+	-o        Optimize plugin image outputs with image_optim.
 	-v        Show script name and version number.
 
 Plugins are executable files found in XDG data directories under imgmod/plugins,

@@ -93,6 +93,28 @@ hookruntime_start() {
 	[ "$output" = "hook:one two" ]
 }
 
+@test "optim plugin optimizes an image in place" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" optim "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$INPUT_FILE" ]
+	[ "$(cat "$OPTIM_LOG")" = "$INPUT_FILE" ]
+}
+
+@test "optim plugin optimizes to an explicit output" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" optim "$INPUT_FILE" "$EXPLICIT_OUTPUT"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$EXPLICIT_OUTPUT" ]
+	[ "$(cat "$OPTIM_LOG")" = "$EXPLICIT_OUTPUT" ]
+}
+
 @test "fails when hook runtime plugin has no start hook" {
 	_write_hook_plugin nostart "
 nostart_help() {

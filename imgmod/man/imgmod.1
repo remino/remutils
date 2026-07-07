@@ -1,4 +1,4 @@
-.TH IMGMOD 1 "July 7, 2026" "imgmod 1.0.0"
+.TH IMGMOD 1 "July 7, 2026" "imgmod 1.1.0"
 .SH NAME
 imgmod \- Image modification helpers
 .SH SYNOPSIS
@@ -30,6 +30,9 @@ Print shell completion data and generated completion scripts.
 .TP
 .B newplugin
 Create a new imgmod plugin from a template.
+.TP
+.B optim
+Optimize an image directly with image_optim.
 .TP
 .B socshare
 Crop and resize an image to 1200x630 for social sharing.
@@ -90,6 +93,11 @@ Create and optimize a social sharing image:
 .B imgmod -o socshare image.png
 .fi
 .TP
+Optimize an image directly:
+.nf
+.B imgmod optim image.png
+.fi
+.TP
 Create a new local plugin:
 .nf
 .B imgmod newplugin watermark
@@ -102,6 +110,7 @@ List completion command candidates:
 .SH SEE ALSO
 .BR imgmod-completion (1),
 .BR imgmod-newplugin (1),
+.BR imgmod-optim (1),
 .BR imgmod-socshare (1)
 .SH AUTHOR
 Written by Rémino Rem: <https://remino.net/>

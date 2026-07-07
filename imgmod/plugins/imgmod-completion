@@ -326,6 +326,11 @@ completion_options() {
 			completion_item -v
 			completion_item --version
 			;;
+		optim)
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			;;
 		socshare)
 			completion_item -h
 			completion_item -v

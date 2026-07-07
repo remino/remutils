@@ -10,6 +10,7 @@
 ## v1.1.0
 
 - Add `chain` command to run multiple plugins in sequence.
+- Add `optim` command for direct image optimization.
 
 ## v1.0.0
 
