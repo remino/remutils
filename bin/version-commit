@@ -35,8 +35,8 @@ version_commit_main() {
 
 	TYPE="$2"
 	case "$TYPE" in
-	major | minor | patch) ;;
-	*) _fatal $E_ARGS "Invalid version type: $TYPE. Must be one of: major, minor, patch." ;;
+		major | minor | patch) ;;
+		*) _fatal $E_ARGS "Invalid version type: $TYPE. Must be one of: major, minor, patch." ;;
 	esac
 
 	_require git version
@@ -48,23 +48,19 @@ version_commit_main() {
 	PACKAGE_JSON="$(dirname "$SCRIPT_FILE")/package.json"
 	PACKAGE_LOCK="$(dirname "$SCRIPT_FILE")/package-lock.json"
 
-	git add "$SCRIPT_FILE"
-	if [ -f "$PACKAGE_JSON" ]; then
-		git add "$PACKAGE_JSON"
-	fi
 	if [ -f "$PACKAGE_LOCK" ]; then
 		_require npm
 		(
 			cd "$(dirname "$PACKAGE_LOCK")"
-			npm install --package-lock-only --ignore-scripts --no-audit --no-fund >/dev/null
+			npm install --package-lock-only --ignore-scripts --no-audit --no-fund > /dev/null
 		)
-		git add "$PACKAGE_LOCK"
 	fi
 
 	# detect git repo root of file
 	REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 	cd "$REPO_ROOT" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $REPO_ROOT"
 
+	git add "$SCRIPT_DIR"
 	git commit -m "Bump $SCRIPT_NAME to v$NEW_VERSION"
 	git tag -a "$SCRIPT_NAME@$NEW_VERSION" -m "$SCRIPT_NAME v$NEW_VERSION"
 }
@@ -80,7 +76,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

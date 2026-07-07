@@ -31,15 +31,15 @@ version_main() {
 	[ -z "$VERSION" ] && echo "No VERSION found." >&2 && return $E_NO_VERSION
 
 	case "$CMD" in
-	show)
-		echo "$VERSION"
-		;;
-	major | minor | patch)
-		_update "$VERSION_SOURCE" "$FILE" "$PACKAGE_JSON"
-		;;
-	*)
-		echo "Invalid command: $CMD" >&2 && return $E_ARGS
-		;;
+		show)
+			echo "$VERSION"
+			;;
+		major | minor | patch)
+			_update "$VERSION_SOURCE" "$FILE" "$PACKAGE_JSON"
+			;;
+		*)
+			echo "Invalid command: $CMD" >&2 && return $E_ARGS
+			;;
 	esac
 }
 
@@ -79,21 +79,21 @@ _update() {
 	local minor
 	local patch
 
-	IFS=. read -r major minor patch <<<"$VERSION"
+	IFS=. read -r major minor patch <<< "$VERSION"
 
 	case "$CMD" in
-	major)
-		major="$((major + 1))"
-		minor=0
-		patch=0
-		;;
-	minor)
-		minor="$((minor + 1))"
-		patch=0
-		;;
-	patch)
-		patch="$((patch + 1))"
-		;;
+		major)
+			major="$((major + 1))"
+			minor=0
+			patch=0
+			;;
+		minor)
+			minor="$((minor + 1))"
+			patch=0
+			;;
+		patch)
+			patch="$((patch + 1))"
+			;;
 	esac
 
 	NEW_VERSION="$major.$minor.$patch"
@@ -101,13 +101,15 @@ _update() {
 	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$file"
 
 	case "$source" in
-	package)
-		_write_package_version "$package_json" "$NEW_VERSION"
-		;;
-	shell)
-		_write_shell_version "$file" "$NEW_VERSION"
-		;;
+		package)
+			_write_package_version "$package_json" "$NEW_VERSION"
+			;;
+		shell)
+			_write_shell_version "$file" "$NEW_VERSION"
+			;;
 	esac
+
+	_update_release_files "$file" "$VERSION" "$NEW_VERSION"
 }
 
 _write_package_version() {
@@ -130,6 +132,62 @@ _write_shell_version() {
 
 	export NEW_VERSION="$new_version"
 	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$file"
+}
+
+_update_release_files() {
+	local file=$1
+	local old_version=$2
+	local new_version=$3
+	local script_dir
+	local script_name
+
+	script_dir="$(dirname "$file")"
+	script_name="$(basename "$script_dir")"
+
+	_update_changelog "$script_dir/CHANGELOG.md" "$new_version"
+	_update_manpages "$script_dir" "$script_name" "$old_version" "$new_version"
+}
+
+_update_changelog() {
+	local changelog=$1
+	local new_version=$2
+	local heading
+	local anchor
+
+	[ -f "$changelog" ] || return 0
+	grep -Eq '^##[[:space:]]+(HEAD|Unreleased)[[:space:]]*$' "$changelog" || return 0
+
+	heading="v$new_version"
+	anchor="v${new_version//./}"
+
+	CHANGELOG_HEADING="$heading" CHANGELOG_ANCHOR="$anchor" perl -0pi -e '
+my $heading = $ENV{CHANGELOG_HEADING};
+my $anchor = $ENV{CHANGELOG_ANCHOR};
+s/^##[ \t]+(?:HEAD|Unreleased)[ \t]*$/## $heading/m;
+s/^- \[(?:HEAD|Unreleased)\]\(#(?:head|unreleased)\)$/- [$heading](#$anchor)/m;
+' "$changelog"
+}
+
+_update_manpages() {
+	local script_dir=$1
+	local script_name=$2
+	local old_version=$3
+	local new_version=$4
+	local manpage
+
+	[ -d "$script_dir/man" ] || return 0
+
+	while IFS= read -r manpage; do
+		MAN_SCRIPT_NAME="$script_name" MAN_OLD_VERSION="$old_version" MAN_NEW_VERSION="$new_version" perl -pi -e '
+my $name = quotemeta($ENV{MAN_SCRIPT_NAME});
+my $old = quotemeta($ENV{MAN_OLD_VERSION});
+my $new = $ENV{MAN_NEW_VERSION};
+if ($. == 1 && /^\.TH\b/) {
+	s/\b$old\b/$new/g;
+	s/\b($name)\s+\d+\.\d+\.\d+\b/$1 $new/gi;
+}
+' "$manpage"
+	done < <(find "$script_dir/man" -type f -name '*.1' | sort)
 }
 
 _usage() {

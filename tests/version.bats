@@ -8,7 +8,7 @@ teardown() {
 
 @test "shows version from file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version show "$VERSION_FILE"
 
@@ -18,7 +18,7 @@ teardown() {
 
 @test "updates major version in file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.1.1' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' > "$VERSION_FILE"
 
 	run ./bin/version major "$VERSION_FILE"
 
@@ -28,7 +28,7 @@ teardown() {
 
 @test "updates minor version in file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.1.1' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' > "$VERSION_FILE"
 
 	run ./bin/version minor "$VERSION_FILE"
 
@@ -38,7 +38,7 @@ teardown() {
 
 @test "updates patch version in file" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version patch "$VERSION_FILE"
 
@@ -58,7 +58,7 @@ teardown() {
 
 @test "handles missing version" {
 	VERSION_FILE="$(mktemp)"
-	echo 'NO_VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'NO_VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version show "$VERSION_FILE"
 
@@ -68,7 +68,7 @@ teardown() {
 
 @test "handles invalid command" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version invalid_cmd "$VERSION_FILE"
 
@@ -85,7 +85,7 @@ teardown() {
 
 @test "shows usage when insufficient arguments are provided" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version show
 
@@ -95,7 +95,7 @@ teardown() {
 
 @test "version file is updated correctly after major update" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.1.1' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' > "$VERSION_FILE"
 
 	run ./bin/version major "$VERSION_FILE"
 
@@ -107,7 +107,7 @@ teardown() {
 
 @test "version file is updated correctly after minor update" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.1.1' >"$VERSION_FILE"
+	echo 'VERSION=1.1.1' > "$VERSION_FILE"
 
 	run ./bin/version minor "$VERSION_FILE"
 
@@ -119,7 +119,7 @@ teardown() {
 
 @test "version file is updated correctly after patch update" {
 	VERSION_FILE="$(mktemp)"
-	echo 'VERSION=1.2.3' >"$VERSION_FILE"
+	echo 'VERSION=1.2.3' > "$VERSION_FILE"
 
 	run ./bin/version patch "$VERSION_FILE"
 
@@ -129,19 +129,115 @@ teardown() {
 	[ "$UPDATED_VERSION" = "1.2.4" ]
 }
 
+@test "updates changelog HEAD section when bumping a script directory" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	mkdir -p "$SCRIPT_DIR"
+
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+
+	cat > "$SCRIPT_DIR/CHANGELOG.md" << 'EOF'
+# Changelog
+
+<!-- mtoc-start -->
+
+- [HEAD](#head)
+- [v1.2.3](#v123)
+
+<!-- mtoc-end -->
+
+## HEAD
+
+- Add demo feature.
+
+## v1.2.3
+
+- Existing release.
+EOF
+
+	run ./bin/version patch "$SCRIPT_DIR/demo"
+
+	[ "$status" -eq 0 ]
+	[[ "$(cat "$SCRIPT_DIR/CHANGELOG.md")" == *"- [v1.2.4](#v124)"* ]]
+	[[ "$(cat "$SCRIPT_DIR/CHANGELOG.md")" == *"## v1.2.4"* ]]
+	[[ "$(cat "$SCRIPT_DIR/CHANGELOG.md")" == *"- Add demo feature."* ]]
+
+	rm -rf "$WORKDIR"
+}
+
+@test "updates changelog Unreleased section when bumping a script directory" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	mkdir -p "$SCRIPT_DIR"
+
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+
+	cat > "$SCRIPT_DIR/CHANGELOG.md" << 'EOF'
+# Changelog
+
+<!-- mtoc-start -->
+
+- [Unreleased](#unreleased)
+
+<!-- mtoc-end -->
+
+## Unreleased
+
+- Add demo feature.
+EOF
+
+	run ./bin/version minor "$SCRIPT_DIR/demo"
+
+	[ "$status" -eq 0 ]
+	[[ "$(cat "$SCRIPT_DIR/CHANGELOG.md")" == *"- [v1.3.0](#v130)"* ]]
+	[[ "$(cat "$SCRIPT_DIR/CHANGELOG.md")" == *"## v1.3.0"* ]]
+
+	rm -rf "$WORKDIR"
+}
+
+@test "updates manpage source version on the TH line" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	mkdir -p "$SCRIPT_DIR/man"
+
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+
+	cat > "$SCRIPT_DIR/man/demo.1" << 'EOF'
+.TH DEMO 1 "July 2026" "demo 1.0.0"
+.SH NAME
+demo \- demo
+EOF
+
+	run ./bin/version patch "$SCRIPT_DIR/demo"
+
+	[ "$status" -eq 0 ]
+	[ "$(sed -n '1p' "$SCRIPT_DIR/man/demo.1")" = '.TH DEMO 1 "July 2026" "demo 1.2.4"' ]
+
+	rm -rf "$WORKDIR"
+}
+
 @test "version-commit stages package.json when present" {
 	WORKDIR="$(mktemp -d)"
 	SCRIPT_DIR="$WORKDIR/demo"
 	BIN_DIR="$WORKDIR/bin"
 	mkdir -p "$SCRIPT_DIR" "$BIN_DIR"
 
-	cat >"$SCRIPT_DIR/demo" <<'EOF'
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
 #!/usr/bin/env bash
 VERSION="1.2.3"
 EOF
 	chmod +x "$SCRIPT_DIR/demo"
 
-	cat >"$SCRIPT_DIR/package.json" <<'EOF'
+	cat > "$SCRIPT_DIR/package.json" << 'EOF'
 {
   "name": "demo",
   "version": "1.2.3"
@@ -157,14 +253,65 @@ EOF
 	git -C "$WORKDIR" add .
 	git -C "$WORKDIR" commit -q -m "initial"
 
-	pushd "$WORKDIR" >/dev/null
+	pushd "$WORKDIR" > /dev/null
 	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-commit" "$SCRIPT_DIR" patch
-	popd >/dev/null
+	popd > /dev/null
 
 	[ "$status" -eq 0 ]
 	[ -n "$(git -C "$WORKDIR" log -1 --format=%s)" ]
 	[[ "$(git -C "$WORKDIR" ls-tree --name-only -r HEAD)" == *"demo"* ]]
 	[[ "$(git -C "$WORKDIR" ls-tree --name-only -r HEAD)" == *"package.json"* ]]
+
+	rm -rf "$WORKDIR"
+}
+
+@test "version-commit stages changelog and manpage changes" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/demo"
+	BIN_DIR="$WORKDIR/bin"
+	mkdir -p "$SCRIPT_DIR/man" "$BIN_DIR"
+
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+	chmod +x "$SCRIPT_DIR/demo"
+
+	cat > "$SCRIPT_DIR/CHANGELOG.md" << 'EOF'
+# Changelog
+
+<!-- mtoc-start -->
+
+- [HEAD](#head)
+
+<!-- mtoc-end -->
+
+## HEAD
+
+- Add demo feature.
+EOF
+
+	cat > "$SCRIPT_DIR/man/demo.1" << 'EOF'
+.TH DEMO 1 "July 2026" "demo 1.2.3"
+EOF
+
+	cp ./bin/version ./bin/version-commit "$BIN_DIR/"
+
+	git -C "$WORKDIR" init -q
+	git -C "$WORKDIR" config user.email "test@example.com"
+	git -C "$WORKDIR" config user.name "Test User"
+	git -C "$WORKDIR" add .
+	git -C "$WORKDIR" commit -q -m "initial"
+
+	pushd "$WORKDIR" > /dev/null
+	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-commit" "$SCRIPT_DIR" patch
+	popd > /dev/null
+
+	[ "$status" -eq 0 ]
+	[[ "$(git -C "$WORKDIR" show --name-only --format= HEAD)" == *"CHANGELOG.md"* ]]
+	[[ "$(git -C "$WORKDIR" show --name-only --format= HEAD)" == *"man/demo.1"* ]]
+	[[ "$(git -C "$WORKDIR" show HEAD:demo/CHANGELOG.md)" == *"## v1.2.4"* ]]
+	[ "$(git -C "$WORKDIR" show HEAD:demo/man/demo.1)" = '.TH DEMO 1 "July 2026" "demo 1.2.4"' ]
 
 	rm -rf "$WORKDIR"
 }
@@ -175,20 +322,20 @@ EOF
 	BIN_DIR="$WORKDIR/bin"
 	mkdir -p "$SCRIPT_DIR" "$BIN_DIR"
 
-	cat >"$SCRIPT_DIR/demo" <<'EOF'
+	cat > "$SCRIPT_DIR/demo" << 'EOF'
 #!/usr/bin/env bash
 VERSION="1.2.3"
 EOF
 	chmod +x "$SCRIPT_DIR/demo"
 
-	cat >"$SCRIPT_DIR/package.json" <<'EOF'
+	cat > "$SCRIPT_DIR/package.json" << 'EOF'
 {
   "name": "demo",
   "version": "1.2.3"
 }
 EOF
 
-	cat >"$SCRIPT_DIR/package-lock.json" <<'EOF'
+	cat > "$SCRIPT_DIR/package-lock.json" << 'EOF'
 {
   "name": "demo",
   "version": "1.2.3",
@@ -204,7 +351,7 @@ EOF
 
 	cp ./bin/version ./bin/version-commit "$BIN_DIR/"
 
-	cat >"$BIN_DIR/npm" <<'EOF'
+	cat > "$BIN_DIR/npm" << 'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -235,9 +382,9 @@ EOF
 	git -C "$WORKDIR" add .
 	git -C "$WORKDIR" commit -q -m "initial"
 
-	pushd "$WORKDIR" >/dev/null
+	pushd "$WORKDIR" > /dev/null
 	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-commit" "$SCRIPT_DIR" patch
-	popd >/dev/null
+	popd > /dev/null
 
 	[ "$status" -eq 0 ]
 	[[ "$(git -C "$WORKDIR" show --name-only --format= HEAD)" == *"package-lock.json"* ]]
