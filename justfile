@@ -27,6 +27,9 @@ format-all dir=".":
 	prettier --ignore-unknown --write "{{dir}}"
 	shfmt -w "{{dir}}"
 
+hooks:
+	lefthook install
+
 lint name="":
 	if [ -n "{{name}}" ]; then \
 		just lint-all "{{name}}"; \
