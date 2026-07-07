@@ -1,0 +1,59 @@
+.TH IMGMOD-SOCSHARE 1 "July 7, 2026" "imgmod 1.0.0"
+.SH NAME
+imgmod-socshare \- Create a 1200x630 social sharing image
+.SH SYNOPSIS
+.B imgmod socshare
+[\fB-f\fR \fIFORMAT\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+.SH DESCRIPTION
+.B imgmod socshare
+uses ImageMagick to auto-orient, center crop, resize, and extend an image to
+1200x630 for Open Graph and Twitter card usage.
+
+When \fIOUTPUT\fR is omitted, the output path is generated from \fIINPUT\fR as
+\fISTEM\fB-pubshare.\fIFORMAT\fR. The default format is \fBjpg\fR.
+.SH OPTIONS
+.TP
+.B \-f \fIFORMAT\fR
+Set output image format. Defaults to the output extension, or \fBjpg\fR when
+output is omitted.
+.TP
+.B \-h
+Show usage help.
+.SH OUTPUT
+The command prints the output file path and reports it through
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+.SH DEPENDENCIES
+.TP
+.B magick
+ImageMagick command used to transform the image.
+.SH EXAMPLES
+.TP
+Create a JPEG next to the input:
+.nf
+.B imgmod socshare image.png
+.fi
+.TP
+Create a PNG:
+.nf
+.B imgmod socshare -f png image.png
+.fi
+.TP
+Write to an explicit WebP output:
+.nf
+.B imgmod socshare image.png share.webp
+.fi
+.TP
+Create and optimize output:
+.nf
+.B imgmod -o socshare image.png
+.fi
+.SH SEE ALSO
+.BR imgmod (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

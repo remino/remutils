@@ -1,0 +1,60 @@
+.TH IMGMOD-NEWPLUGIN 1 "July 7, 2026" "imgmod 1.0.0"
+.SH NAME
+imgmod-newplugin \- Create a new imgmod plugin
+.SH SYNOPSIS
+.B imgmod newplugin
+[\fB-t\fR \fITEMPLATE-FILE\fR] \fINAME-OR-PATH\fR
+.br
+.B imgmod
+\fB-n\fR \fINAME-OR-PATH\fR
+.SH DESCRIPTION
+.B imgmod newplugin
+creates a new executable plugin from a Mustache template.
+
+Bare names create plugins in the user XDG plugin directory using the Git-style
+executable name \fBimgmod-\fINAME\fR.
+Values containing a slash are treated as exact relative or absolute paths and
+are not renamed.
+.SH OPTIONS
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-t \fITEMPLATE-FILE\fR
+Use a custom Mustache template.
+.SH TEMPLATE VARIABLES
+.TP
+.B plugin_name
+Clean command name used by \fBimgmod \fICOMMAND\fR.
+.TP
+.B plugin_prefix
+Shell function prefix derived from \fBplugin_name\fR.
+.TP
+.B plugin_version
+Initial plugin version.
+.SH EXAMPLES
+.TP
+Create a local XDG plugin:
+.nf
+.B imgmod newplugin watermark
+.fi
+.TP
+Create a plugin at an exact path:
+.nf
+.B imgmod newplugin ./imgmod-watermark
+.fi
+.TP
+Use a custom template:
+.nf
+.B imgmod newplugin -t ./plugin.mustache watermark
+.fi
+.SH SEE ALSO
+.BR imgmod (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

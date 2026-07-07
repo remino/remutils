@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# imgmod
+# Image modification helpers.
+
+VERSION='1.0.0'
+
+imgmod_resolve_script_path() {
+	local source=$1
+	local dir
+
+	while [ -L "$source" ]; do
+		dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+		source="$(readlink "$source")"
+		[[ "$source" != /* ]] && source="$dir/$source"
+	done
+
+	dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+	printf '%s/%s\n' "$dir" "$(basename -- "$source")"
+}
+
+SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_PATH="$(imgmod_resolve_script_path "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+
+# shellcheck source=lib/imgmod.sh
+. "$SCRIPT_DIR/lib/imgmod.sh"
+
+imgmod_main() {
+	trap _exit INT TERM
+
+	local newplugin=
+	local optimize=0
+	local opt
+
+	[ $# -lt 1 ] && _help && return
+
+	case "$1" in
+		--help)
+			_help
+			return
+			;;
+		--version)
+			_version
+			return
+			;;
+	esac
+
+	OPTIND=1
+	while getopts :hn:ov opt; do
+		case $opt in
+			h)
+				_help
+				return
+				;;
+			n) newplugin="$OPTARG" ;;
+			o) optimize=1 ;;
+			v)
+				_version
+				return
+				;;
+			:) _invalid_opt "$OPTARG" ;;
+			*) _invalid_opt "$OPTARG" ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	if [ -n "$newplugin" ]; then
+		[ $# -gt 0 ] && _help && return $E_ARGS
+		_run_plugin "$optimize" newplugin "$newplugin"
+		return
+	fi
+
+	[ $# -lt 1 ] && _help && return
+
+	case "$1" in
+		version)
+			_version
+			return
+			;;
+		help)
+			shift
+			if [ $# -eq 0 ]; then
+				_help
+				return
+			fi
+			_run_plugin 0 "$1" -h
+			;;
+		*)
+			_run_plugin "$optimize" "$@"
+			;;
+	esac
+}
+
+_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_NAME <command> [<options>] [<args>]
+
+Image modification helpers.
+
+COMMANDS:
+
+	completion Shell completion data.
+	newplugin Create a new imgmod plugin.
+	socshare  Crop and resize an image to 1200x630 for social sharing.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-n        Create a new plugin. Names create XDG plugins; paths create files exactly there.
+	-o        Optimize plugin image output with image_optim.
+	-v        Show script name and version number.
+
+Plugins are executable files found in XDG data directories under imgmod/plugins,
+or in the bundled plugins directory next to this script.
+
+USAGE
+}
+
+_run_plugin() {
+	local optimize=$1
+	local command_name=$2
+	local plugin
+	local outputs_file=
+	local status
+
+	shift 2
+
+	export IMGMOD_PLUGIN_DIR="$SCRIPT_DIR/plugins"
+
+	plugin="$(imgmod_find_plugin "$command_name")"
+
+	if [ -z "$plugin" ]; then
+		unset IMGMOD_PLUGIN_DIR
+		_invalid_cmd "$command_name"
+	fi
+
+	export IMGMOD_LIB="$SCRIPT_DIR/lib/imgmod.sh"
+	export IMGMOD_APP_NAME="$SCRIPT_NAME"
+	export IMGMOD_PLUGIN_NAME="$command_name"
+
+	if [ "$optimize" -ne 0 ]; then
+		_require image_optim
+		outputs_file="$(mktemp)"
+		_imgmod_outputs_begin "$outputs_file"
+	fi
+
+	"$plugin" "$@"
+	status=$?
+
+	if [ -n "$outputs_file" ]; then
+		_imgmod_outputs_end
+
+		if [ "$status" -eq 0 ]; then
+			_imgmod_optimize_outputs "$outputs_file"
+			status=$?
+		fi
+
+		rm -f "$outputs_file"
+	fi
+
+	unset IMGMOD_APP_NAME
+	unset IMGMOD_PLUGIN_NAME
+	unset IMGMOD_PLUGIN_DIR
+
+	return "$status"
+}
+
+_invalid_opt() {
+	local invalid_opt=$1
+
+	_error "Invalid option: -$invalid_opt"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $1"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_version() {
+	_echo "$SCRIPT_NAME $VERSION"
+}
+
+imgmod_main "$@"

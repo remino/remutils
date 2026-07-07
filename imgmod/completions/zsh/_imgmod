@@ -1,0 +1,2 @@
+#compdef imgmod
+eval "$(imgmod completion zsh)"

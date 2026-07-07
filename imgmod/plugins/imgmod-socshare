@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# imgmod socshare
+# Crop and resize an image for social sharing.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+socshare_start() {
+	local format=input
+	local input=
+	local output=
+	local opt
+
+	OPTIND=1
+	while getopts f:h opt; do
+		case $opt in
+			f) format="$OPTARG" ;;
+			h)
+				socshare_help
+				return
+				;;
+			*) socshare_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && socshare_help && return $E_ARGS
+	[ $# -gt 2 ] && socshare_help && return $E_ARGS
+
+	input="$1"
+	output="${2:-}"
+
+	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
+
+	if [ "$format" = input ]; then
+		format="$(_imgmod_output_format "$output")"
+	fi
+
+	_imgmod_validate_format "$format"
+
+	if [ -z "$output" ]; then
+		output="$(socshare_output_path "$input" "$format")"
+	fi
+
+	_require magick
+
+	magick "$input" -auto-orient -resize 1200x630^ -gravity center -extent 1200x630 "$format:$output"
+	imgmod_output "$output"
+}
+
+socshare_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [-f <format>] <input> [output]
+
+Crop and resize an image to a generic 1200x630 social sharing image for Open Graph and Twitter cards.
+
+OPTIONS:
+
+	-f        Output image format. Defaults to output extension, or jpg when output is omitted.
+	-h        Show this help screen.
+
+USAGE
+}
+
+socshare_output_path() {
+	local input=$1
+	local format=$2
+	local input_dir
+	local input_name
+	local input_stem
+	local extension
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	[ -z "$input_stem" ] && input_stem="$input_name"
+
+	extension="$format"
+	[ "$extension" = jpeg ] && extension=jpg
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-pubshare.$extension"
+	else
+		_echo "$input_dir/$input_stem-pubshare.$extension"
+	fi
+}
+
+socshare_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	socshare_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

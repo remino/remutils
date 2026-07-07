@@ -1,0 +1,67 @@
+.TH IMGMOD-COMPLETION 1 "July 7, 2026" "imgmod 1.0.0"
+.SH NAME
+imgmod-completion \- Print imgmod shell completion data
+.SH SYNOPSIS
+.B imgmod completion
+\fBcommands\fR
+.br
+.B imgmod completion
+\fBoptions\fR [\fICOMMAND\fR]
+.br
+.B imgmod completion
+\fBbash\fR|\fBzsh\fR|\fBfish\fR
+.SH DESCRIPTION
+.B imgmod completion
+prints command candidates, option candidates, and generated shell completion
+scripts for
+.BR imgmod (1).
+
+Shell completion scripts call this plugin dynamically, so XDG plugins appear in
+completion without regenerating shell files.
+.SH TOPICS
+.TP
+.B bash
+Print a Bash completion script.
+.TP
+.B zsh
+Print a Zsh completion script.
+.TP
+.B fish
+Print a Fish completion script.
+.TP
+.B commands
+Print command names, one per line.
+.TP
+.B options [\fICOMMAND\fR]
+Print top-level option names, or option names for \fICOMMAND\fR.
+.SH EXAMPLES
+.TP
+Load Bash completion:
+.nf
+.B source <(imgmod completion bash)
+.fi
+.TP
+Load Zsh completion:
+.nf
+.B eval "$(imgmod completion zsh)"
+.fi
+.TP
+Load Fish completion:
+.nf
+.B imgmod completion fish | source
+.fi
+.TP
+Inspect command candidates:
+.nf
+.B imgmod completion commands
+.fi
+.SH SEE ALSO
+.BR imgmod (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

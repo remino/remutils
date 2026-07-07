@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# imgmod {{plugin_name}}
+
+VERSION='{{plugin_version}}'
+
+if [ -z "${IMGMOD_LIB:-}" ]; then
+	echo "Run this plugin through imgmod or set IMGMOD_LIB." >&2
+	exit 16
+fi
+
+# shellcheck source=/dev/null
+. "$IMGMOD_LIB"
+
+{{plugin_prefix}}_start() {
+	while getopts h opt; do
+		case $opt in
+			h)
+				{{plugin_prefix}}_help
+				return
+				;;
+			*) {{plugin_prefix}}_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	# Use imgmod_output "$file" for image files that can be optimized with imgmod -o.
+	{{plugin_prefix}}_help
+}
+
+{{plugin_prefix}}_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] [<args>]
+
+OPTIONS:
+
+	-h        Show this help screen.
+
+USAGE
+}
+
+{{plugin_prefix}}_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	{{plugin_prefix}}_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

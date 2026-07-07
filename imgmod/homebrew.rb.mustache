@@ -1,0 +1,31 @@
+# vim: set ft=ruby :
+class Imgmod < Formula
+  desc "Image modification helpers."
+  version "{{version}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
+  sha256 "{{sha256}}"
+  license "ISC"
+  homepage "https://github.com/remino/remutils"
+
+  depends_on "bash"
+  depends_on "imagemagick"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  def install
+    libexec.install Dir["*"]
+    bin.install_symlink libexec / "{{name}}" => "{{name}}"
+    bash_completion.install libexec / "completions/bash/{{name}}" => "{{name}}"
+    zsh_completion.install libexec / "completions/zsh/_{{name}}" => "_{{name}}"
+    fish_completion.install libexec / "completions/fish/{{name}}.fish"
+    man1.install Dir["man/*.1"]
+  end
+
+  test do
+    out = shell_output("#{bin}/{{name}} -v")
+    assert_match version.to_s, out
+  end
+end

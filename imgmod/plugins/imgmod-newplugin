@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# imgmod newplugin
+# Create a new imgmod plugin.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_DIR="$(dirname "$SCRIPT_DIR")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+newplugin_start() {
+	local template_file="$IMGMOD_DIR/templates/plugin.mustache"
+	local opt
+
+	OPTIND=1
+	while getopts ht: opt; do
+		case $opt in
+			h)
+				newplugin_help
+				return
+				;;
+			t) template_file="$OPTARG" ;;
+			*) newplugin_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -ne 1 ] && newplugin_help && return $E_ARGS
+
+	newplugin_create "$template_file" "$1"
+}
+
+newplugin_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [-t <template-file>] <name-or-path>
+
+Create a new imgmod plugin from a template.
+
+Bare names create plugins in the user's XDG data directory. Values containing
+slashes create a plugin at that exact relative or absolute path.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-t        Use custom Mustache template file.
+
+USAGE
+}
+
+newplugin_create() {
+	local template_file=$1
+	local value=$2
+	local target
+	local target_dir
+	local plugin_name
+
+	if [[ "$value" == */* ]]; then
+		target="$value"
+		target_dir="$(dirname "$target")"
+	else
+		plugin_name="$value"
+		target="${XDG_DATA_HOME:-$HOME/.local/share}/imgmod/plugins/$IMGMOD_PLUGIN_PREFIX$plugin_name"
+		target_dir="$(dirname "$target")"
+		mkdir -p "$target_dir"
+	fi
+
+	plugin_name="$(basename "$target")"
+	[[ "$plugin_name" == "$IMGMOD_PLUGIN_PREFIX"* ]] && plugin_name="${plugin_name#"$IMGMOD_PLUGIN_PREFIX"}"
+
+	[ -z "$plugin_name" ] && _fatal $E_ARGS "Invalid plugin name: $value"
+	[ ! -f "$template_file" ] && _fatal $E_ARGS "Template file not found: $template_file"
+	[ -e "$target" ] && _fatal $E_ARGS "File already exists: $target"
+	[ ! -d "$target_dir" ] && _fatal $E_ARGS "Directory does not exist: $target_dir"
+
+	newplugin_write_template "$template_file" "$target" "$plugin_name"
+	chmod a+x "$target"
+	_echo "$target"
+}
+
+newplugin_write_template() {
+	local template_file=$1
+	local target=$2
+	local plugin_name=$3
+	local mo="$IMGMOD_DIR/lib/mo"
+
+	[ ! -x "$mo" ] && _fatal "$E_MISSING_APP" "Mustache renderer not found: $mo"
+
+	(
+		# shellcheck source=../lib/mo
+		source "$mo"
+
+		export plugin_name="$plugin_name"
+		export plugin_prefix="$(echo "$plugin_name" | sed 's/[^A-Za-z0-9_]/_/g')"
+		[[ "$plugin_prefix" =~ ^[0-9] ]] && export plugin_prefix="_$plugin_prefix"
+		export plugin_version='1.0.0'
+
+		mo "$template_file" > "$target"
+	)
+}
+
+newplugin_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	newplugin_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"
