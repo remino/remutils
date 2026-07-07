@@ -32,8 +32,8 @@ teardown() {
 
 @test "mkiso creates ISO from valid directory" {
 	TMP_DIR=$(mktemp -d)
-	echo "Hello, World!" >"$TMP_DIR/file1.txt"
-	echo "This is a test." >"$TMP_DIR/file2.txt"
+	echo "Hello, World!" > "$TMP_DIR/file1.txt"
+	echo "This is a test." > "$TMP_DIR/file2.txt"
 
 	output_iso="$TMP_DIR/output.iso"
 

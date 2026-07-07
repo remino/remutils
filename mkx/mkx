@@ -28,21 +28,21 @@ mkx_main() {
 
 	while getopts bfhi:lst:vx opt; do
 		case $opt in
-		b) TEMPLATE_NAME='bare' ;;
-		f) FORCE=1 ;;
-		h) _help && return ;;
-		i)
-			TEMPLATE_NAME='bare'
-			INTERPRETER="$OPTARG"
-			;;
-		s)
-			TEMPLATE_NAME='bare'
-			INTERPRETER="/bin/sh"
-			;;
-		t) TEMPLATE_NAME="$OPTARG" ;;
-		v) _version && return ;;
-		x) CHMOD=1 ;;
-		*) _invalid_opt ;;
+			b) TEMPLATE_NAME='bare' ;;
+			f) FORCE=1 ;;
+			h) _help && return ;;
+			i)
+				TEMPLATE_NAME='bare'
+				INTERPRETER="$OPTARG"
+				;;
+			s)
+				TEMPLATE_NAME='bare'
+				INTERPRETER="/bin/sh"
+				;;
+			t) TEMPLATE_NAME="$OPTARG" ;;
+			v) _version && return ;;
+			x) CHMOD=1 ;;
+			*) _invalid_opt ;;
 		esac
 	done
 
@@ -123,7 +123,7 @@ _fatal() {
 }
 
 _help() {
-	cat <<USAGE
+	cat << USAGE
 $SCRIPT_NAME $VERSION
 
 USAGE: $SCRIPT_NAME [-bhsvx] [-i <interpreter>] [-t <template>] <scriptfile>
@@ -199,7 +199,7 @@ _template() {
 		export date="$date"
 		export mkx_version="$VERSION"
 
-		mo "$template_file" >"$NEW_SCRIPT"
+		mo "$template_file" > "$NEW_SCRIPT"
 	)
 }
 

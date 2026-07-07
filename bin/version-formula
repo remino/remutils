@@ -54,9 +54,9 @@ version_formula_main() {
 		export name="$SCRIPT_NAME"
 		export tag="$TAG"
 		export version="$VERSION"
-		export sha256="$(cut -w -f 1 <"$SUMFILE")"
+		export sha256="$(cut -w -f 1 < "$SUMFILE")"
 
-		mo "$TEMPLATE" >"$FORMULA_DIR/$SCRIPT_NAME.rb"
+		mo "$TEMPLATE" > "$FORMULA_DIR/$SCRIPT_NAME.rb"
 	)
 }
 
@@ -71,7 +71,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

@@ -31,7 +31,7 @@ teardown() {
 }
 
 @test "waituntil handles past time" {
-	if date --version >/dev/null 2>&1; then
+	if date --version > /dev/null 2>&1; then
 		PAST_TIME=$(date -d "-10 seconds" +"%H:%M:%S")
 	else
 		PAST_TIME=$(date -v-10S +"%H:%M:%S")
@@ -43,7 +43,7 @@ teardown() {
 }
 
 @test "waituntil waits until a specific time" {
-	if date --version >/dev/null 2>&1; then
+	if date --version > /dev/null 2>&1; then
 		TARGET_TIME=$(date -d "+1 seconds" +"%H:%M:%S")
 		start_time=$(date +"%s")
 	else
@@ -83,7 +83,7 @@ teardown() {
 }
 
 @test "runat waits until a specific future time" {
-	if date --version >/dev/null 2>&1; then
+	if date --version > /dev/null 2>&1; then
 		FUTURE_TIME=$(date -d "+2 seconds" +"%Y-%m-%d %H:%M:%S")
 		start_time=$(date +"%s")
 	else
@@ -101,7 +101,7 @@ teardown() {
 }
 
 @test "runat handles past time" {
-	if date --version >/dev/null 2>&1; then
+	if date --version > /dev/null 2>&1; then
 		PAST_TIME=$(date -d "-10 seconds" +"%Y-%m-%d %H:%M:%S")
 	else
 		PAST_TIME=$(date -v-10S +"%Y-%m-%d %H:%M:%S")

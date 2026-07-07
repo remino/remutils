@@ -33,7 +33,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -gt 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -gt 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -45,7 +45,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -gt 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -gt 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -62,7 +62,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -80,7 +80,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -101,7 +101,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -122,7 +122,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -134,7 +134,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -147,7 +147,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -162,7 +162,7 @@ teardown() {
 	[[ "$output" == *"File exists. Overwrite?"* ]]
 	[[ "$output" == *"Overwriting..."* ]]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -177,7 +177,7 @@ teardown() {
 	[[ "$output" == *"File exists. Overwrite?"* ]]
 	[[ "$output" == *"Cancelled."* ]]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }

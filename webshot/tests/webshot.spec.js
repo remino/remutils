@@ -15,190 +15,190 @@ const expectedDir = path.join(rootDir, 'tests/expected');
 const outputRoot = path.join(rootDir, 'tests/.tmp');
 
 async function runWebshot(args, options = {}) {
-  return execFileAsync(process.execPath, [binPath, ...args], {
-    cwd: options.cwd ?? rootDir,
-    timeout: 30000,
-  });
+	return execFileAsync(process.execPath, [binPath, ...args], {
+		cwd: options.cwd ?? rootDir,
+		timeout: 30000,
+	});
 }
 
 async function readFixture(name) {
-  return fs.readFile(path.join(fixturesDir, name));
+	return fs.readFile(path.join(fixturesDir, name));
 }
 
 async function readPackageVersion() {
-  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-  return packageJson.version;
+	const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+	return packageJson.version;
 }
 
 async function startFixtureServer() {
-  const server = createServer(async (request, response) => {
-    if (request.url === '/page.html') {
-      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      response.end(await readFixture('page.html'));
-      return;
-    }
+	const server = createServer(async (request, response) => {
+		if (request.url === '/page.html') {
+			response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+			response.end(await readFixture('page.html'));
+			return;
+		}
 
-    if (request.url === '/redirect') {
-      response.writeHead(302, {
-        location: '/page.html',
-      });
-      response.end();
-      return;
-    }
+		if (request.url === '/redirect') {
+			response.writeHead(302, {
+				location: '/page.html',
+			});
+			response.end();
+			return;
+		}
 
-    response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-    response.end('not found');
-  });
+		response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+		response.end('not found');
+	});
 
-  await new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', resolve);
-  });
+	await new Promise((resolve) => {
+		server.listen(0, '127.0.0.1', resolve);
+	});
 
-  const { port } = server.address();
-  return {
-    url: `http://127.0.0.1:${port}/page.html`,
-    close: () => new Promise((resolve) => server.close(resolve)),
-  };
+	const { port } = server.address();
+	return {
+		url: `http://127.0.0.1:${port}/page.html`,
+		close: () => new Promise((resolve) => server.close(resolve)),
+	};
 }
 
 async function imageRaw(file) {
-  return sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+	return sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 }
 
 async function expectImageToMatch(
-  actualFile,
-  expectedFile,
-  maxAverageDelta = 0,
+	actualFile,
+	expectedFile,
+	maxAverageDelta = 0,
 ) {
-  const [actual, expected] = await Promise.all([
-    imageRaw(actualFile),
-    imageRaw(expectedFile),
-  ]);
+	const [actual, expected] = await Promise.all([
+		imageRaw(actualFile),
+		imageRaw(expectedFile),
+	]);
 
-  expect(actual.info.width).toBe(expected.info.width);
-  expect(actual.info.height).toBe(expected.info.height);
-  expect(actual.info.channels).toBe(expected.info.channels);
+	expect(actual.info.width).toBe(expected.info.width);
+	expect(actual.info.height).toBe(expected.info.height);
+	expect(actual.info.channels).toBe(expected.info.channels);
 
-  let totalDelta = 0;
-  for (let index = 0; index < actual.data.length; index += 1) {
-    totalDelta += Math.abs(actual.data[index] - expected.data[index]);
-  }
+	let totalDelta = 0;
+	for (let index = 0; index < actual.data.length; index += 1) {
+		totalDelta += Math.abs(actual.data[index] - expected.data[index]);
+	}
 
-  const averageDelta = totalDelta / actual.data.length;
-  expect(averageDelta).toBeLessThanOrEqual(maxAverageDelta);
+	const averageDelta = totalDelta / actual.data.length;
+	expect(averageDelta).toBeLessThanOrEqual(maxAverageDelta);
 }
 
 describe('webshot CLI', () => {
-  let server;
-  let outputDir;
+	let server;
+	let outputDir;
 
-  beforeAll(async () => {
-    server = await startFixtureServer();
-  });
+	beforeAll(async () => {
+		server = await startFixtureServer();
+	});
 
-  afterAll(async () => {
-    await server.close();
-  });
+	afterAll(async () => {
+		await server.close();
+	});
 
-  beforeEach(async () => {
-    await fs.mkdir(outputRoot, { recursive: true });
-    outputDir = await fs.mkdtemp(path.join(outputRoot, 'run-'));
-  });
+	beforeEach(async () => {
+		await fs.mkdir(outputRoot, { recursive: true });
+		outputDir = await fs.mkdtemp(path.join(outputRoot, 'run-'));
+	});
 
-  afterEach(async () => {
-    await fs.rm(outputDir, { force: true, recursive: true });
-  });
+	afterEach(async () => {
+		await fs.rm(outputDir, { force: true, recursive: true });
+	});
 
-  it('prints usage and exits successfully when no arguments are provided', async () => {
-    const result = await runWebshot([]);
+	it('prints usage and exits successfully when no arguments are provided', async () => {
+		const result = await runWebshot([]);
 
-    expect(result.stdout).toContain('USAGE: webshot');
-    expect(result.stderr).toBe('');
-  });
+		expect(result.stdout).toContain('USAGE: webshot');
+		expect(result.stderr).toBe('');
+	});
 
-  it('prints the version and exits successfully with -v', async () => {
-    const version = await readPackageVersion();
-    const result = await runWebshot(['-v']);
+	it('prints the version and exits successfully with -v', async () => {
+		const version = await readPackageVersion();
+		const result = await runWebshot(['-v']);
 
-    expect(result.stdout).toBe(`webshot ${version}\n`);
-    expect(result.stderr).toBe('');
-  });
+		expect(result.stdout).toBe(`webshot ${version}\n`);
+		expect(result.stderr).toBe('');
+	});
 
-  it('captures the fixture page as a stable PNG', async () => {
-    const actual = path.join(outputDir, 'fixture.png');
+	it('captures the fixture page as a stable PNG', async () => {
+		const actual = path.join(outputDir, 'fixture.png');
 
-    await runWebshot(['-W', '320', '-H', '180', server.url, actual]);
+		await runWebshot(['-W', '320', '-H', '180', server.url, actual]);
 
-    await expectImageToMatch(
-      actual,
-      path.join(expectedDir, 'webshot-320x180.png'),
-    );
-  });
+		await expectImageToMatch(
+			actual,
+			path.join(expectedDir, 'webshot-320x180.png'),
+		);
+	});
 
-  it('writes a png file based on the url when no output file is provided', async () => {
-    const expectedOutput = path.join(outputDir, '127.0.0.1-page.png');
-    const bareUrl = server.url.replace(/^http:\/\//, '');
+	it('writes a png file based on the url when no output file is provided', async () => {
+		const expectedOutput = path.join(outputDir, '127.0.0.1-page.png');
+		const bareUrl = server.url.replace(/^http:\/\//, '');
 
-    await runWebshot(['-W', '320', '-H', '180', bareUrl], {
-      cwd: outputDir,
-    });
+		await runWebshot(['-W', '320', '-H', '180', bareUrl], {
+			cwd: outputDir,
+		});
 
-    await expectImageToMatch(
-      expectedOutput,
-      path.join(expectedDir, 'webshot-320x180.png'),
-    );
-  });
+		await expectImageToMatch(
+			expectedOutput,
+			path.join(expectedDir, 'webshot-320x180.png'),
+		);
+	});
 
-  it('follows redirects when capturing', async () => {
-    const actual = path.join(outputDir, 'redirect.png');
-    const redirectUrl = server.url.replace('/page.html', '/redirect');
+	it('follows redirects when capturing', async () => {
+		const actual = path.join(outputDir, 'redirect.png');
+		const redirectUrl = server.url.replace('/page.html', '/redirect');
 
-    await runWebshot(['-W', '320', '-H', '180', redirectUrl, actual]);
+		await runWebshot(['-W', '320', '-H', '180', redirectUrl, actual]);
 
-    await expectImageToMatch(
-      actual,
-      path.join(expectedDir, 'webshot-320x180.png'),
-    );
-  });
+		await expectImageToMatch(
+			actual,
+			path.join(expectedDir, 'webshot-320x180.png'),
+		);
+	});
 
-  it('embeds CSS and JavaScript before capturing', async () => {
-    const actual = path.join(outputDir, 'injected.png');
+	it('embeds CSS and JavaScript before capturing', async () => {
+		const actual = path.join(outputDir, 'injected.png');
 
-    await runWebshot([
-      '-W',
-      '320',
-      '-H',
-      '180',
-      '-c',
-      path.join(fixturesDir, 'inject.css'),
-      '-j',
-      path.join(fixturesDir, 'inject.js'),
-      server.url,
-      actual,
-    ]);
+		await runWebshot([
+			'-W',
+			'320',
+			'-H',
+			'180',
+			'-c',
+			path.join(fixturesDir, 'inject.css'),
+			'-j',
+			path.join(fixturesDir, 'inject.js'),
+			server.url,
+			actual,
+		]);
 
-    await expectImageToMatch(
-      actual,
-      path.join(expectedDir, 'injected-320x180.png'),
-    );
-  });
+		await expectImageToMatch(
+			actual,
+			path.join(expectedDir, 'injected-320x180.png'),
+		);
+	});
 
-  it('uses DPI to scale output pixels while preserving viewport size', async () => {
-    const actual = path.join(outputDir, 'dpi.png');
+	it('uses DPI to scale output pixels while preserving viewport size', async () => {
+		const actual = path.join(outputDir, 'dpi.png');
 
-    await runWebshot([
-      '-W',
-      '320',
-      '-H',
-      '180',
-      '-d',
-      '192',
-      server.url,
-      actual,
-    ]);
+		await runWebshot([
+			'-W',
+			'320',
+			'-H',
+			'180',
+			'-d',
+			'192',
+			server.url,
+			actual,
+		]);
 
-    const metadata = await sharp(actual).metadata();
-    expect(metadata.width).toBe(640);
-    expect(metadata.height).toBe(360);
-  });
+		const metadata = await sharp(actual).metadata();
+		expect(metadata.width).toBe(640);
+		expect(metadata.height).toBe(360);
+	});
 });

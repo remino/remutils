@@ -17,9 +17,9 @@ file2dataurl_main() {
 
 	while getopts hv opt; do
 		case $opt in
-		h) cmd=help ;;
-		v) cmd=version ;;
-		*) _invalid_opt ;;
+			h) cmd=help ;;
+			v) cmd=version ;;
+			*) _invalid_opt ;;
 		esac
 	done
 
@@ -28,15 +28,15 @@ file2dataurl_main() {
 	[ -z "$cmd" ] && cmd="process"
 
 	case "$cmd" in
-	help | process | version) "file2dataurl_$cmd" "$@" ;;
-	*) _invalid_cmd ;;
+		help | process | version) "file2dataurl_$cmd" "$@" ;;
+		*) _invalid_cmd ;;
 	esac
 
 	_exit
 }
 
 file2dataurl_help() {
-	cat <<USAGE
+	cat << USAGE
 $scriptname $VERSION
 
 USAGE: $scriptinv [<options>] <file>
@@ -55,7 +55,7 @@ file2dataurl_process() {
 	file="$1"
 	[ ! -f "$file" ] && _fatal $e_no_file "No such file: $file"
 	mime="$(file -b --mime-type "$file")"
-	_echo "data:${mime};base64,$(base64 <"$file")"
+	_echo "data:${mime};base64,$(base64 < "$file")"
 }
 
 file2dataurl_version() {
