@@ -112,6 +112,16 @@ load helpers
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-vidframe.1" ]
 }
 
+@test "manpages are bundled for every bundled plugin" {
+	local plugin
+	local command
+
+	for plugin in "$BATS_TEST_DIRNAME"/../plugins/imgmod-*; do
+		command="$(basename "$plugin")"
+		[ -f "$BATS_TEST_DIRNAME/../man/$command.1" ]
+	done
+}
+
 @test "manpages document commands" {
 	grep -q "^\\.TH IMGMOD " "$BATS_TEST_DIRNAME/../man/imgmod.1"
 	grep -q "^\\.TH IMGMOD-CHAIN " "$BATS_TEST_DIRNAME/../man/imgmod-chain.1"
