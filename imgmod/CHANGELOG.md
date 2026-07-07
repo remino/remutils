@@ -2,9 +2,14 @@
 
 <!-- mtoc-start -->
 
+- [v1.1.0](#v110)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## v1.1.0
+
+- Add `chain` command to run multiple plugins in sequence.
 
 ## v1.0.0
 

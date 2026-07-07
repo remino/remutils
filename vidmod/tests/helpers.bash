@@ -30,10 +30,15 @@ _make_fake_tool() {
 	cat > "$FAKE_BIN/$name" << TOOL
 #!/bin/sh
 printf '%s' "$name" >> "\$VIDMOD_TOOL_LOG"
+last=
 for arg do
 	printf ' <%s>' "\$arg" >> "\$VIDMOD_TOOL_LOG"
+	last="\$arg"
 done
 printf '\n' >> "\$VIDMOD_TOOL_LOG"
+if [ -n "\$last" ]; then
+	: > "\$last"
+fi
 exit $exit_code
 TOOL
 	chmod a+x "$FAKE_BIN/$name"

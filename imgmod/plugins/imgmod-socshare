@@ -2,7 +2,7 @@
 # imgmod socshare
 # Crop and resize an image for social sharing.
 
-VERSION='1.0.1'
+VERSION='1.1.0'
 
 SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"

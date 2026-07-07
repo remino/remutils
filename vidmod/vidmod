@@ -2,7 +2,7 @@
 # vidmod
 # Video modification helpers.
 
-VERSION='2.0.0'
+VERSION='2.1.0'
 
 vidmod_resolve_script_path() {
 	local source=$1
@@ -105,6 +105,7 @@ COMMANDS:
 	60fps      Change frame rate to 60 fps.
 	audio      Extract audio without video.
 	butter     Smooth motion with butterflow.
+	chain      Run multiple vidmod plugins in sequence.
 	completion Shell completion data.
 	crop219    Crop video to 21:9.
 	crossfade  Create a crossfade with vidcrossfade.

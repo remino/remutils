@@ -166,4 +166,3 @@ TEMPLATE
 	[ -x "$plugin" ]
 	[[ "$(sed -n '1,20p' "$plugin")" == *"imgmod aliasname"* ]]
 }
-

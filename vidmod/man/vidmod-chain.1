@@ -1,0 +1,9 @@
+.TH VIDMOD-CHAIN 1
+.SH NAME
+vidmod-chain \- run multiple vidmod plugins in sequence
+.SH SYNOPSIS
+.B vidmod chain
+<command> [options] -- <command> [options] -- <input> <output>
+.SH DESCRIPTION
+Run two or more chainable vidmod plugins, passing temporary output from each
+stage to the next stage.

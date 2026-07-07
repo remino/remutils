@@ -20,6 +20,7 @@ load helpers
 	[ "$status" -eq 0 ]
 	_output_has_line help
 	_output_has_line version
+	_output_has_line chain
 	_output_has_line completion
 	_output_has_line newplugin
 	_output_has_line socshare
@@ -126,6 +127,15 @@ PLUGIN
 	_output_has_line -f
 }
 
+@test "completion options include chain options" {
+	run "$BATS_TEST_DIRNAME/../imgmod" completion options chain
+
+	[ "$status" -eq 0 ]
+	_output_has_line -h
+	_output_has_line -v
+	_output_has_line --version
+}
+
 @test "completion options include completion plugin options" {
 	run "$BATS_TEST_DIRNAME/../imgmod" completion options completion
 
@@ -171,4 +181,3 @@ PLUGIN
 	[[ "$output" == *"Run imgmod -h for help."* ]]
 	[[ "$output" != *"USAGE:"* ]]
 }
-

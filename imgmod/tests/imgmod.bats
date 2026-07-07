@@ -46,6 +46,7 @@ load helpers
 	run "$link" completion commands
 
 	[ "$status" -eq 0 ]
+	_output_has_line chain
 	_output_has_line completion
 	_output_has_line newplugin
 	_output_has_line socshare
@@ -97,6 +98,7 @@ load helpers
 
 @test "manpages are bundled" {
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod.1" ]
+	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-chain.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-completion.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-socshare.1" ]
@@ -104,6 +106,7 @@ load helpers
 
 @test "manpages document commands" {
 	grep -q "^\\.TH IMGMOD " "$BATS_TEST_DIRNAME/../man/imgmod.1"
+	grep -q "^\\.TH IMGMOD-CHAIN " "$BATS_TEST_DIRNAME/../man/imgmod-chain.1"
 	grep -q "^\\.TH IMGMOD-COMPLETION " "$BATS_TEST_DIRNAME/../man/imgmod-completion.1"
 	grep -q "^\\.TH IMGMOD-NEWPLUGIN " "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1"
 	grep -q "^\\.TH IMGMOD-SOCSHARE " "$BATS_TEST_DIRNAME/../man/imgmod-socshare.1"
@@ -112,4 +115,3 @@ load helpers
 @test "homebrew formula installs manpages" {
 	grep -q "man1.install" "$BATS_TEST_DIRNAME/../homebrew.rb.mustache"
 }
-

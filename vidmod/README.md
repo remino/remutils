@@ -14,11 +14,11 @@ Vidmod 2 exposes the old vidmod 1 changes as command plugins:
 vidmod mp4 input.mov
 vidmod rotate90 input.mov rotated.mov
 vidmod twitter input.mov twitter.mp4
+vidmod chain mp4 -- twitter -- input.mov twitter.mp4
 ```
 
-Each command processes one input file. Vidmod 1 command chaining is
-intentionally not part of vidmod 2; run multiple `vidmod` commands when you need
-multiple changes.
+Each normal command processes one input file. Use `chain` when you need multiple
+changes in sequence.
 
 ## Commands
 
@@ -59,3 +59,21 @@ vidmod completion bash
 vidmod completion zsh
 vidmod completion fish
 ```
+
+## Chains
+
+Run multiple plugins in sequence with `chain`. Separate each plugin stage with
+`--`, then pass the input and final output after the last separator:
+
+```sh
+vidmod chain mp4 -- twitter -- input.mov twitter.mp4
+vidmod chain 169 -f "-y" -- rotate90 -- input.mov rotated.mov
+```
+
+Chainable plugins must accept the standard plugin arguments:
+
+```text
+<command> [<options>] <input> [output]
+```
+
+The final output path is required for chains.

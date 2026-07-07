@@ -164,4 +164,3 @@ PLUGIN
 	[ "$status" -eq 16 ]
 	[[ "$output" == *"Invalid command"* ]]
 }
-

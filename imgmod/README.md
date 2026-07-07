@@ -15,6 +15,7 @@ Rémino Rem <https://remino.net/>, 2026
         - [Bash](#bash)
         - [Zsh](#zsh)
         - [Fish](#fish)
+    - [Chains](#chains)
     - [New Plugins](#new-plugins)
     - [Plugins](#plugins)
     - [Plugin Hooks](#plugin-hooks)
@@ -117,6 +118,23 @@ imgmod completion zsh
 imgmod completion fish
 ```
 
+### Chains
+
+Run multiple plugins in sequence with `chain`. Separate each plugin stage with
+`--`, then pass the input and final output after the last separator:
+
+```sh
+imgmod chain socshare -f png -- socshare -f webp -- image.png output.webp
+```
+
+Chainable plugins must accept the standard plugin arguments:
+
+```text
+<command> [<options>] <input> [output]
+```
+
+The final output path is required for chains.
+
 ### New Plugins
 
 Create a plugin in your XDG data directory:
@@ -159,8 +177,8 @@ Run a plugin by name:
 imgmod watermark image.png
 ```
 
-That command resolves to an executable named `imgmod-watermark`.
-Plugins that use the shared runtime support `-v` and `--version`:
+That command resolves to an executable named `imgmod-watermark`. Plugins that
+use the shared runtime support `-v` and `--version`:
 
 ```sh
 imgmod watermark -v

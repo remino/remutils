@@ -2,7 +2,7 @@
 # vidmod completion
 # Shell completion data.
 
-VERSION='2.0.0'
+VERSION='2.1.0'
 
 SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
@@ -319,6 +319,11 @@ completion_options() {
 			completion_item -v
 			completion_item --version
 			completion_item -t
+			;;
+		chain)
+			completion_item -h
+			completion_item -v
+			completion_item --version
 			;;
 		completion)
 			completion_item -h

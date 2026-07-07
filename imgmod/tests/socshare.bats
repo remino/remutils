@@ -186,4 +186,3 @@ load helpers
 	[ "$status" -eq 16 ]
 	[[ "$output" == *"Invalid command: socialshare"* ]]
 }
-

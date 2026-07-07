@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # vidmod qt
 
-VERSION='2.0.0'
+VERSION='2.1.0'
 
 [ -n "${VIDMOD_LIB:-}" ] || VIDMOD_LIB="$(dirname "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)")/lib/vidmod.sh"
 
