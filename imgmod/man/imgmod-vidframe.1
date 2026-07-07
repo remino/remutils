@@ -1,0 +1,36 @@
+.TH IMGMOD-VIDFRAME 1 "July 7, 2026" "imgmod 1.3.0"
+.SH NAME
+imgmod-vidframe \- Extract one frame from a video
+.SH SYNOPSIS
+.B imgmod vidframe
+[\fB-f\fR \fIFRAME\fR] [\fB-t\fR \fITIMESTAMP\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+.SH DESCRIPTION
+.B imgmod vidframe
+uses ffmpeg to extract one frame from a video as an image.
+
+When no frame or timestamp is specified, the first frame is extracted. When
+\fIOUTPUT\fR is omitted, the output path is generated from \fIINPUT\fR as
+\fISTEM\fB-frame.png\fR.
+.SH OPTIONS
+.TP
+.B \-f \fIFRAME\fR
+Extract a zero-based frame number.
+.TP
+.B \-t \fITIMESTAMP\fR
+Extract a frame at an ffmpeg timestamp, such as \fB00:00:03.500\fR or
+\fB3.5\fR.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH OUTPUT
+The command prints the output file path and reports it through
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+.SH DEPENDENCIES
+.TP
+.B ffmpeg
+Video tool used to extract the frame.
+.SH SEE ALSO
+.BR imgmod (1)

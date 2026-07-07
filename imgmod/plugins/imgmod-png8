@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# imgmod png8
+# Convert an image to PNG8.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+png8_start() {
+	local input=
+	local output=
+	local opt
+
+	OPTIND=1
+	while getopts h opt; do
+		case $opt in
+			h)
+				png8_help
+				return
+				;;
+			*) png8_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && png8_help && return $E_ARGS
+	[ $# -gt 2 ] && png8_help && return $E_ARGS
+
+	input="$1"
+	output="${2:-}"
+
+	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
+
+	if [ -z "$output" ]; then
+		output="$(png8_output_path "$input")"
+	fi
+
+	_require magick
+
+	magick "$input" "PNG8:$output"
+	imgmod_output "$output"
+}
+
+png8_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] <input> [output]
+
+Convert an image to PNG8.
+
+When output is omitted, the output path is generated next to the input with a
+-png8.png suffix.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+png8_output_path() {
+	local input=$1
+	local input_dir
+	local input_name
+	local input_stem
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	[ -z "$input_stem" ] && input_stem="$input_name"
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-png8.png"
+	else
+		_echo "$input_dir/$input_stem-png8.png"
+	fi
+}
+
+png8_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	png8_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

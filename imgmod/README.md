@@ -20,7 +20,10 @@ Rémino Rem <https://remino.net/>, 2026
     - [Plugins](#plugins)
     - [Plugin Hooks](#plugin-hooks)
     - [Optim](#optim)
+    - [png8](#png8)
+    - [scale4x](#scale4x)
     - [socshare](#socshare)
+    - [vidframe](#vidframe)
 
 <!-- mtoc-end -->
 
@@ -154,6 +157,30 @@ flag still optimizes a normal command's reported outputs:
 imgmod -o socshare image.png
 ```
 
+### png8
+
+Convert an image to PNG8:
+
+```sh
+imgmod png8 input.png
+imgmod png8 input.png output.png
+```
+
+When `output` is omitted, the output path is generated with a `-png8.png`
+suffix.
+
+### scale4x
+
+Scale an image 4x without antialiasing or smoothing:
+
+```sh
+imgmod scale4x input.png
+imgmod scale4x input.png output.png
+```
+
+When `output` is omitted, the output path is generated with a `-4x` suffix and
+the input extension.
+
 ### New Plugins
 
 Create a plugin in your XDG data directory:
@@ -255,3 +282,16 @@ Use `-f` to select a different output format:
 imgmod socshare -f png image.png
 # image-pubshare.png
 ```
+
+### vidframe
+
+Extract one frame from a video:
+
+```sh
+imgmod vidframe export.mov
+imgmod vidframe -t 00:00:02.500 export.mov still.png
+imgmod vidframe -f 12 export.mov frame-12.png
+```
+
+When no frame or timestamp is specified, the first frame is extracted. `-f`
+uses a zero-based frame number, and `-t` accepts an ffmpeg timestamp.

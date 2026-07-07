@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# imgmod scale4x
+# Scale an image 4x without smoothing.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+scale4x_start() {
+	local input=
+	local output=
+	local opt
+
+	OPTIND=1
+	while getopts h opt; do
+		case $opt in
+			h)
+				scale4x_help
+				return
+				;;
+			*) scale4x_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && scale4x_help && return $E_ARGS
+	[ $# -gt 2 ] && scale4x_help && return $E_ARGS
+
+	input="$1"
+	output="${2:-}"
+
+	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
+
+	if [ -z "$output" ]; then
+		output="$(scale4x_output_path "$input")"
+	fi
+
+	_require magick
+
+	magick "$input" -filter point -resize 400% "$output"
+	imgmod_output "$output"
+}
+
+scale4x_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] <input> [output]
+
+Scale an image 4x without antialiasing or smoothing.
+
+When output is omitted, the output path is generated next to the input with a
+-4x suffix.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+scale4x_output_path() {
+	local input=$1
+	local input_dir
+	local input_name
+	local input_stem
+	local input_ext
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	input_ext="${input_name##*.}"
+
+	if [ "$input_stem" = "$input_name" ] || [ -z "$input_stem" ]; then
+		input_stem="$input_name"
+		input_ext="png"
+	fi
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-4x.$input_ext"
+	else
+		_echo "$input_dir/$input_stem-4x.$input_ext"
+	fi
+}
+
+scale4x_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	scale4x_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

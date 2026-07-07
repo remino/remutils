@@ -1,0 +1,29 @@
+.TH IMGMOD-SCALE4X 1 "July 7, 2026" "imgmod 1.3.0"
+.SH NAME
+imgmod-scale4x \- Scale an image 4x without smoothing
+.SH SYNOPSIS
+.B imgmod scale4x
+[\fB-h\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+.SH DESCRIPTION
+.B imgmod scale4x
+uses ImageMagick's point filter to resize an image to 400% without
+antialiasing or smoothing.
+
+When \fIOUTPUT\fR is omitted, the output path is generated from \fIINPUT\fR
+with a \fB-4x\fR suffix.
+.SH OPTIONS
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH OUTPUT
+The command prints the output file path and reports it through
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+.SH DEPENDENCIES
+.TP
+.B magick
+ImageMagick command used to transform the image.
+.SH SEE ALSO
+.BR imgmod (1)

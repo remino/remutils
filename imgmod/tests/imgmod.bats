@@ -50,7 +50,10 @@ load helpers
 	_output_has_line completion
 	_output_has_line newplugin
 	_output_has_line optim
+	_output_has_line png8
+	_output_has_line scale4x
 	_output_has_line socshare
+	_output_has_line vidframe
 }
 
 @test "fails for unknown command" {
@@ -103,7 +106,10 @@ load helpers
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-completion.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-optim.1" ]
+	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-png8.1" ]
+	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-scale4x.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-socshare.1" ]
+	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-vidframe.1" ]
 }
 
 @test "manpages document commands" {
@@ -112,7 +118,10 @@ load helpers
 	grep -q "^\\.TH IMGMOD-COMPLETION " "$BATS_TEST_DIRNAME/../man/imgmod-completion.1"
 	grep -q "^\\.TH IMGMOD-NEWPLUGIN " "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1"
 	grep -q "^\\.TH IMGMOD-OPTIM " "$BATS_TEST_DIRNAME/../man/imgmod-optim.1"
+	grep -q "^\\.TH IMGMOD-PNG8 " "$BATS_TEST_DIRNAME/../man/imgmod-png8.1"
+	grep -q "^\\.TH IMGMOD-SCALE4X " "$BATS_TEST_DIRNAME/../man/imgmod-scale4x.1"
 	grep -q "^\\.TH IMGMOD-SOCSHARE " "$BATS_TEST_DIRNAME/../man/imgmod-socshare.1"
+	grep -q "^\\.TH IMGMOD-VIDFRAME " "$BATS_TEST_DIRNAME/../man/imgmod-vidframe.1"
 }
 
 @test "homebrew formula installs manpages" {

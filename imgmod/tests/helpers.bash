@@ -9,6 +9,7 @@ setup() {
 	XDG_DIRS_TWO="$OUTPUT_DIR/xdg-dirs-two"
 	FAKE_BIN="$OUTPUT_DIR/fake-bin"
 	OPTIM_LOG="$OUTPUT_DIR/image_optim.log"
+	TOOL_LOG="$OUTPUT_DIR/tool.log"
 
 	export XDG_DATA_HOME="$XDG_HOME"
 	export XDG_DATA_DIRS="$XDG_DIRS_ONE:$XDG_DIRS_TWO"
@@ -39,6 +40,29 @@ printf '%s\n' "\$*" >> "\$IMGMOD_OPTIM_LOG"
 exit $exit_code
 PLUGIN
 	chmod a+x "$FAKE_BIN/image_optim"
+}
+
+_make_fake_imgmod_tool() {
+	local name=$1
+	local exit_code="${2:-0}"
+
+	mkdir -p "$FAKE_BIN"
+
+	cat > "$FAKE_BIN/$name" << TOOL
+#!/bin/sh
+printf '%s' "$name" >> "\$IMGMOD_TOOL_LOG"
+last=
+for arg do
+	printf ' <%s>' "\$arg" >> "\$IMGMOD_TOOL_LOG"
+	last="\$arg"
+done
+printf '\n' >> "\$IMGMOD_TOOL_LOG"
+if [ -n "\$last" ]; then
+	: > "\${last#PNG8:}"
+fi
+exit $exit_code
+TOOL
+	chmod a+x "$FAKE_BIN/$name"
 }
 
 _write_custom_plugin() {

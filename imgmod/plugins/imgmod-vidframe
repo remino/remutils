@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# imgmod vidframe
+# Extract one frame from a video as an image.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+vidframe_start() {
+	local frame=
+	local input=
+	local output=
+	local timestamp=
+	local opt
+
+	OPTIND=1
+	while getopts f:t:h opt; do
+		case $opt in
+			f) frame="$OPTARG" ;;
+			t) timestamp="$OPTARG" ;;
+			h)
+				vidframe_help
+				return
+				;;
+			*) vidframe_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && vidframe_help && return $E_ARGS
+	[ $# -gt 2 ] && vidframe_help && return $E_ARGS
+	[ -n "$frame" ] && [ -n "$timestamp" ] && _fatal $E_ARGS "Use either -f or -t, not both."
+
+	input="$1"
+	output="${2:-}"
+
+	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
+
+	if [ -z "$output" ]; then
+		output="$(vidframe_output_path "$input")"
+	fi
+
+	_require ffmpeg
+
+	if [ -n "$timestamp" ]; then
+		ffmpeg -ss "$timestamp" -i "$input" -frames:v 1 "$output"
+	elif [ -n "$frame" ]; then
+		vidframe_validate_frame "$frame"
+		ffmpeg -i "$input" -vf "select=eq(n\\,$frame)" -frames:v 1 -vsync 0 "$output"
+	else
+		ffmpeg -i "$input" -frames:v 1 "$output"
+	fi
+
+	imgmod_output "$output"
+}
+
+vidframe_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [-f <frame>] [-t <timestamp>] <input> [output]
+
+Extract one frame from a video as an image.
+
+When no frame or timestamp is specified, the first frame is extracted. When
+output is omitted, the output path is generated next to the input with a
+-frame.png suffix.
+
+OPTIONS:
+
+	-f        Zero-based frame number to extract.
+	-t        Timestamp to extract, such as 00:00:03.500 or 3.5.
+	-h        Show this help screen.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+vidframe_output_path() {
+	local input=$1
+	local input_dir
+	local input_name
+	local input_stem
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	[ -z "$input_stem" ] && input_stem="$input_name"
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-frame.png"
+	else
+		_echo "$input_dir/$input_stem-frame.png"
+	fi
+}
+
+vidframe_validate_frame() {
+	local frame=$1
+
+	if [[ ! "$frame" =~ ^[0-9]+$ ]]; then
+		_fatal $E_ARGS "Invalid frame: $frame"
+	fi
+}
+
+vidframe_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	vidframe_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"
