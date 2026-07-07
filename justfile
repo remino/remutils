@@ -14,7 +14,7 @@ tests name="":
 	fi
 
 tests-all:
-	bats -r .
+	bats -r -j 4 --no-parallelize-within-files .
 
 format name="":
 	if [ -n "{{name}}" ]; then \
