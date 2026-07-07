@@ -293,5 +293,5 @@ imgmod vidframe -t 00:00:02.500 export.mov still.png
 imgmod vidframe -f 12 export.mov frame-12.png
 ```
 
-When no frame or timestamp is specified, the first frame is extracted. `-f`
-uses a zero-based frame number, and `-t` accepts an ffmpeg timestamp.
+When no frame or timestamp is specified, the first frame is extracted. `-f` uses
+a zero-based frame number, and `-t` accepts an ffmpeg timestamp.
