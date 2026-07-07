@@ -9,7 +9,8 @@ Rémino Rem <https://remino.net/>, 2026
 - [Installation & Usage](#installation--usage)
 - [Development](#development)
     - [Git Hooks](#git-hooks)
-    - [Scripts](#scripts)
+    - [Tasks](#tasks)
+    - [Release Scripts](#release-scripts)
 - [Licence](#licence)
 
 <!-- mtoc-end -->
@@ -39,16 +40,34 @@ along with documentation and a test suite. For example:
 Install Git hooks with:
 
 ```sh
-lefthook install
+just hooks
 ```
 
 The pre-commit hook formats staged shell files with `shfmt` and staged Markdown,
 JSON, YAML, HTML, CSS, and JavaScript files with `prettier`.
 
-### Scripts
+### Tasks
 
-Use the following scripts in `bin` to help deploy updates, listed below in the
-order of execution:
+Use `just` for common development tasks:
+
+- `just list`
+    - List tools managed by this repo.
+- `just tests [name]`
+    - Run all tests, or one tool's test suite when `name` is provided.
+- `just format [name]`
+    - Format the whole repo, or one tool when `name` is provided.
+- `just lint [name]`
+    - Check formatting for the whole repo, or one tool when `name` is provided.
+- `just version [name]`
+    - Show versions for all tools, or one tool when `name` is provided.
+- `just release <name> <initial|major|minor|patch> [--github]`
+    - Create a release commit and tag, optionally publishing to GitHub.
+- `just clean`
+    - Remove generated release tarballs and checksum files.
+
+### Release Scripts
+
+The `just` recipes call scripts in `bin` for lower-level release operations:
 
 - `script-tests`
     - To run the test suite of a script.
