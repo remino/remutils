@@ -6,3 +6,8 @@ pre-commit:
     shfmt:
       run: bin/format-staged shfmt
       stage_fixed: true
+
+pre-push:
+  commands:
+    tests:
+      run: just tests-all
