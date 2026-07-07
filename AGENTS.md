@@ -71,6 +71,10 @@ Run `just lint` when changing shell, Markdown, JSON, or formatting-sensitive
 files. If you update generated Homebrew output outside this repo, use
 `bin/version-formula <tool> <formula_dir>` after the tag exists.
 
+Git hooks are managed with `lefthook`. Use `lefthook install` to enable the
+tracked hooks and `lefthook run pre-commit` to run staged formatting manually.
+Do not add Husky, lint-staged, or a root `package.json` for hook management.
+
 ## Agent Rules
 
 - Keep changes scoped to the requested tool unless the user asks for a shared

@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Format staged files and re-stage formatter changes.
+
+set -euo pipefail
+
+_main() {
+	[ $# -eq 1 ] || _usage
+	_require git
+
+	local formatter=$1
+
+	case "$formatter" in
+		prettier) _format_prettier ;;
+		shfmt) _format_shfmt ;;
+		*) _usage ;;
+	esac
+}
+
+_format_prettier() {
+	_require prettier
+	_format_matching_files _is_prettier_file prettier --ignore-unknown --write
+}
+
+_format_shfmt() {
+	_require shfmt
+	_format_matching_files _is_shell_file shfmt -w
+}
+
+_format_matching_files() {
+	local matcher=$1
+	shift
+
+	local files=()
+	local file
+
+	while IFS= read -r -d '' file; do
+		[ -f "$file" ] || continue
+		"$matcher" "$file" || continue
+		_reject_partially_staged "$file"
+		files+=("$file")
+	done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+	[ "${#files[@]}" -eq 0 ] && return 0
+
+	"$@" "${files[@]}"
+	git add -- "${files[@]}"
+}
+
+_is_prettier_file() {
+	local file=$1
+
+	case "$file" in
+		*.css | *.html | *.js | *.json | *.md | *.mjs | *.yaml | *.yml)
+			return 0
+			;;
+	esac
+
+	return 1
+}
+
+_is_shell_file() {
+	local file=$1
+
+	case "$file" in
+		*.bash | *.bats | *.sh | *.zsh)
+			return 0
+			;;
+	esac
+
+	head -n 1 "$file" | grep -Eq '^#!.*\b(bash|sh|zsh)\b'
+}
+
+_reject_partially_staged() {
+	local file=$1
+
+	if ! git diff --quiet -- "$file" && ! git diff --cached --quiet -- "$file"; then
+		echo "Partially staged file: $file" >&2
+		echo "Stage or stash unstaged changes before running staged formatting." >&2
+		return 1
+	fi
+}
+
+_require() {
+	local missing=0
+	local bin
+
+	for bin in "$@"; do
+		if ! command -v "$bin" > /dev/null 2>&1; then
+			missing=1
+			echo "Required: $bin" >&2
+		fi
+	done
+
+	[ "$missing" -eq 0 ] || return 127
+}
+
+_usage() {
+	echo "USAGE: $(basename "$0") <prettier|shfmt>" >&2
+	exit 16
+}
+
+_main "$@"

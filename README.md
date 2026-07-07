@@ -8,6 +8,7 @@ Rémino Rem <https://remino.net/>, 2026
 
 - [Installation & Usage](#installation--usage)
 - [Development](#development)
+    - [Git Hooks](#git-hooks)
     - [Scripts](#scripts)
 - [Licence](#licence)
 
@@ -32,6 +33,17 @@ along with documentation and a test suite. For example:
     - `man/hello.1`
     - `README.md`
     - `tests/`: Bats test suite directory.
+
+### Git Hooks
+
+Install Git hooks with:
+
+```sh
+lefthook install
+```
+
+The pre-commit hook formats staged shell files with `shfmt` and staged Markdown,
+JSON, YAML, HTML, CSS, and JavaScript files with `prettier`.
 
 ### Scripts
 

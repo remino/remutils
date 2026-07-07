@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    prettier:
+      run: bin/format-staged prettier
+      stage_fixed: true
+    shfmt:
+      run: bin/format-staged shfmt
+      stage_fixed: true
