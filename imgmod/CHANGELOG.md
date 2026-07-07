@@ -23,3 +23,4 @@
   `imgmod_plugin_run`.
 - Add plugin-backed Bash, Zsh, and Fish shell completions.
 - Add manpages for `imgmod` and bundled plugins.
+- Add `-v` and `--version` handling for shared-runtime plugins.

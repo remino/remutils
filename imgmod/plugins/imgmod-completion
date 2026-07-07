@@ -2,7 +2,7 @@
 # imgmod completion
 # Shell completion data.
 
-VERSION='1.0.0'
+VERSION='1.0.1'
 
 SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
@@ -70,6 +70,11 @@ TOPICS:
 	fish           Print Fish completion script.
 	options        List top-level or command options.
 	zsh            Print Zsh completion script.
+
+OPTIONS:
+
+	-h, --help     Show this help screen.
+	-v, --version  Show plugin name and version number.
 
 USAGE
 }
@@ -312,11 +317,21 @@ completion_options() {
 			;;
 		newplugin)
 			completion_item -h
+			completion_item -v
+			completion_item --version
 			completion_item -t
 			;;
 		socshare)
 			completion_item -h
+			completion_item -v
+			completion_item --version
 			completion_item -f
+			;;
+		completion)
+			completion_item -h
+			completion_item --help
+			completion_item -v
+			completion_item --version
 			;;
 	esac
 }

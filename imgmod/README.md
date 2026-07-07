@@ -160,6 +160,11 @@ imgmod watermark image.png
 ```
 
 That command resolves to an executable named `imgmod-watermark`.
+Plugins that use the shared runtime support `-v` and `--version`:
+
+```sh
+imgmod watermark -v
+```
 
 Plugin lookup order allows local commands to override bundled commands:
 
@@ -188,8 +193,9 @@ imgmod_plugin_run "$@"
 
 For a plugin named `watermark`, `PLUGIN_PREFIX` is `watermark`. For a plugin
 named `socshare`, `PLUGIN_PREFIX` is `socshare`. Define `<prefix>_help` to show
-plugin-specific usage. Use `imgmod_output "$file"` for image files that can be
-optimized with `imgmod -o`.
+plugin-specific usage. The shared runtime handles `-v` and `--version`
+automatically. Use `imgmod_output "$file"` for image files that can be optimized
+with `imgmod -o`.
 
 ### socshare
 

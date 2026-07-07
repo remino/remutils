@@ -40,6 +40,13 @@ imgmod_plugin_run() {
 
 	trap _exit INT TERM
 
+	case "${1:-}" in
+		-v | --version)
+			imgmod_plugin_version
+			return
+			;;
+	esac
+
 	if declare -F "$start_hook" > /dev/null 2>&1; then
 		"$start_hook" "$@"
 		return
@@ -50,6 +57,14 @@ imgmod_plugin_run() {
 	fi
 
 	return $E_ARGS
+}
+
+imgmod_plugin_version() {
+	if [ -n "${VERSION:-}" ]; then
+		_echo "$USAGE_NAME $VERSION"
+	else
+		_echo "$USAGE_NAME"
+	fi
 }
 
 imgmod_output() {

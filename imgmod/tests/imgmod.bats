@@ -96,6 +96,24 @@ teardown() {
 	[[ "$output" == *"USAGE: imgmod socshare"* ]]
 }
 
+@test "shows bundled plugin versions" {
+	_assert_plugin_version completion "$BATS_TEST_DIRNAME/../imgmod" completion -v
+	_assert_plugin_version newplugin "$BATS_TEST_DIRNAME/../imgmod" newplugin -v
+	_assert_plugin_version socshare "$BATS_TEST_DIRNAME/../imgmod" socshare -v
+}
+
+@test "shows directly-run bundled plugin versions" {
+	_assert_plugin_version completion "$BATS_TEST_DIRNAME/../plugins/imgmod-completion" -v
+	_assert_plugin_version newplugin "$BATS_TEST_DIRNAME/../plugins/imgmod-newplugin" -v
+	_assert_plugin_version socshare "$BATS_TEST_DIRNAME/../plugins/imgmod-socshare" -v
+}
+
+@test "shows bundled plugin versions with long option" {
+	_assert_plugin_version completion "$BATS_TEST_DIRNAME/../imgmod" completion --version
+	_assert_plugin_version newplugin "$BATS_TEST_DIRNAME/../imgmod" newplugin --version
+	_assert_plugin_version socshare "$BATS_TEST_DIRNAME/../imgmod" socshare --version
+}
+
 @test "shows newplugin help" {
 	run "$BATS_TEST_DIRNAME/../imgmod" newplugin -h
 
@@ -385,6 +403,8 @@ PLUGIN
 
 	[ "$status" -eq 0 ]
 	_output_has_line -h
+	_output_has_line -v
+	_output_has_line --version
 	_output_has_line -t
 }
 
@@ -393,7 +413,19 @@ PLUGIN
 
 	[ "$status" -eq 0 ]
 	_output_has_line -h
+	_output_has_line -v
+	_output_has_line --version
 	_output_has_line -f
+}
+
+@test "completion options include completion plugin options" {
+	run "$BATS_TEST_DIRNAME/../imgmod" completion options completion
+
+	[ "$status" -eq 0 ]
+	_output_has_line -h
+	_output_has_line --help
+	_output_has_line -v
+	_output_has_line --version
 }
 
 @test "completion prints bash completion script" {
@@ -813,4 +845,21 @@ _output_lacks_line() {
 	local unexpected=$1
 
 	! _output_has_line "$unexpected"
+}
+
+_script_version() {
+	grep -m1 VERSION "$1" | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+'
+}
+
+_assert_plugin_version() {
+	local plugin_name=$1
+	local plugin_script="$BATS_TEST_DIRNAME/../plugins/imgmod-$plugin_name"
+	local version
+
+	shift
+	version="$(_script_version "$plugin_script")"
+
+	run "$@"
+	[ "$status" -eq 0 ]
+	[ "$output" = "imgmod $plugin_name $version" ]
 }
