@@ -2,13 +2,13 @@
 
 <!-- mtoc-start -->
 
-- [v1.3.0](#v130)
+- [v1.4.0](#v140)
 - [v1.1.0](#v110)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
 
-## v1.3.0
+## v1.4.0
 
 - Add `png8` command to convert images to PNG8.
 - Add `scale4x` command to scale images 4x without antialiasing or smoothing.
