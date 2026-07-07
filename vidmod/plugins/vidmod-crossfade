@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# vidmod crossfade
+
+VERSION='2.0.0'
+
+[ -n "${VIDMOD_LIB:-}" ] || VIDMOD_LIB="$(dirname "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)")/lib/vidmod.sh"
+
+# shellcheck source=../lib/vidmod.sh
+. "$VIDMOD_LIB"
+
+crossfade_start() {
+	vidmod_legacy_start crossfade "$@"
+}
+
+vidmod_plugin_run "$@"

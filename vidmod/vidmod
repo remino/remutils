@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+# vidmod
+# Video modification helpers.
+
+VERSION='2.0.0'
+
+vidmod_resolve_script_path() {
+	local source=$1
+	local dir
+
+	while [ -L "$source" ]; do
+		dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+		source="$(readlink "$source")"
+		[[ "$source" != /* ]] && source="$dir/$source"
+	done
+
+	dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+	printf '%s/%s\n' "$dir" "$(basename -- "$source")"
+}
+
+SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_PATH="$(vidmod_resolve_script_path "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+
+# shellcheck source=lib/vidmod.sh
+. "$SCRIPT_DIR/lib/vidmod.sh"
+
+vidmod_main() {
+	trap _exit INT TERM
+
+	local newplugin=
+	local opt
+
+	[ $# -lt 1 ] && _help && return
+
+	case "$1" in
+		--help)
+			_help
+			return
+			;;
+		--version)
+			_version
+			return
+			;;
+	esac
+
+	OPTIND=1
+	while getopts :hn:v opt; do
+		case $opt in
+			h)
+				_help
+				return
+				;;
+			n) newplugin="$OPTARG" ;;
+			v)
+				_version
+				return
+				;;
+			:) _invalid_opt "$OPTARG" ;;
+			*) _invalid_opt "$OPTARG" ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	if [ -n "$newplugin" ]; then
+		[ $# -gt 0 ] && _help && return $E_ARGS
+		_run_plugin newplugin "$newplugin"
+		return
+	fi
+
+	[ $# -lt 1 ] && _help && return
+
+	case "$1" in
+		version)
+			_version
+			return
+			;;
+		help)
+			shift
+			if [ $# -eq 0 ]; then
+				_help
+				return
+			fi
+			_run_plugin "$1" -h
+			;;
+		*)
+			_run_plugin "$@"
+			;;
+	esac
+}
+
+_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_NAME <command> [<options>] [<args>]
+
+Video modification helpers.
+
+COMMANDS:
+
+	169        Set display aspect ratio to 16:9.
+	43         Set display aspect ratio to 4:3.
+	60fps      Change frame rate to 60 fps.
+	audio      Extract audio without video.
+	butter     Smooth motion with butterflow.
+	completion Shell completion data.
+	crop219    Crop video to 21:9.
+	crossfade  Create a crossfade with vidcrossfade.
+	hevc       Encode video as HEVC/H.265.
+	loop       Duplicate the video once into a looped file.
+	mono       Convert audio to mono.
+	mp4        Convert video to MP4.
+	mute       Remove audio.
+	newplugin  Create a new vidmod plugin.
+	qt         Make a QuickTime-friendly copy.
+	reverse    Reverse video and audio.
+	rotate90   Rotate video 90 degrees clockwise.
+	rotate180  Rotate video 180 degrees.
+	rotate270  Rotate video 270 degrees clockwise.
+	slowdown   Slow video and audio to 80% speed.
+	twitter    Encode video for Twitter/X upload.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-n        Create a new plugin. Names create XDG plugins; paths create files exactly there.
+	-v        Show script name and version number.
+
+Plugins are executable files found in XDG data directories under vidmod/plugins,
+or in the bundled plugins directory next to this script.
+
+USAGE
+}
+
+_run_plugin() {
+	local command_name=$1
+	local plugin
+
+	shift
+
+	export VIDMOD_PLUGIN_DIR="$SCRIPT_DIR/plugins"
+
+	plugin="$(vidmod_find_plugin "$command_name")"
+
+	if [ -z "$plugin" ]; then
+		unset VIDMOD_PLUGIN_DIR
+		_invalid_cmd "$command_name"
+	fi
+
+	export VIDMOD_LIB="$SCRIPT_DIR/lib/vidmod.sh"
+	export VIDMOD_APP_NAME="$SCRIPT_NAME"
+	export VIDMOD_PLUGIN_NAME="$command_name"
+
+	"$plugin" "$@"
+	local status=$?
+
+	unset VIDMOD_APP_NAME
+	unset VIDMOD_PLUGIN_NAME
+	unset VIDMOD_PLUGIN_DIR
+
+	return "$status"
+}
+
+_invalid_opt() {
+	local invalid_opt=$1
+
+	_error "Invalid option: -$invalid_opt"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $1"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_version() {
+	_echo "$SCRIPT_NAME $VERSION"
+}
+
+vidmod_main "$@"

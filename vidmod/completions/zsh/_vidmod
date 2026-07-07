@@ -1,0 +1,2 @@
+#compdef vidmod
+eval "$(vidmod completion zsh)"

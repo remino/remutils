@@ -1,0 +1,349 @@
+#!/usr/bin/env bash
+# vidmod completion
+# Shell completion data.
+
+VERSION='2.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+VIDMOD_LIB="${VIDMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/vidmod.sh}"
+VIDMOD_PLUGIN_DIR="${VIDMOD_PLUGIN_DIR:-$SCRIPT_DIR}"
+
+# shellcheck source=../lib/vidmod.sh
+. "$VIDMOD_LIB"
+
+completion_start() {
+	local topic="${1:-}"
+
+	case "$topic" in
+		bash)
+			[ $# -eq 1 ] || {
+				completion_help
+				return $E_ARGS
+			}
+			completion_bash
+			;;
+		commands)
+			[ $# -eq 1 ] || {
+				completion_help
+				return $E_ARGS
+			}
+			vidmod_list_commands
+			;;
+		fish)
+			[ $# -eq 1 ] || {
+				completion_help
+				return $E_ARGS
+			}
+			completion_fish
+			;;
+		options)
+			shift
+			completion_options "$@"
+			;;
+		zsh)
+			[ $# -eq 1 ] || {
+				completion_help
+				return $E_ARGS
+			}
+			completion_zsh
+			;;
+		-h | --help | '')
+			completion_help
+			;;
+		*) completion_invalid_topic "$topic" ;;
+	esac
+}
+
+completion_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME <topic> [command]
+
+Print shell completion data.
+
+TOPICS:
+
+	bash           Print Bash completion script.
+	commands       List command names.
+	fish           Print Fish completion script.
+	options        List top-level or command options.
+	zsh            Print Zsh completion script.
+
+OPTIONS:
+
+	-h, --help     Show this help screen.
+	-v, --version  Show plugin name and version number.
+
+USAGE
+}
+
+completion_bash() {
+	cat << 'BASH'
+_vidmod()
+{
+	local cur prev command vidmod_bin skip_next
+	local commands options
+	local i
+
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD - 1]}"
+	vidmod_bin="${COMP_WORDS[0]}"
+
+	if [ "$prev" = -n ] || [ "$prev" = -f ] || [ "$prev" = -t ]; then
+		COMPREPLY=($(compgen -f -- "$cur"))
+		return 0
+	fi
+
+	skip_next=0
+	for ((i = 1; i < COMP_CWORD; i++)); do
+		if [ "$skip_next" -eq 1 ]; then
+			skip_next=0
+			continue
+		fi
+
+		case "${COMP_WORDS[i]}" in
+			-n | -f | -t)
+				skip_next=1
+				;;
+			-h | --help | -v | --version)
+				;;
+			-*)
+				;;
+			*)
+				command="${COMP_WORDS[i]}"
+				break
+				;;
+		esac
+	done
+
+	if [ -z "$command" ]; then
+		options="$("$vidmod_bin" completion options 2> /dev/null)"
+		commands="$("$vidmod_bin" completion commands 2> /dev/null)"
+		COMPREPLY=($(compgen -W "$options $commands" -- "$cur"))
+		return 0
+	fi
+
+	case "$command" in
+		help)
+			commands="$("$vidmod_bin" completion commands 2> /dev/null)"
+			COMPREPLY=($(compgen -W "$commands" -- "$cur"))
+			;;
+		*)
+			options="$("$vidmod_bin" completion options "$command" 2> /dev/null)"
+			if [ -n "$options" ] && [[ "$cur" == -* ]]; then
+				COMPREPLY=($(compgen -W "$options" -- "$cur"))
+			else
+				COMPREPLY=($(compgen -f -- "$cur"))
+			fi
+			;;
+	esac
+}
+
+complete -F _vidmod vidmod
+BASH
+}
+
+completion_zsh() {
+	cat << 'ZSH'
+#compdef vidmod
+
+_vidmod() {
+	local -a commands options option_specs
+	local command option
+
+	commands=("${(@f)$(_call_program vidmod-commands vidmod completion commands 2>/dev/null)}")
+
+	if [[ "$words[CURRENT - 1]" == -n || "$words[CURRENT - 1]" == -f || "$words[CURRENT - 1]" == -t ]]; then
+		_files
+		return
+	fi
+
+	if ((CURRENT == 2)); then
+		options=("${(@f)$(_call_program vidmod-options vidmod completion options 2>/dev/null)}")
+		for option in $options; do
+			option_specs+=("${option}[Option]")
+		done
+
+		_arguments \
+			$option_specs \
+			"1:command:(${commands[*]})"
+		return
+	fi
+
+	command="$words[2]"
+
+	case "$command" in
+		help)
+			_arguments "2:command:(${commands[*]})"
+			;;
+		*)
+			options=("${(@f)$(_call_program vidmod-options vidmod completion options "$command" 2>/dev/null)}")
+			for option in $options; do
+				option_specs+=("${option}[Option]")
+			done
+
+			if ((${#option_specs})); then
+				_arguments \
+					$option_specs \
+					'*:file:_files'
+			else
+				_files
+			fi
+			;;
+	esac
+}
+
+compdef _vidmod vidmod
+ZSH
+}
+
+completion_fish() {
+	cat << 'FISH'
+function __fish_vidmod_commands
+    command vidmod completion commands 2>/dev/null
+end
+
+function __fish_vidmod_options
+    command vidmod completion options $argv 2>/dev/null
+end
+
+function __fish_vidmod_seen_command
+    set -l tokens (commandline -opc)
+    set -l skip_next 0
+
+    for token in $tokens[2..-1]
+        if test "$skip_next" = 1
+            set skip_next 0
+            continue
+        end
+
+        switch $token
+            case -n -f -t
+                set skip_next 1
+            case -h --help -v --version
+            case '-*'
+            case '*'
+                return 0
+        end
+    end
+
+    return 1
+end
+
+function __fish_vidmod_using_command
+    set -l expected $argv[1]
+    set -l tokens (commandline -opc)
+    set -l skip_next 0
+
+    for token in $tokens[2..-1]
+        if test "$skip_next" = 1
+            set skip_next 0
+            continue
+        end
+
+        switch $token
+            case -n -f -t
+                set skip_next 1
+            case -h --help -v --version
+            case '-*'
+            case '*'
+                test "$token" = "$expected"
+                return $status
+        end
+    end
+
+    return 1
+end
+
+function __fish_vidmod_current_command
+    set -l tokens (commandline -opc)
+    set -l skip_next 0
+
+    for token in $tokens[2..-1]
+        if test "$skip_next" = 1
+            set skip_next 0
+            continue
+        end
+
+        switch $token
+            case -n -f -t
+                set skip_next 1
+            case -h --help -v --version
+            case '-*'
+            case '*'
+                echo "$token"
+                return 0
+        end
+    end
+
+    return 1
+end
+
+function __fish_vidmod_command_options
+    set -l command (__fish_vidmod_current_command)
+
+    if test -n "$command"; and test "$command" != help
+        __fish_vidmod_options "$command"
+    end
+end
+
+complete -c vidmod -n 'not __fish_vidmod_seen_command' -a '(__fish_vidmod_options)'
+complete -c vidmod -n 'not __fish_vidmod_seen_command' -a '(__fish_vidmod_commands)'
+
+complete -c vidmod -n '__fish_vidmod_using_command help' -a '(__fish_vidmod_commands)'
+complete -c vidmod -n '__fish_vidmod_seen_command' -a '(__fish_vidmod_command_options)'
+FISH
+}
+
+completion_options() {
+	local command_name="${1:-}"
+
+	if [ $# -gt 1 ]; then
+		completion_help
+		return $E_ARGS
+	fi
+
+	case "$command_name" in
+		'')
+			completion_item -h
+			completion_item --help
+			completion_item -v
+			completion_item --version
+			completion_item -n
+			;;
+		newplugin)
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			completion_item -t
+			;;
+		completion)
+			completion_item -h
+			completion_item --help
+			completion_item -v
+			completion_item --version
+			;;
+		*)
+			completion_item -f
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			;;
+	esac
+}
+
+completion_item() {
+	printf '%s\n' "$1"
+}
+
+completion_invalid_topic() {
+	_error "Invalid completion topic: $1"
+	_echo
+	completion_help
+	exit $E_ARGS
+}
+
+vidmod_plugin_run "$@"
