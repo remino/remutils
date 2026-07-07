@@ -6,6 +6,7 @@ setup() {
 
 teardown() {
 	rm -rf "$WORKDIR"
+	rm -rf "${REMOTE_DIR:-}"
 }
 
 _write_demo_script() {
@@ -25,6 +26,15 @@ _init_git_repo() {
 	git -C "$WORKDIR" config user.name "Test User"
 }
 
+_init_git_remote() {
+	REMOTE_DIR="$WORKDIR-remote.git"
+
+	git init --bare -q "$REMOTE_DIR"
+	git -C "$WORKDIR" remote add origin "$REMOTE_DIR"
+	git -C "$WORKDIR" commit --allow-empty -q -m "Prepare remote"
+	git -C "$WORKDIR" push -u origin HEAD > /dev/null
+}
+
 @test "release initial commits and tags script" {
 	_write_demo_script
 	_init_git_repo
@@ -39,6 +49,7 @@ _init_git_repo() {
 @test "release with --github publishes after initial release" {
 	_write_demo_script
 	_init_git_repo
+	_init_git_remote
 
 	BIN_DIR="$WORKDIR/bin"
 	mkdir -p "$BIN_DIR"
@@ -55,6 +66,7 @@ EOF
 	[ "$status" -eq 0 ]
 	[ "$(cat "$WORKDIR/released")" = "$SCRIPT_DIR" ]
 	[ "$(git -C "$WORKDIR" tag --list)" = "demo@1.0.0" ]
+	[ "$(git -C "$REMOTE_DIR" tag --list)" = "demo@1.0.0" ]
 }
 
 @test "release rejects invalid release type" {
