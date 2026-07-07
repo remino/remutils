@@ -55,6 +55,15 @@ level release flow. With `--github`, it pushes tags and calls
 
 ## Verification
 
+Format modified files before finishing work. Use `prettier` for Markdown, JSON,
+YAML, HTML, CSS, and JavaScript files, and `shfmt` for shell scripts and Bats
+tests. Prefer the repo wrappers when possible:
+
+```sh
+just format <tool>
+just lint <tool>
+```
+
 For a single tool, run:
 
 ```sh
