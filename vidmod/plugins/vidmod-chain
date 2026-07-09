@@ -41,7 +41,7 @@ Run multiple vidmod plugins in sequence.
 
 Each command must follow the vidmod plugin argument style:
 
-	<command> [<options>] <input> [output]
+	<command> [<options>] [-o output] <input>
 
 OPTIONS:
 
@@ -153,9 +153,9 @@ chain_run_stage() {
 	[ -n "$plugin" ] || _fatal "$E_ARGS" "Invalid chain command: $command_name"
 
 	if [ "$final_stage" -eq 1 ]; then
-		VIDMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" "$input" "$output"
+		VIDMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" -o "$output" "$input"
 	else
-		VIDMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" "$input" "$output" > /dev/null
+		VIDMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" -o "$output" "$input" > /dev/null
 	fi
 }
 

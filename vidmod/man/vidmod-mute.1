@@ -3,7 +3,7 @@
 vidmod-mute \- remove audio from a video
 .SH SYNOPSIS
 .B vidmod mute
-[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 Remove the audio stream from a video while copying streams where possible.
 .SH OPTIONS
@@ -13,6 +13,9 @@ Pass extra ffmpeg options.
 .TP
 .B \-h
 Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR.
 .TP
 .B \-v, --version
 Show the plugin name and version.

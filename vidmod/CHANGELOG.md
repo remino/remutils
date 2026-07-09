@@ -2,12 +2,18 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.4.1](#v241)
 - [v2.4.0](#v240)
 - [v2.2.0](#v220)
 - [v2.0.0](#v200)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Change output-producing commands to use `-o <output>` for explicit output
+  paths instead of positional output arguments.
 
 ## v2.4.1
 

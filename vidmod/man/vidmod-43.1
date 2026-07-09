@@ -3,7 +3,7 @@
 vidmod-43 \- set video display aspect ratio to 4:3
 .SH SYNOPSIS
 .B vidmod 43
-[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 Set the display aspect ratio of a video to 4:3.
 .SH OPTIONS
@@ -13,6 +13,9 @@ Pass extra ffmpeg options.
 .TP
 .B \-h
 Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR.
 .TP
 .B \-v, --version
 Show the plugin name and version.

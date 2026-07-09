@@ -12,9 +12,9 @@ Vidmod 2 exposes the old vidmod 1 changes as command plugins:
 
 ```sh
 vidmod mp4 input.mov
-vidmod fit1080 input.mov framed.mov
-vidmod rotate90 input.mov rotated.mov
-vidmod twitter input.mov twitter.mp4
+vidmod fit1080 -o framed.mov input.mov
+vidmod rotate90 -o rotated.mov input.mov
+vidmod twitter -o twitter.mp4 input.mov
 vidmod chain mp4 -- twitter -- input.mov twitter.mp4
 ```
 
@@ -35,6 +35,7 @@ Each legacy command accepts:
 ```text
 -f  Extra ffmpeg options.
 -h  Show help.
+-o  Output video file.
 -v  Show command version.
 ```
 
@@ -74,7 +75,7 @@ vidmod chain 169 -f "-y" -- rotate90 -- input.mov rotated.mov
 Chainable plugins must accept the standard plugin arguments:
 
 ```text
-<command> [<options>] <input> [output]
+<command> [<options>] [-o <output>] <input>
 ```
 
 The final output path is required for chains.

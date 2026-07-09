@@ -143,13 +143,14 @@ vidmod_legacy_start() {
 	shift
 
 	OPTIND=1
-	while getopts :f:h opt; do
+	while getopts :f:ho: opt; do
 		case $opt in
 			f) ffmpeg_extra_opts="$OPTARG" ;;
 			h)
 				vidmod_legacy_help "$change_name"
 				return
 				;;
+			o) output="$OPTARG" ;;
 			:) vidmod_legacy_invalid_opt "$OPTARG" "$change_name" ;;
 			*) vidmod_legacy_invalid_opt "$OPTARG" "$change_name" ;;
 		esac
@@ -158,10 +159,9 @@ vidmod_legacy_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && vidmod_legacy_help "$change_name" && return $E_ARGS
-	[ $# -gt 2 ] && vidmod_legacy_help "$change_name" && return $E_ARGS
+	[ $# -gt 1 ] && vidmod_legacy_help "$change_name" && return $E_ARGS
 
 	input=$1
-	output="${2:-}"
 	[ -f "$input" ] || _fatal "$E_NO_FILE" "File not found: $input"
 
 	if [ -z "$output" ]; then
@@ -180,7 +180,7 @@ vidmod_legacy_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [<options>] <input> [output]
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
 
 Apply the old vidmod "$change_name" change to one video file.
 
@@ -188,6 +188,7 @@ OPTIONS:
 
 	-f        Extra ffmpeg options.
 	-h        Show this help screen.
+	-o        Output video file.
 	-v        Show plugin name and version number.
 
 USAGE

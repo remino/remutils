@@ -3,7 +3,7 @@
 vidmod-rotate90 \- rotate video 90 degrees
 .SH SYNOPSIS
 .B vidmod rotate90
-[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 Rotate the video image 90 degrees.
 .SH OPTIONS
@@ -13,6 +13,9 @@ Pass extra ffmpeg options.
 .TP
 .B \-h
 Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR.
 .TP
 .B \-v, --version
 Show the plugin name and version.

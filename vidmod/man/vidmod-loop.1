@@ -3,7 +3,7 @@
 vidmod-loop \- duplicate a video once into a loop
 .SH SYNOPSIS
 .B vidmod loop
-[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 Create an output containing the input video twice in sequence.
 .SH OPTIONS
@@ -13,6 +13,9 @@ Pass extra ffmpeg options.
 .TP
 .B \-h
 Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR.
 .TP
 .B \-v, --version
 Show the plugin name and version.

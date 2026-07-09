@@ -38,5 +38,5 @@ load helpers
 
 	[ "$status" -eq 0 ]
 	_output_has_line -f
-	! _output_has_line -o
+	_output_has_line -o
 }

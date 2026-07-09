@@ -3,7 +3,7 @@
 vidmod-fit1080 \- Fit a video into a centered 1920x1080 black frame
 .SH SYNOPSIS
 .B vidmod fit1080
-[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 .B vidmod fit1080
 uses ffmpeg to scale a video down to fit inside 1920x1080 while preserving its
@@ -17,6 +17,9 @@ Pass extra ffmpeg options.
 .TP
 .B \-h
 Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR.
 .TP
 .B \-v, --version
 Show the plugin name and version.

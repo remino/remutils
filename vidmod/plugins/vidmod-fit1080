@@ -16,13 +16,14 @@ fit1080_start() {
 	local opt
 
 	OPTIND=1
-	while getopts :f:h opt; do
+	while getopts :f:ho: opt; do
 		case $opt in
 			f) ffmpeg_extra_opts="$OPTARG" ;;
 			h)
 				fit1080_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			:) fit1080_invalid_opt "$OPTARG" ;;
 			*) fit1080_invalid_opt "$OPTARG" ;;
 		esac
@@ -31,10 +32,9 @@ fit1080_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && fit1080_help && return $E_ARGS
-	[ $# -gt 2 ] && fit1080_help && return $E_ARGS
+	[ $# -gt 1 ] && fit1080_help && return $E_ARGS
 
 	input="$1"
-	output="${2:-}"
 
 	[ -f "$input" ] || _fatal "$E_NO_FILE" "File not found: $input"
 
@@ -54,7 +54,7 @@ fit1080_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [<options>] <input> [output]
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
 
 Fit a video into a centered 1920x1080 black frame.
 
@@ -62,6 +62,7 @@ OPTIONS:
 
 	-f        Extra ffmpeg options.
 	-h        Show this help screen.
+	-o        Output video file.
 	-v        Show plugin name and version number.
 
 USAGE

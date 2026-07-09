@@ -17,7 +17,7 @@ load helpers
 
 	_make_fake_video_tools
 
-	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" rotate90 "$INPUT_FILE" "$output_file"
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" rotate90 -o "$output_file" "$INPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $output_file" ]
@@ -29,20 +29,22 @@ load helpers
 
 	_make_fake_video_tools
 
-	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" 169 -f "-y -stats" "$INPUT_FILE" "$output_file"
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" 169 -f "-y -stats" -o "$output_file" "$INPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $output_file" ]
 	[[ "$(cat "$TOOL_LOG")" == *"<-nostdin> <-y> <-stats> <-vf> <setdar=16/9> <$output_file>" ]]
 }
 
-@test "does not accept output file option" {
+@test "rejects positional output file" {
+	local output_file="$OUTPUT_DIR/final.mp4"
+
 	_make_fake_video_tools
 
-	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" 169 -o "$OUTPUT_DIR/out.mov" "$INPUT_FILE"
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" rotate90 "$INPUT_FILE" "$output_file"
 
 	[ "$status" -eq 16 ]
-	[[ "$output" == *"Invalid option: -o"* ]]
+	[[ "$output" == *"USAGE: vidmod rotate90"* ]]
 	[ ! -e "$TOOL_LOG" ]
 }
 
@@ -61,8 +63,8 @@ load helpers
 
 	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" mp4 twitter "$INPUT_FILE"
 
-	[ "$status" -eq 17 ]
-	[[ "$output" == *"File not found: twitter"* ]]
+	[ "$status" -eq 16 ]
+	[[ "$output" == *"USAGE: vidmod mp4"* ]]
 	[ ! -e "$TOOL_LOG" ]
 }
 
@@ -83,4 +85,16 @@ load helpers
 	[ "$status" -eq 0 ]
 	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $OUTPUT_DIR/source-fit1080.mov" ]
 	[[ "$(cat "$TOOL_LOG")" == *"<-vf> <scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2> <-c:a> <copy> <$OUTPUT_DIR/source-fit1080.mov>" ]]
+}
+
+@test "fits video into 1080p frame with explicit output" {
+	local output_file="$OUTPUT_DIR/framed.mov"
+
+	_make_fake_video_tools
+
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" fit1080 -o "$output_file" "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $output_file" ]
+	[[ "$(cat "$TOOL_LOG")" == *"<-vf> <scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2> <-c:a> <copy> <$output_file>" ]]
 }
