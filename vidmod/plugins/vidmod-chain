@@ -2,7 +2,7 @@
 # vidmod chain
 # Run multiple vidmod plugins in sequence.
 
-VERSION='2.1.0'
+VERSION='3.0.0'
 
 SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"

@@ -2,7 +2,7 @@
 # vidmod fit1080
 # Fit a video into a centered 1920x1080 black frame.
 
-VERSION='1.0.0'
+VERSION='2.0.0'
 
 [ -n "${VIDMOD_LIB:-}" ] || VIDMOD_LIB="$(dirname "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)")/lib/vidmod.sh"
 

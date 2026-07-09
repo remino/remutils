@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # vidmod rotate270
 
-VERSION='2.1.0'
+VERSION='3.0.0'
 
 [ -n "${VIDMOD_LIB:-}" ] || VIDMOD_LIB="$(dirname "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)")/lib/vidmod.sh"
 
