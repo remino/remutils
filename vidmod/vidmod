@@ -100,35 +100,36 @@ Video modification helpers.
 
 COMMANDS:
 
-	169        Set display aspect ratio to 16:9.
-	43         Set display aspect ratio to 4:3.
-	60fps      Change frame rate to 60 fps.
-	audio      Extract audio without video.
-	butter     Smooth motion with butterflow.
-	chain      Run multiple vidmod plugins in sequence.
-	completion Shell completion data.
-	crop219    Crop video to 21:9.
-	crossfade  Create a crossfade with vidcrossfade.
-	fit1080    Fit video into a centered 1920x1080 black frame.
-	hevc       Encode video as HEVC/H.265.
-	loop       Duplicate the video once into a looped file.
-	mono       Convert audio to mono.
-	mp4        Convert video to MP4.
-	mute       Remove audio.
-	newplugin  Create a new vidmod plugin.
-	qt         Make a QuickTime-friendly copy.
-	reverse    Reverse video and audio.
-	rotate90   Rotate video 90 degrees clockwise.
-	rotate180  Rotate video 180 degrees.
-	rotate270  Rotate video 270 degrees clockwise.
-	slowdown   Slow video and audio to 80% speed.
-	twitter    Encode video for Twitter/X upload.
+	169         Set display aspect ratio to 16:9.
+	43          Set display aspect ratio to 4:3.
+	60fps       Change frame rate to 60 fps.
+	audio       Extract audio without video.
+	butter      Smooth motion with butterflow.
+	chain       Run multiple vidmod plugins in sequence.
+	completion  Shell completion data.
+	crop219     Crop video to 21:9.
+	crossfade   Create a crossfade with vidcrossfade.
+	fit1080     Fit video into a centered 1920x1080 black frame.
+	hevc        Encode video as HEVC/H.265.
+	loop        Duplicate the video once into a looped file.
+	mono        Convert audio to mono.
+	mp4         Convert video to MP4.
+	mute        Remove audio.
+	newplugin   Create a new vidmod plugin.
+	qt          Make a QuickTime-friendly copy.
+	reverse     Reverse video and audio.
+	rotate90    Rotate video 90 degrees clockwise.
+	rotate180   Rotate video 180 degrees.
+	rotate270   Rotate video 270 degrees clockwise.
+	slowdown    Slow video and audio to 80% speed.
+	twitter     Encode video for Twitter/X upload.
 
 OPTIONS:
 
-	-h        Show this help screen.
-	-n        Create a new plugin. Names create XDG plugins; paths create files exactly there.
-	-v        Show script name and version number.
+	-h          Show this help screen.
+	-n          Create a new plugin. Names create XDG plugins; paths create files
+	            exactly there.
+	-v          Show script name and version number.
 
 Plugins are executable files found in XDG data directories under vidmod/plugins,
 or in the bundled plugins directory next to this script.
