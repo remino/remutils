@@ -250,9 +250,10 @@ EOF
 }
 
 @test "init scaffolds a site" {
-	run "$SCRIPT" init demo "$SITE_ROOT"
+	run env LITESITE_LICENSE_HOLDER="Site Owner" "$SCRIPT" init demo "$SITE_ROOT"
 
 	[ "$status" -eq 0 ]
+	expected_year="$(date +%Y)"
 	[ -f "$SITE_ROOT/README.md" ]
 	[ -f "$SITE_ROOT/LICENSE.txt" ]
 	[ -f "$SITE_ROOT/.deploy-filter" ]
@@ -263,6 +264,7 @@ EOF
 	[ -f "$SITE_ROOT/src/public/share.svg" ]
 	[ -f "$SITE_ROOT/src/nginx/demo.conf" ]
 	[[ "$(cat "$SITE_ROOT/README.md")" == *"# demo"* ]]
+	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Copyright (c) $expected_year Site Owner"* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"<title>demo</title>"* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"/style.css"* ]]
 }

@@ -426,9 +426,25 @@ serve_site() {
 		done
 }
 
+license_holder() {
+	if [[ -n "${LITESITE_LICENSE_HOLDER:-}" ]]; then
+		printf '%s\n' "$LITESITE_LICENSE_HOLDER"
+		return
+	fi
+
+	if command -v git > /dev/null && git config user.name > /dev/null; then
+		git config user.name
+		return
+	fi
+
+	printf '%s\n' "Your Name"
+}
+
 init_site() {
 	local slug="${1:-}"
 	local dest="${2:-}"
+	local license_year
+	local license_holder
 
 	if [[ -z "$slug" ]]; then
 		echo "USAGE: litesite new <site_slug> [<dest_dir>]" >&2
@@ -441,6 +457,8 @@ init_site() {
 	fi
 
 	dest="${dest:-./$slug}"
+	license_year="$(date +%Y)"
+	license_holder="$(license_holder)"
 
 	if [[ -e "$dest" ]]; then
 		echo "litesite: destination already exists: $dest" >&2
@@ -563,10 +581,10 @@ EOF
 
 	SITE_SLUG="$slug" perl -0pi -e 's/__SITE_SLUG__/$ENV{SITE_SLUG}/g' "$dest/README.md"
 
-	cat > "$dest/LICENSE.txt" << 'EOF'
+	cat > "$dest/LICENSE.txt" << EOF
 ISC License
 
-Copyright (c) 2026 Rémino Rem <https://remino.net/>
+Copyright (c) $license_year $license_holder
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
