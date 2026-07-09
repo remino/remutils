@@ -20,12 +20,23 @@ load helpers
 	_make_fake_imgmod_tool magick
 	touch "$INPUT_FILE"
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" scale4x "$INPUT_FILE" "$output_file"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" scale4x -o "$output_file" "$INPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]
 	[ -f "$output_file" ]
 	[ "$(cat "$TOOL_LOG")" = "magick <$INPUT_FILE> <-filter> <point> <-resize> <400%> <$output_file>" ]
+}
+
+@test "scale4x rejects positional output" {
+	local output_file="$OUTPUT_DIR/scaled.png"
+
+	touch "$INPUT_FILE"
+
+	run "$BATS_TEST_DIRNAME/../imgmod" scale4x "$INPUT_FILE" "$output_file"
+
+	[ "$status" -eq 16 ]
+	[[ "$output" == *"USAGE: imgmod scale4x"* ]]
 }
 
 @test "collage stitches vertically by default" {
@@ -103,7 +114,7 @@ magick <(> <$wide> <-auto-orient> <-resize> <x200>> <)> <(> <$tall> <-auto-orien
 	_make_fake_imgmod_tool ffmpeg
 	touch "$input_file"
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" vidframe -t 00:00:02.500 "$input_file" "$output_file"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" vidframe -t 00:00:02.500 -o "$output_file" "$input_file"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]
@@ -118,7 +129,7 @@ magick <(> <$wide> <-auto-orient> <-resize> <x200>> <)> <(> <$tall> <-auto-orien
 	_make_fake_imgmod_tool ffmpeg
 	touch "$input_file"
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" vidframe -f 12 "$input_file" "$output_file"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" vidframe -f 12 -o "$output_file" "$input_file"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]

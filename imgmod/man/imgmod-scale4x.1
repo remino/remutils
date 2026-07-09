@@ -3,7 +3,7 @@
 imgmod-scale4x \- Scale an image 4x without smoothing
 .SH SYNOPSIS
 .B imgmod scale4x
-[\fB-h\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-h\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 .B imgmod scale4x
 uses ImageMagick's point filter to resize an image to 400% without
@@ -16,11 +16,14 @@ with a \fB-4x\fR suffix.
 .B \-h
 Show usage help.
 .TP
+.B \-o \fIOUTPUT\fR
+Write the scaled image to \fIOUTPUT\fR.
+.TP
 .B \-v, --version
 Show the plugin name and version.
 .SH OUTPUT
 The command prints the output file path and reports it through
-\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -O\fR.
 .SH DEPENDENCIES
 .TP
 .B magick

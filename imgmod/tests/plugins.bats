@@ -11,7 +11,7 @@ touch '$output_file'
 imgmod_output '$output_file'
 "
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o publichook
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O publichook
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]
@@ -27,7 +27,7 @@ touch '$output_file'
 echo '$output_file'
 "
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o stdoutonly
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O stdoutonly
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]
@@ -43,7 +43,7 @@ touch '$output_file'
 _imgmod_output '$output_file'
 "
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o compathook
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O compathook
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$output_file" ]
@@ -108,7 +108,7 @@ hookruntime_start() {
 	_make_input_image
 	_make_fake_image_optim
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" optim "$INPUT_FILE" "$EXPLICIT_OUTPUT"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" optim -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$EXPLICIT_OUTPUT" ]

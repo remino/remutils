@@ -11,12 +11,12 @@ load helpers
 
 	printf 'input' > "$INPUT_FILE"
 	_write_custom_plugin first '
-cp "$1" "$2"
+cp "$3" "$2"
 printf "\nfirst" >> "$2"
 imgmod_output "$2"
 '
 	_write_custom_plugin second '
-cp "$1" "$2"
+cp "$3" "$2"
 printf "\nsecond" >> "$2"
 imgmod_output "$2"
 '
@@ -30,8 +30,8 @@ imgmod_output "$2"
 
 @test "chain requires explicit output" {
 	printf 'input' > "$INPUT_FILE"
-	_write_custom_plugin first 'cp "$1" "$2"; imgmod_output "$2"'
-	_write_custom_plugin second 'cp "$1" "$2"; imgmod_output "$2"'
+	_write_custom_plugin first 'cp "$3" "$2"; imgmod_output "$2"'
+	_write_custom_plugin second 'cp "$3" "$2"; imgmod_output "$2"'
 
 	run "$BATS_TEST_DIRNAME/../imgmod" chain first -- second -- "$INPUT_FILE"
 
@@ -43,7 +43,7 @@ imgmod_output "$2"
 	local output_file="$OUTPUT_DIR/chained.txt"
 
 	printf 'input' > "$INPUT_FILE"
-	_write_custom_plugin first 'cp "$1" "$2"; imgmod_output "$2"'
+	_write_custom_plugin first 'cp "$3" "$2"; imgmod_output "$2"'
 
 	run "$BATS_TEST_DIRNAME/../imgmod" chain completion -- first -- "$INPUT_FILE" "$output_file"
 

@@ -41,7 +41,7 @@ Run multiple imgmod plugins in sequence.
 
 Each command must follow the imgmod plugin argument style:
 
-	<command> [<options>] <input> [output]
+	<command> [<options>] [-o output] <input>
 
 OPTIONS:
 
@@ -153,9 +153,9 @@ chain_run_stage() {
 	[ -n "$plugin" ] || _fatal "$E_ARGS" "Invalid chain command: $command_name"
 
 	if [ "$final_stage" -eq 1 ]; then
-		IMGMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" "$input" "$output"
+		IMGMOD_PLUGIN_NAME="$command_name" "$plugin" "$@" -o "$output" "$input"
 	else
-		IMGMOD_PLUGIN_NAME="$command_name" IMGMOD_OUTPUTS_FILE= "$plugin" "$@" "$input" "$output" > /dev/null
+		IMGMOD_PLUGIN_NAME="$command_name" IMGMOD_OUTPUTS_FILE= "$plugin" "$@" -o "$output" "$input" > /dev/null
 	fi
 }
 

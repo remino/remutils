@@ -3,7 +3,7 @@
 imgmod-socshare \- Create a 1200x630 social sharing image
 .SH SYNOPSIS
 .B imgmod socshare
-[\fB-f\fR \fIFORMAT\fR] \fIINPUT\fR [\fIOUTPUT\fR]
+[\fB-f\fR \fIFORMAT\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
 .SH DESCRIPTION
 .B imgmod socshare
 uses ImageMagick to auto-orient, center crop, resize, and extend an image to
@@ -20,11 +20,14 @@ output is omitted.
 .B \-h
 Show usage help.
 .TP
+.B \-o \fIOUTPUT\fR
+Write the social sharing image to \fIOUTPUT\fR.
+.TP
 .B \-v, --version
 Show the plugin name and version.
 .SH OUTPUT
 The command prints the output file path and reports it through
-\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -O\fR.
 .SH DEPENDENCIES
 .TP
 .B magick
@@ -48,7 +51,7 @@ Write to an explicit WebP output:
 .TP
 Create and optimize output:
 .nf
-.B imgmod -o socshare image.png
+.B imgmod -O socshare image.png
 .fi
 .SH SEE ALSO
 .BR imgmod (1)

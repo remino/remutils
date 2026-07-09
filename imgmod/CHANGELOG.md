@@ -14,6 +14,10 @@
 
 - Add `collage` command to stitch multiple images together vertically or
   horizontally.
+- Change output-producing commands to use `-o <output>` for explicit output
+  paths instead of positional output arguments.
+- Prefer top-level `-O`, `--optim`, and `--optimize` for output optimization.
+  Keep top-level `-o` as a deprecated alias.
 
 ## v1.4.1
 

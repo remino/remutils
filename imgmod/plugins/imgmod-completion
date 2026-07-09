@@ -92,7 +92,7 @@ _imgmod()
 	prev="${COMP_WORDS[COMP_CWORD - 1]}"
 	imgmod_bin="${COMP_WORDS[0]}"
 
-	if [ "$prev" = -n ] || [ "$prev" = -t ]; then
+	if [ "$prev" = -n ] || [ "$prev" = -o ] || [ "$prev" = -t ]; then
 		COMPREPLY=($(compgen -f -- "$cur"))
 		return 0
 	fi
@@ -108,7 +108,7 @@ _imgmod()
 			-n)
 				skip_next=1
 				;;
-			-o | -h | --help | -v | --version)
+			-o | -O | --optim | --optimize | -h | --help | -v | --version)
 				;;
 			-*)
 				;;
@@ -223,7 +223,7 @@ function __fish_imgmod_seen_command
         switch $token
             case -n
                 set skip_next 1
-            case -o -h --help -v --version
+            case -o -O --optim --optimize -h --help -v --version
             case '-*'
             case '*'
                 return 0
@@ -247,7 +247,7 @@ function __fish_imgmod_using_command
         switch $token
             case -n
                 set skip_next 1
-            case -o -h --help -v --version
+            case -o -O --optim --optimize -h --help -v --version
             case '-*'
             case '*'
                 test "$token" = "$expected"
@@ -271,7 +271,7 @@ function __fish_imgmod_current_command
         switch $token
             case -n
                 set skip_next 1
-            case -o -h --help -v --version
+            case -o -O --optim --optimize -h --help -v --version
             case '-*'
             case '*'
                 echo "$token"
@@ -314,6 +314,9 @@ completion_options() {
 			completion_item --version
 			completion_item -n
 			completion_item -o
+			completion_item -O
+			completion_item --optim
+			completion_item --optimize
 			;;
 		newplugin)
 			completion_item -h
@@ -330,12 +333,36 @@ completion_options() {
 			completion_item -h
 			completion_item -v
 			completion_item --version
+			completion_item -o
 			;;
 		socshare)
 			completion_item -h
 			completion_item -v
 			completion_item --version
 			completion_item -f
+			completion_item -o
+			;;
+		collage)
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			completion_item -H
+			completion_item -o
+			completion_item -V
+			;;
+		png8 | scale4x)
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			completion_item -o
+			;;
+		vidframe)
+			completion_item -h
+			completion_item -v
+			completion_item --version
+			completion_item -f
+			completion_item -o
+			completion_item -t
 			;;
 		completion)
 			completion_item -h

@@ -17,12 +17,13 @@ scale4x_start() {
 	local opt
 
 	OPTIND=1
-	while getopts h opt; do
+	while getopts ho: opt; do
 		case $opt in
 			h)
 				scale4x_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			*) scale4x_invalid_opt ;;
 		esac
 	done
@@ -30,10 +31,9 @@ scale4x_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && scale4x_help && return $E_ARGS
-	[ $# -gt 2 ] && scale4x_help && return $E_ARGS
+	[ $# -gt 1 ] && scale4x_help && return $E_ARGS
 
 	input="$1"
-	output="${2:-}"
 
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
@@ -51,7 +51,7 @@ scale4x_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [<options>] <input> [output]
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
 
 Scale an image 4x without antialiasing or smoothing.
 
@@ -61,6 +61,7 @@ When output is omitted, the output path is generated next to the input with a
 OPTIONS:
 
 	-h        Show this help screen.
+	-o        Output image file.
 	-v        Show plugin name and version number.
 
 USAGE

@@ -21,6 +21,7 @@ load helpers
 	_output_has_line help
 	_output_has_line version
 	_output_has_line chain
+	_output_has_line collage
 	_output_has_line completion
 	_output_has_line newplugin
 	_output_has_line optim
@@ -106,6 +107,9 @@ PLUGIN
 	_output_has_line --version
 	_output_has_line -n
 	_output_has_line -o
+	_output_has_line -O
+	_output_has_line --optim
+	_output_has_line --optimize
 }
 
 @test "completion options include newplugin options" {
@@ -126,6 +130,7 @@ PLUGIN
 	_output_has_line -v
 	_output_has_line --version
 	_output_has_line -f
+	_output_has_line -o
 }
 
 @test "completion options include chain options" {

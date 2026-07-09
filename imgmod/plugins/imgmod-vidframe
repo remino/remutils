@@ -19,7 +19,7 @@ vidframe_start() {
 	local opt
 
 	OPTIND=1
-	while getopts f:t:h opt; do
+	while getopts f:ho:t: opt; do
 		case $opt in
 			f) frame="$OPTARG" ;;
 			t) timestamp="$OPTARG" ;;
@@ -27,6 +27,7 @@ vidframe_start() {
 				vidframe_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			*) vidframe_invalid_opt ;;
 		esac
 	done
@@ -34,11 +35,10 @@ vidframe_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && vidframe_help && return $E_ARGS
-	[ $# -gt 2 ] && vidframe_help && return $E_ARGS
+	[ $# -gt 1 ] && vidframe_help && return $E_ARGS
 	[ -n "$frame" ] && [ -n "$timestamp" ] && _fatal $E_ARGS "Use either -f or -t, not both."
 
 	input="$1"
-	output="${2:-}"
 
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
@@ -64,7 +64,7 @@ vidframe_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [-f <frame>] [-t <timestamp>] <input> [output]
+USAGE: $USAGE_NAME [-f <frame>] [-t <timestamp>] [-o <output>] <input>
 
 Extract one frame from a video as an image.
 
@@ -75,8 +75,9 @@ output is omitted, the output path is generated next to the input with a
 OPTIONS:
 
 	-f        Zero-based frame number to extract.
-	-t        Timestamp to extract, such as 00:00:03.500 or 3.5.
 	-h        Show this help screen.
+	-o        Output image file.
+	-t        Timestamp to extract, such as 00:00:03.500 or 3.5.
 	-v        Show plugin name and version number.
 
 USAGE

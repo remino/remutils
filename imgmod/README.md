@@ -55,14 +55,18 @@ cd remutils/imgmod
 
 Run `imgmod` without arguments to see how to use it.
 
-Use `-o` before a command to optimize image outputs reported by that command
-with `image_optim`:
+Use `-O`, `--optim`, or `--optimize` before a command to optimize image outputs
+reported by that command with `image_optim`:
 
 ```sh
-imgmod -o socshare image.png
+imgmod -O socshare image.png
+imgmod --optim socshare image.png
+imgmod --optimize socshare image.png
 ```
 
-`-o` optimizes the outputs of a normal command.
+`-O` optimizes the outputs of a normal command. Command plugins use `-o` for
+explicit output paths. Top-level `-o` still works as a deprecated alias for
+`-O`.
 
 Plugins report optimizable image output with the shared hook:
 
@@ -137,7 +141,7 @@ imgmod chain socshare -f png -- socshare -f webp -- image.png output.webp
 Chainable plugins must accept the standard plugin arguments:
 
 ```text
-<command> [<options>] <input> [output]
+<command> [<options>] [-o <output>] <input>
 ```
 
 The final output path is required for chains.
@@ -165,14 +169,15 @@ Optimize an image directly with `image_optim`:
 
 ```sh
 imgmod optim image.png
-imgmod optim image.png output.png
+imgmod optim -o output.png image.png
 ```
 
-When no output is provided, the input is optimized in place. The top-level `-o`
-flag still optimizes a normal command's reported outputs:
+When no output is provided, the input is optimized in place. The top-level `-O`
+flag, also available as `--optim` or `--optimize`, optimizes a normal command's
+reported outputs:
 
 ```sh
-imgmod -o socshare image.png
+imgmod -O socshare image.png
 ```
 
 ### png8
@@ -181,7 +186,7 @@ Convert an image to PNG8:
 
 ```sh
 imgmod png8 input.png
-imgmod png8 input.png output.png
+imgmod png8 -o output.png input.png
 ```
 
 When `output` is omitted, the output path is generated with a `-png8.png`
@@ -193,7 +198,7 @@ Scale an image 4x without antialiasing or smoothing:
 
 ```sh
 imgmod scale4x input.png
-imgmod scale4x input.png output.png
+imgmod scale4x -o output.png input.png
 ```
 
 When `output` is omitted, the output path is generated with a `-4x` suffix and
@@ -277,12 +282,12 @@ For a plugin named `watermark`, `PLUGIN_PREFIX` is `watermark`. For a plugin
 named `socshare`, `PLUGIN_PREFIX` is `socshare`. Define `<prefix>_help` to show
 plugin-specific usage. The shared runtime handles `-v` and `--version`
 automatically. Use `imgmod_output "$file"` for image files that can be optimized
-with `imgmod -o`.
+with `imgmod -O`.
 
 ### socshare
 
 ```sh
-imgmod socshare [-f <format>] <input> [output]
+imgmod socshare [-f <format>] [-o <output>] <input>
 ```
 
 Crop and resize an image to `1200x630` for Open Graph and Twitter cards.
@@ -307,8 +312,8 @@ Extract one frame from a video:
 
 ```sh
 imgmod vidframe export.mov
-imgmod vidframe -t 00:00:02.500 export.mov still.png
-imgmod vidframe -f 12 export.mov frame-12.png
+imgmod vidframe -t 00:00:02.500 -o still.png export.mov
+imgmod vidframe -f 12 -o frame-12.png export.mov
 ```
 
 When no frame or timestamp is specified, the first frame is extracted. `-f` uses

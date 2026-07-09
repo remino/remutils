@@ -21,10 +21,10 @@ load helpers
 	[[ "$output" == *"USAGE: imgmod newplugin"* ]]
 }
 
-@test "does not optimize newplugin output when -o is set" {
+@test "does not optimize newplugin output when -O is set" {
 	_make_fake_image_optim
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o newplugin notimage
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O newplugin notimage
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$XDG_DATA_HOME/imgmod/plugins/imgmod-notimage" ]

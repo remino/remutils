@@ -17,12 +17,13 @@ optim_start() {
 	local opt
 
 	OPTIND=1
-	while getopts h opt; do
+	while getopts ho: opt; do
 		case $opt in
 			h)
 				optim_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			*) optim_invalid_opt ;;
 		esac
 	done
@@ -30,10 +31,10 @@ optim_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && optim_help && return $E_ARGS
-	[ $# -gt 2 ] && optim_help && return $E_ARGS
+	[ $# -gt 1 ] && optim_help && return $E_ARGS
 
 	input="$1"
-	output="${2:-$input}"
+	output="${output:-$input}"
 
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
@@ -50,7 +51,7 @@ optim_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [<options>] <input> [output]
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
 
 Optimize an image file with image_optim.
 
@@ -60,6 +61,7 @@ provided, the input is copied there first and the copy is optimized.
 OPTIONS:
 
 	-h        Show this help screen.
+	-o        Output image file.
 	-v        Show plugin name and version number.
 
 USAGE

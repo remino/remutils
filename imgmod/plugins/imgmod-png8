@@ -17,12 +17,13 @@ png8_start() {
 	local opt
 
 	OPTIND=1
-	while getopts h opt; do
+	while getopts ho: opt; do
 		case $opt in
 			h)
 				png8_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			*) png8_invalid_opt ;;
 		esac
 	done
@@ -30,10 +31,9 @@ png8_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && png8_help && return $E_ARGS
-	[ $# -gt 2 ] && png8_help && return $E_ARGS
+	[ $# -gt 1 ] && png8_help && return $E_ARGS
 
 	input="$1"
-	output="${2:-}"
 
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
@@ -51,7 +51,7 @@ png8_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [<options>] <input> [output]
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
 
 Convert an image to PNG8.
 
@@ -61,6 +61,7 @@ When output is omitted, the output path is generated next to the input with a
 OPTIONS:
 
 	-h        Show this help screen.
+	-o        Output image file.
 	-v        Show plugin name and version number.
 
 USAGE

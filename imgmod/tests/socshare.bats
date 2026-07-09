@@ -74,7 +74,7 @@ load helpers
 @test "creates socshare image with explicit output" {
 	_make_input_image
 
-	run "$BATS_TEST_DIRNAME/../imgmod" socshare "$INPUT_FILE" "$EXPLICIT_OUTPUT"
+	run "$BATS_TEST_DIRNAME/../imgmod" socshare -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$EXPLICIT_OUTPUT" ]
@@ -83,7 +83,19 @@ load helpers
 	[ "$(magick identify -format '%m' "$EXPLICIT_OUTPUT")" = "WEBP" ]
 }
 
-@test "optimizes socshare output when -o is set" {
+@test "optimizes socshare output when -O is set" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O socshare "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+	[ -f "$output" ]
+	[ "$(cat "$OPTIM_LOG")" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+}
+
+@test "optimizes socshare output with deprecated -o alias" {
 	_make_input_image
 	_make_fake_image_optim
 
@@ -95,7 +107,43 @@ load helpers
 	[ "$(cat "$OPTIM_LOG")" = "$OUTPUT_DIR/source-pubshare.jpg" ]
 }
 
-@test "does not optimize socshare output without -o" {
+@test "optimizes socshare output with long optim option" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" --optim socshare "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+	[ -f "$output" ]
+	[ "$(cat "$OPTIM_LOG")" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+}
+
+@test "optimizes socshare output with long optimize option" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" --optimize socshare "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+	[ -f "$output" ]
+	[ "$(cat "$OPTIM_LOG")" = "$OUTPUT_DIR/source-pubshare.jpg" ]
+}
+
+@test "optimizes explicit socshare output when -O is set" {
+	_make_input_image
+	_make_fake_image_optim
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O socshare -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$EXPLICIT_OUTPUT" ]
+	[ -f "$EXPLICIT_OUTPUT" ]
+	[ "$(cat "$OPTIM_LOG")" = "$EXPLICIT_OUTPUT" ]
+}
+
+@test "does not optimize socshare output without -O" {
 	_make_input_image
 	_make_fake_image_optim
 
@@ -117,12 +165,12 @@ load helpers
 	[ ! -e "$OPTIM_LOG" ]
 }
 
-@test "fails when -o is set and image_optim is missing" {
+@test "fails when -O is set and image_optim is missing" {
 	local safe_path="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 	_make_input_image
 
-	run env PATH="$safe_path" "$BATS_TEST_DIRNAME/../imgmod" -o socshare "$INPUT_FILE"
+	run env PATH="$safe_path" "$BATS_TEST_DIRNAME/../imgmod" -O socshare "$INPUT_FILE"
 
 	[ "$status" -eq 19 ]
 	[[ "$output" == *"Required: image_optim"* ]]
@@ -133,7 +181,7 @@ load helpers
 	_make_input_image
 	_make_fake_image_optim 43
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o socshare "$INPUT_FILE"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O socshare "$INPUT_FILE"
 
 	[ "$status" -eq 43 ]
 	[ "$output" = "$OUTPUT_DIR/source-pubshare.jpg" ]
@@ -143,7 +191,7 @@ load helpers
 @test "does not optimize when plugin fails" {
 	_make_fake_image_optim
 
-	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -o socshare "$OUTPUT_DIR/missing.png"
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" -O socshare "$OUTPUT_DIR/missing.png"
 
 	[ "$status" -eq 17 ]
 	[[ "$output" == *"No such file"* ]]

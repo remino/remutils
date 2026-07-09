@@ -18,13 +18,14 @@ socshare_start() {
 	local opt
 
 	OPTIND=1
-	while getopts f:h opt; do
+	while getopts f:ho: opt; do
 		case $opt in
 			f) format="$OPTARG" ;;
 			h)
 				socshare_help
 				return
 				;;
+			o) output="$OPTARG" ;;
 			*) socshare_invalid_opt ;;
 		esac
 	done
@@ -32,10 +33,9 @@ socshare_start() {
 	shift "$((OPTIND - 1))"
 
 	[ $# -lt 1 ] && socshare_help && return $E_ARGS
-	[ $# -gt 2 ] && socshare_help && return $E_ARGS
+	[ $# -gt 1 ] && socshare_help && return $E_ARGS
 
 	input="$1"
-	output="${2:-}"
 
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
@@ -59,7 +59,7 @@ socshare_help() {
 	cat << USAGE
 $USAGE_NAME $VERSION
 
-USAGE: $USAGE_NAME [-f <format>] <input> [output]
+USAGE: $USAGE_NAME [-f <format>] [-o <output>] <input>
 
 Crop and resize an image to a generic 1200x630 social sharing image for Open Graph and Twitter cards.
 
@@ -67,6 +67,7 @@ OPTIONS:
 
 	-f        Output image format. Defaults to output extension, or jpg when output is omitted.
 	-h        Show this help screen.
+	-o        Output image file.
 	-v        Show plugin name and version number.
 
 USAGE

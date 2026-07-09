@@ -30,40 +30,34 @@ imgmod_main() {
 
 	local newplugin=
 	local optimize=0
-	local opt
 
 	[ $# -lt 1 ] && _help && return
 
-	case "$1" in
-		--help)
-			_help
-			return
-			;;
-		--version)
-			_version
-			return
-			;;
-	esac
-
-	OPTIND=1
-	while getopts :hn:ov opt; do
-		case $opt in
-			h)
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			-h | --help)
 				_help
 				return
 				;;
-			n) newplugin="$OPTARG" ;;
-			o) optimize=1 ;;
-			v)
+			-v | --version)
 				_version
 				return
 				;;
-			:) _invalid_opt "$OPTARG" ;;
-			*) _invalid_opt "$OPTARG" ;;
+			-o | -O | --optim | --optimize)
+				optimize=1
+				shift
+				;;
+			-n)
+				shift
+				[ $# -lt 1 ] && _invalid_opt n
+				newplugin="$1"
+				shift
+				break
+				;;
+			-*) _invalid_opt "${1#-}" ;;
+			*) break ;;
 		esac
 	done
-
-	shift "$((OPTIND - 1))"
 
 	if [ -n "$newplugin" ]; then
 		[ $# -gt 0 ] && _help && return $E_ARGS
@@ -102,22 +96,25 @@ Image modification helpers.
 
 COMMANDS:
 
-	chain      Run multiple imgmod plugins in sequence.
-	collage    Stitch multiple images together.
-	completion Shell completion data.
-	newplugin Create a new imgmod plugin.
-	optim     Optimize an image directly with image_optim.
-	png8      Convert an image to PNG8.
-	scale4x   Scale an image 4x without smoothing.
-	socshare  Crop and resize an image to 1200x630 for social sharing.
-	vidframe  Extract one frame from a video as an image.
+	chain       Run multiple imgmod plugins in sequence.
+	collage     Stitch multiple images together.
+	completion  Shell completion data.
+	newplugin   Create a new imgmod plugin.
+	optim       Optimize an image directly with image_optim.
+	png8        Convert an image to PNG8.
+	scale4x     Scale an image 4x without smoothing.
+	socshare    Crop and resize an image to 1200x630 for social sharing.
+	vidframe    Extract one frame from a video as an image.
 
 OPTIONS:
 
-	-h        Show this help screen.
-	-n        Create a new plugin. Names create XDG plugins; paths create files exactly there.
-	-o        Optimize plugin image outputs with image_optim.
-	-v        Show script name and version number.
+	-h          Show this help screen.
+	-n          Create a new plugin. Names create XDG plugins; paths create files
+	            exactly there.
+	-O, --optim, --optimize
+	            Optimize plugin image outputs with image_optim.
+	-o          Deprecated alias for -O.
+	-v          Show script name and version number.
 
 Plugins are executable files found in XDG data directories under imgmod/plugins,
 or in the bundled plugins directory next to this script.

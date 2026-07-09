@@ -9,7 +9,7 @@ imgmod \- Image modification helpers
 [\fB-v\fR|\fB--version\fR]
 .br
 .B imgmod
-[\fB-o\fR] \fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
+[\fB-O\fR|\fB--optim\fR|\fB--optimize\fR] \fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
 .br
 .B imgmod
 \fB-n\fR \fINAME-OR-PATH\fR
@@ -62,9 +62,12 @@ Show usage help.
 .B \-n \fINAME-OR-PATH\fR
 Create a new plugin. This is a shortcut for \fBimgmod newplugin\fR.
 .TP
-.B \-o
+.B \-O, --optim, --optimize
 Optimize plugin image outputs with \fBimage_optim\fR.
 Only files reported by a plugin with \fBimgmod_output\fR are optimized.
+.TP
+.B \-o
+Deprecated alias for \fB-O\fR.
 .TP
 .B \-v, --version
 Show script name and version number.
@@ -88,7 +91,7 @@ prefix, such as \fBwatermark_start\fR, and call
 \fBimgmod_plugin_run "$@"\fR.
 
 Plugins call \fBimgmod_output \fIFILE\fR to report image output files that can
-be optimized with \fBimgmod -o\fR.
+be optimized with \fBimgmod -O\fR.
 .SH FILES
 .TP
 .B ~/.local/share/imgmod/plugins/imgmod-*
@@ -102,7 +105,7 @@ Create a social sharing image:
 .TP
 Create and optimize a social sharing image:
 .nf
-.B imgmod -o socshare image.png
+.B imgmod -O socshare image.png
 .fi
 .TP
 Optimize an image directly:
