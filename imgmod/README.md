@@ -16,6 +16,7 @@ Rémino Rem <https://remino.net/>, 2026
         - [Zsh](#zsh)
         - [Fish](#fish)
     - [Chains](#chains)
+    - [collage](#collage)
     - [New Plugins](#new-plugins)
     - [Plugins](#plugins)
     - [Plugin Hooks](#plugin-hooks)
@@ -140,6 +141,23 @@ Chainable plugins must accept the standard plugin arguments:
 ```
 
 The final output path is required for chains.
+
+### collage
+
+Stitch multiple images together vertically or horizontally:
+
+```sh
+imgmod collage input-a.png input-b.png
+imgmod collage -H -o output.png images/
+```
+
+Use `-V` for vertical collages, which is the default. Vertical collages scale
+images down to the smallest input width before stitching. Use `-H` for
+horizontal collages, which scale images down to the smallest input height.
+
+Inputs can be files or directories. Directories are searched recursively. When
+`-o` is omitted, the output path is generated from the first discovered input
+file with a `-collage` suffix.
 
 ### Optim
 

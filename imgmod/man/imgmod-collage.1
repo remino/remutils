@@ -1,0 +1,63 @@
+.TH IMGMOD-COLLAGE 1 "July 9, 2026" "imgmod 1.4.1"
+.SH NAME
+imgmod-collage \- Stitch multiple images together
+.SH SYNOPSIS
+.B imgmod collage
+[\fB-H\fR|\fB-V\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR [\fIINPUT ...\fR]
+.SH DESCRIPTION
+.B imgmod collage
+uses ImageMagick to stitch multiple images together without padding.
+
+Inputs can be image files or directories. Directories are searched recursively,
+and discovered files are processed in sorted order within each directory.
+
+Vertical collages scale images down to the smallest input width before
+stitching. Horizontal collages scale images down to the smallest input height
+before stitching.
+
+When \fIOUTPUT\fR is omitted, the output path is generated from the first input
+file as \fISTEM\fB-collage.\fIEXT\fR.
+.SH OPTIONS
+.TP
+.B \-H
+Stitch images horizontally.
+.TP
+.B \-o \fIOUTPUT\fR
+Write the collage to \fIOUTPUT\fR.
+.TP
+.B \-V
+Stitch images vertically. This is the default.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH OUTPUT
+The command prints the output file path and reports it through
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -o\fR.
+.SH DEPENDENCIES
+.TP
+.B magick
+ImageMagick command used to inspect and transform images.
+.SH EXAMPLES
+.TP
+Create a vertical collage:
+.nf
+.B imgmod collage first.png second.png
+.fi
+.TP
+Create a horizontal collage from a directory:
+.nf
+.B imgmod collage -H -o joined.png images/
+.fi
+.SH SEE ALSO
+.BR imgmod (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

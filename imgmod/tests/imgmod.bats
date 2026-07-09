@@ -47,6 +47,7 @@ load helpers
 
 	[ "$status" -eq 0 ]
 	_output_has_line chain
+	_output_has_line collage
 	_output_has_line completion
 	_output_has_line newplugin
 	_output_has_line optim
@@ -103,6 +104,7 @@ load helpers
 @test "manpages are bundled" {
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-chain.1" ]
+	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-collage.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-completion.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1" ]
 	[ -f "$BATS_TEST_DIRNAME/../man/imgmod-optim.1" ]
@@ -125,6 +127,7 @@ load helpers
 @test "manpages document commands" {
 	grep -q "^\\.TH IMGMOD " "$BATS_TEST_DIRNAME/../man/imgmod.1"
 	grep -q "^\\.TH IMGMOD-CHAIN " "$BATS_TEST_DIRNAME/../man/imgmod-chain.1"
+	grep -q "^\\.TH IMGMOD-COLLAGE " "$BATS_TEST_DIRNAME/../man/imgmod-collage.1"
 	grep -q "^\\.TH IMGMOD-COMPLETION " "$BATS_TEST_DIRNAME/../man/imgmod-completion.1"
 	grep -q "^\\.TH IMGMOD-NEWPLUGIN " "$BATS_TEST_DIRNAME/../man/imgmod-newplugin.1"
 	grep -q "^\\.TH IMGMOD-OPTIM " "$BATS_TEST_DIRNAME/../man/imgmod-optim.1"

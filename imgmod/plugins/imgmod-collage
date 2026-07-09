@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# imgmod collage
+# Stitch multiple images together.
+
+VERSION='1.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+collage_start() {
+	local direction=vertical
+	local output=
+	local opt
+
+	OPTIND=1
+	while getopts Ho:Vh opt; do
+		case $opt in
+			H) direction=horizontal ;;
+			o) output="$OPTARG" ;;
+			V) direction=vertical ;;
+			h)
+				collage_help
+				return
+				;;
+			*) collage_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && collage_help && return $E_ARGS
+
+	COLLAGE_INPUTS=()
+	collage_collect_inputs "$@"
+	[ "${#COLLAGE_INPUTS[@]}" -lt 1 ] && _fatal $E_NO_FILE "No input image files found."
+
+	if [ -z "$output" ]; then
+		output="$(collage_output_path "${COLLAGE_INPUTS[0]}")"
+	fi
+
+	_require magick
+
+	if [ "$direction" = horizontal ]; then
+		collage_horizontal "$output" "${COLLAGE_INPUTS[@]}"
+	else
+		collage_vertical "$output" "${COLLAGE_INPUTS[@]}"
+	fi
+
+	imgmod_output "$output"
+}
+
+collage_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [-H|-V] [-o <output>] <input> [<input> ...]
+
+Stitch multiple images together without padding.
+
+Inputs can be image files or directories. Directories are searched recursively.
+Horizontal collages scale images down to the smallest input height. Vertical
+collages scale images down to the smallest input width.
+
+When output is omitted, the output path is generated next to the first input
+file with a -collage suffix.
+
+OPTIONS:
+
+	-H        Stitch images horizontally.
+	-o        Output image file.
+	-V        Stitch images vertically. This is the default.
+	-h        Show this help screen.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+collage_collect_inputs() {
+	local input
+	local found
+
+	for input in "$@"; do
+		if [ -f "$input" ]; then
+			COLLAGE_INPUTS+=("$input")
+			continue
+		fi
+
+		if [ -d "$input" ]; then
+			while IFS= read -r found; do
+				COLLAGE_INPUTS+=("$found")
+			done < <(find "$input" -type f | sort)
+			continue
+		fi
+
+		_fatal $E_NO_FILE "No such file or directory: $input"
+	done
+}
+
+collage_horizontal() {
+	local output=$1
+	local min_height
+	local -a args=()
+	local input
+
+	shift
+
+	min_height="$(collage_min_dimension height "$@")"
+
+	for input in "$@"; do
+		args+=("(" "$input" "-auto-orient" "-resize" "x$min_height>" ")")
+	done
+
+	magick "${args[@]}" +append "$output"
+}
+
+collage_vertical() {
+	local output=$1
+	local min_width
+	local -a args=()
+	local input
+
+	shift
+
+	min_width="$(collage_min_dimension width "$@")"
+
+	for input in "$@"; do
+		args+=("(" "$input" "-auto-orient" "-resize" "${min_width}x>" ")")
+	done
+
+	magick "${args[@]}" -append "$output"
+}
+
+collage_min_dimension() {
+	local dimension=$1
+	local input
+	local size
+	local width
+	local height
+	local smallest=
+
+	shift
+
+	for input in "$@"; do
+		size="$(magick identify -format '%w %h' "$input")" || return
+		read -r width height <<< "$size"
+
+		case "$dimension" in
+			width) size=$width ;;
+			height) size=$height ;;
+		esac
+
+		if [ -z "$smallest" ] || [ "$size" -lt "$smallest" ]; then
+			smallest=$size
+		fi
+	done
+
+	_echo "$smallest"
+}
+
+collage_output_path() {
+	local input=$1
+	local input_dir
+	local input_name
+	local input_stem
+	local input_ext
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	input_ext="${input_name##*.}"
+
+	if [ "$input_stem" = "$input_name" ] || [ -z "$input_stem" ]; then
+		input_stem="$input_name"
+		input_ext="png"
+	fi
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-collage.$input_ext"
+	else
+		_echo "$input_dir/$input_stem-collage.$input_ext"
+	fi
+}
+
+collage_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	collage_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

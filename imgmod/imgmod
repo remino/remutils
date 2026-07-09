@@ -103,6 +103,7 @@ Image modification helpers.
 COMMANDS:
 
 	chain      Run multiple imgmod plugins in sequence.
+	collage    Stitch multiple images together.
 	completion Shell completion data.
 	newplugin Create a new imgmod plugin.
 	optim     Optimize an image directly with image_optim.

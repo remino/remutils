@@ -2,12 +2,18 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v1.4.1](#v141)
 - [v1.4.0](#v140)
 - [v1.1.0](#v110)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Add `collage` command to stitch multiple images together vertically or
+  horizontally.
 
 ## v1.4.1
 

@@ -28,6 +28,60 @@ load helpers
 	[ "$(cat "$TOOL_LOG")" = "magick <$INPUT_FILE> <-filter> <point> <-resize> <400%> <$output_file>" ]
 }
 
+@test "collage stitches vertically by default" {
+	local wide="$OUTPUT_DIR/wide.png"
+	local tall="$OUTPUT_DIR/tall.png"
+
+	_make_fake_magick_with_identify
+	touch "$wide" "$tall"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" collage "$wide" "$tall"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$OUTPUT_DIR/wide-collage.png" ]
+	[ -f "$output" ]
+	[ "$(cat "$TOOL_LOG")" = "magick <identify> <-format> <%w %h> <$wide>
+magick <identify> <-format> <%w %h> <$tall>
+magick <(> <$wide> <-auto-orient> <-resize> <300x>> <)> <(> <$tall> <-auto-orient> <-resize> <300x>> <)> <-append> <$OUTPUT_DIR/wide-collage.png>" ]
+}
+
+@test "collage stitches horizontally with explicit output" {
+	local wide="$OUTPUT_DIR/wide.png"
+	local tall="$OUTPUT_DIR/tall.png"
+	local output_file="$OUTPUT_DIR/joined.webp"
+
+	_make_fake_magick_with_identify
+	touch "$wide" "$tall"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" collage -H -o "$output_file" "$wide" "$tall"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$output_file" ]
+	[ -f "$output_file" ]
+	[ "$(cat "$TOOL_LOG")" = "magick <identify> <-format> <%w %h> <$wide>
+magick <identify> <-format> <%w %h> <$tall>
+magick <(> <$wide> <-auto-orient> <-resize> <x200>> <)> <(> <$tall> <-auto-orient> <-resize> <x200>> <)> <+append> <$output_file>" ]
+}
+
+@test "collage expands input directories recursively" {
+	local input_dir="$OUTPUT_DIR/images"
+	local nested_dir="$input_dir/nested"
+	local tall="$input_dir/tall.png"
+	local wide="$nested_dir/wide.png"
+
+	_make_fake_magick_with_identify
+	mkdir -p "$nested_dir"
+	touch "$wide" "$tall"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" collage "$input_dir"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$OUTPUT_DIR/images/nested/wide-collage.png" ]
+	[ -f "$output" ]
+	[[ "$(cat "$TOOL_LOG")" == *"magick <(> <$wide>"* ]]
+	[[ "$(cat "$TOOL_LOG")" == *"<)> <(> <$tall>"* ]]
+}
+
 @test "vidframe extracts first frame by default" {
 	local input_file="$OUTPUT_DIR/export.mov"
 

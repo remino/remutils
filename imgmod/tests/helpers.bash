@@ -65,6 +65,35 @@ TOOL
 	chmod a+x "$FAKE_BIN/$name"
 }
 
+_make_fake_magick_with_identify() {
+	mkdir -p "$FAKE_BIN"
+
+	cat > "$FAKE_BIN/magick" << 'TOOL'
+#!/bin/sh
+printf '%s' magick >> "$IMGMOD_TOOL_LOG"
+last=
+for arg do
+	printf ' <%s>' "$arg" >> "$IMGMOD_TOOL_LOG"
+	last="$arg"
+done
+printf '\n' >> "$IMGMOD_TOOL_LOG"
+
+if [ "$1" = identify ]; then
+	case "$last" in
+		*wide*) printf '800 200' ;;
+		*tall*) printf '300 900' ;;
+		*) printf '500 400' ;;
+	esac
+	exit 0
+fi
+
+if [ -n "$last" ]; then
+	: > "${last#PNG8:}"
+fi
+TOOL
+	chmod a+x "$FAKE_BIN/magick"
+}
+
 _write_custom_plugin() {
 	local name=$1
 	local body=$2
