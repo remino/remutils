@@ -2,13 +2,13 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.0.0](#v200)
 - [v1.3.1](#v131)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.0.0
 
 - Port `litesite` to a Rust-backed executable, using native Rust build,
   compression, dotenv, and live-server integrations.
