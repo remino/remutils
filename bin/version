@@ -19,11 +19,15 @@ version_main() {
 	[ ! -f "$FILE" ] && echo "Missing file: $FILE" >&2 && return $E_NO_FILE
 
 	PACKAGE_JSON="$(_package_json_for "$FILE")"
+	CARGO_TOML="$(_cargo_toml_for "$FILE")"
 	VERSION_SOURCE="shell"
 
 	if [ -f "$PACKAGE_JSON" ]; then
 		VERSION="$(_read_package_version "$PACKAGE_JSON")"
 		VERSION_SOURCE="package"
+	elif [ -f "$CARGO_TOML" ]; then
+		VERSION="$(_read_cargo_version "$CARGO_TOML")"
+		VERSION_SOURCE="cargo"
 	else
 		VERSION="$(_read_shell_version "$FILE")"
 	fi
@@ -51,6 +55,14 @@ _package_json_for() {
 	echo "$dir/package.json"
 }
 
+_cargo_toml_for() {
+	local file=$1
+	local dir
+
+	dir="$(dirname "$file")"
+	echo "$dir/Cargo.toml"
+}
+
 _read_package_version() {
 	local package_json=$1
 
@@ -63,6 +75,25 @@ if (typeof pkg.version !== "string") {
 }
 process.stdout.write(pkg.version);
 ' "$package_json"
+}
+
+_read_cargo_version() {
+	local cargo_toml=$1
+
+	awk '
+		$0 == "[package]" {
+			in_package = 1
+			next
+		}
+		/^\[/ {
+			in_package = 0
+		}
+		in_package && $1 == "version" {
+			gsub(/"/, "", $3)
+			print $3
+			exit
+		}
+	' "$cargo_toml"
 }
 
 _read_shell_version() {
@@ -101,6 +132,9 @@ _update() {
 	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$file"
 
 	case "$source" in
+		cargo)
+			_write_cargo_version "$CARGO_TOML" "$NEW_VERSION"
+			;;
 		package)
 			_write_package_version "$package_json" "$NEW_VERSION"
 			;;
@@ -124,6 +158,16 @@ const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
 pkg.version = version;
 fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
 ' "$package_json" "$new_version"
+}
+
+_write_cargo_version() {
+	local cargo_toml=$1
+	local new_version=$2
+
+	NEW_VERSION="$new_version" perl -0pi -e '
+my $version = $ENV{NEW_VERSION};
+s/(\[package\][\s\S]*?^version\s*=\s*")(\d+\.\d+\.\d+)(")/$1$version$3/m;
+' "$cargo_toml"
 }
 
 _write_shell_version() {

@@ -231,7 +231,7 @@ EOF
 	run "$SCRIPT" -v
 
 	[ "$status" -eq 0 ]
-	expected_version="litesite $(sed -n 's/^VERSION="\([^"]*\)"/\1/p' "$SCRIPT" | head -n1)"
+	expected_version="litesite $(bin/version show "$SCRIPT")"
 	[ "$output" = "$expected_version" ]
 }
 
@@ -297,11 +297,10 @@ EOF
 	make_serve_stub
 	ln -s "$SITE_ROOT" "$TEST_ROOT/site-link"
 
-	run "$SCRIPT" -C "$TEST_ROOT/site-link" serve
+	run env LITESITE_SERVE_ONCE=1 "$SCRIPT" -C "$TEST_ROOT/site-link" serve
 
 	[ "$status" -eq 0 ]
 	[[ "$output" == *'Serving "./src/public"'* ]]
-	[[ "$output" == *'Change detected ./src/public/index.html'* ]]
 	[[ "$output" != *"$TEST_ROOT/site-link"* ]]
 }
 

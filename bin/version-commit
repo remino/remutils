@@ -47,6 +47,8 @@ version_commit_main() {
 	INIT_PWD="$(pwd)"
 	PACKAGE_JSON="$(dirname "$SCRIPT_FILE")/package.json"
 	PACKAGE_LOCK="$(dirname "$SCRIPT_FILE")/package-lock.json"
+	CARGO_TOML="$(dirname "$SCRIPT_FILE")/Cargo.toml"
+	CARGO_LOCK="$(dirname "$SCRIPT_FILE")/Cargo.lock"
 
 	if [ -f "$PACKAGE_LOCK" ]; then
 		_require npm
@@ -54,6 +56,10 @@ version_commit_main() {
 			cd "$(dirname "$PACKAGE_LOCK")"
 			npm install --package-lock-only --ignore-scripts --no-audit --no-fund > /dev/null
 		)
+	fi
+	if [ -f "$CARGO_TOML" ]; then
+		_require cargo
+		cargo generate-lockfile --manifest-path "$CARGO_TOML"
 	fi
 
 	# detect git repo root of file

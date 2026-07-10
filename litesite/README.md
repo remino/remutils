@@ -66,7 +66,8 @@ HTML files can include other files with SSI-style directives:
 The path is resolved relative to the file being processed. Relative paths,
 absolute paths, and paths outside the site root are all accepted.
 
-`rsdeploy` is required only for `litesite deploy`.
+ImageMagick is required only for AVIF derivative generation. `rsdeploy` is
+required only for `litesite deploy`.
 
 `litesite new <slug>` creates `./<slug>` by default. `init` remains available as
 an alias.
@@ -98,9 +99,12 @@ That's it.
 bats tests
 ```
 
-The package follows the same convention as the other `remutils` scripts:
+The package follows the same top-level convention as the other `remutils` tools,
+with a Rust implementation behind the executable shim:
 
-- `litesite`: executable script
+- `litesite`: executable shim
+- `Cargo.toml`: Rust package metadata and version source
+- `src/`: Rust implementation
 - `man/litesite.1`: manual page
 - `homebrew.rb.mustache`: Homebrew formula template
 - `tests/`: Bats test suite

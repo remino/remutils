@@ -5,12 +5,11 @@ class Litesite < Formula
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
-  homepage "https://github.com/remino/remutils/tree/main/rsdeploy"
+  homepage "https://github.com/remino/remutils/tree/main/litesite"
   revision 1
 
-  depends_on "bash"
+  depends_on "rust" => :build
   depends_on "imagemagick"
-  depends_on "node"
 
   livecheck do
     url :stable
@@ -18,9 +17,8 @@ class Litesite < Formula
   end
 
   def install
-    libexec.install Dir["*"]
-    bin.install_symlink libexec / "{{name}}" => "{{name}}"
-    man1.install libexec / "man/{{name}}.1"
+    system "cargo", "install", *std_cargo_args(path: ".")
+    man1.install "man/{{name}}.1"
   end
 
   test do
