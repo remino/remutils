@@ -162,6 +162,82 @@ describe('comprose new', () => {
 		assert.match(style, /Add styles for custom-paths/)
 		assert.equal(image, 'not a real png, but new only copies images\n')
 	})
+
+	it('supports explicitly selecting the default Astro content template', async () => {
+		const projectDir = await createProject()
+
+		runComprose(projectDir, [
+			'new',
+			'--template',
+			'astro-content',
+			'-p',
+			'journal',
+			'-d',
+			'2026-05-06',
+			'-s',
+			'explicit-template',
+		])
+
+		const content = await readFile(
+			join(
+				projectDir,
+				'src/content/journal/2026-05-06-explicit-template/index.md'
+			),
+			'utf8'
+		)
+
+		assert.match(content, /^pubname: journal$/m)
+		assert.match(content, /^style: journal\/explicit-template\.css$/m)
+	})
+
+	it('creates Middleman blog entries without Astro directories', async () => {
+		const projectDir = await createProject()
+		const imagePath = join(projectDir, 'source.avif')
+
+		await writeFile(imagePath, 'fake avif payload\n')
+
+		const output = runComprose(projectDir, [
+			'new',
+			'--template',
+			'middleman-blog',
+			'--content-root',
+			'source/posts',
+			'-d',
+			'2026-05-06',
+			'-t',
+			'Middleman Entry',
+			'-i',
+			imagePath,
+		])
+
+		assert.match(output, /Created middleman-entry/)
+
+		const content = await readFile(
+			join(projectDir, 'source/posts/middleman-entry.html.md'),
+			'utf8'
+		)
+		const image = await readFile(
+			join(projectDir, 'source/posts/middleman-entry/source.avif'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Middleman Entry$/m)
+		assert.match(content, /^date: 2026-05-06$/m)
+		assert.doesNotMatch(content, /^pubname:/m)
+		assert.doesNotMatch(content, /^type:/m)
+		assert.doesNotMatch(content, /^catname:/m)
+		assert.equal(image, 'fake avif payload\n')
+
+		await assert.rejects(
+			readFile(
+				join(
+					projectDir,
+					'src/content/posts/2026-05-06-middleman-entry/index.md'
+				),
+				'utf8'
+			)
+		)
+	})
 })
 
 describe('comprose import', () => {
@@ -237,6 +313,90 @@ describe('comprose import', () => {
 			'journal',
 			sourceDir,
 		])
+
+		assert.equal(error.status, 12)
+		assert.match(String(error.stderr), /import would overwrite existing entry/)
+	})
+
+	it('imports Middleman blog entries and rewrites assets relatively', async () => {
+		const projectDir = await createProject()
+		const sourceDir = await mkdtemp(join(tmpdir(), 'comprose-source-'))
+		cleanupPaths.push(sourceDir)
+
+		await writeFile(
+			join(sourceDir, 'post.md'),
+			[
+				'---',
+				'date: 2026-05-28',
+				'original_date: 2020-01-02',
+				'share_image: share.avif',
+				'---',
+				'',
+				'# Imported Middleman',
+				'',
+				'![Image](image.avif#?large)',
+				'',
+			].join('\n')
+		)
+		await writeFile(join(sourceDir, 'image.avif'), 'fake image\n')
+		await writeFile(join(sourceDir, 'share.avif'), 'fake share\n')
+
+		const output = runComprose(projectDir, [
+			'import',
+			'--template',
+			'middleman-blog',
+			'--content-root',
+			'source/posts',
+			sourceDir,
+		])
+
+		assert.match(output, /Imported imported-middleman/)
+
+		const content = await readFile(
+			join(projectDir, 'source/posts/imported-middleman.html.md'),
+			'utf8'
+		)
+		const image = await readFile(
+			join(projectDir, 'source/posts/imported-middleman/image.avif'),
+			'utf8'
+		)
+		const share = await readFile(
+			join(projectDir, 'source/posts/imported-middleman/share.avif'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Imported Middleman$/m)
+		assert.match(content, /^date: 2026-05-28$/m)
+		assert.match(content, /^original_date: 2020-01-02$/m)
+		assert.match(content, /^share_image: share.avif$/m)
+		assert.match(content, /!\[Image\]\(image\.avif\)/)
+		assert.doesNotMatch(content, /^# Imported Middleman$/m)
+		assert.doesNotMatch(content, /^pubname:/m)
+		assert.equal(image, 'fake image\n')
+		assert.equal(share, 'fake share\n')
+	})
+
+	it('fails with exit code 12 for existing Middleman blog imports', async () => {
+		const projectDir = await createProject()
+		const sourceDir = await mkdtemp(join(tmpdir(), 'comprose-source-'))
+		cleanupPaths.push(sourceDir)
+
+		await writeFile(
+			join(sourceDir, 'post.md'),
+			'---\ndate: 2026-05-28\n---\n\n# Middleman Conflict\n\nBody.\n'
+		)
+
+		const args = [
+			'import',
+			'--template',
+			'middleman-blog',
+			'--content-root',
+			'source/posts',
+			sourceDir,
+		]
+
+		runComprose(projectDir, args)
+		const error = runComproseExpectFailure(projectDir, args)
 
 		assert.equal(error.status, 12)
 		assert.match(String(error.stderr), /import would overwrite existing entry/)

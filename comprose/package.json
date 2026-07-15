@@ -12,8 +12,9 @@
 	},
 	"files": [
 		"comprose",
-		"bin",
-		"man"
+		"bin/comprose.js",
+		"man",
+		"templates"
 	],
 	"scripts": {
 		"format": "prettier --write .",
@@ -45,6 +46,7 @@
 		"node": ">=20"
 	},
 	"dependencies": {
+		"mustache": "^4.2.0",
 		"sharp": "0.34.5"
 	}
 }

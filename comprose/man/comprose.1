@@ -12,8 +12,8 @@ comprose \- Create and import prose content entries
 \fIimport\fR [\fIOPTIONS\fR] \fIPATH\fR
 .SH DESCRIPTION
 .B comprose
-creates dated Markdown entry scaffolds for prose-oriented static sites.
-It can also import a directory containing Markdown, optional CSS, and referenced images into an entry layout with content, style, and public asset roots.
+creates Markdown entry scaffolds for prose-oriented static sites.
+It can also import a directory containing Markdown, optional CSS, and referenced images into a selected Mustache-backed template layout.
 .SH COMMANDS
 .TP
 .B help
@@ -25,6 +25,9 @@ Create a new content entry scaffold.
 .B import
 Import a directory into a new content entry.
 .SH OPTIONS
+.TP
+.B --template \fINAME-OR-PATH\fR
+Set the template layout. Built-in templates are \fBastro-content\fR and \fBmiddleman-blog\fR. Defaults to \fBastro-content\fR.
 .TP
 .B \-s \fISLUG\fR
 Set the entry slug.
@@ -79,26 +82,38 @@ Alias for \fB--public-prefix\fR.
 .TP
 .B --style-prefix \fIPATH\fR
 Override the style frontmatter prefix. Defaults to \fB<project>\fR.
+.SH TEMPLATES
+.TP
+.B astro-content
+Writes \fBsrc/content/<project>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<project>/<slug>/\fR.
+.TP
+.B middleman-blog
+Writes \fB<content-root>/<slug>.html.md\fR and assets under \fB<content-root>/<slug>/\fR. It does not create a stylesheet by default.
+.PP
+Custom template directories can be passed to \fB--template\fR. They must contain \fBentry.md.mustache\fR and may contain \fBstyle.css.mustache\fR. A custom directory may include \fBlayout.json\fR with \fB{ "layout": "middleman-blog" }\fR; otherwise it uses the \fBastro-content\fR path layout.
 .SH EXAMPLES
 .TP
 Create a new article:
 .nf
-.B comprose new -p journal --pubname example-journal -s my-new-entry
+.B comprose new --template astro-content -p journal --pubname example-journal -s my-new-entry
 .fi
 .TP
-Create a dated note with tags:
+Create a Middleman-style entry:
 .nf
-.B comprose new -p journal -d 2026-05-06 -k note -g terminal -g css -t "Terminal Notes"
+.B comprose new --template middleman-blog --content-root source/posts -s my-new-entry
 .fi
 .TP
 Import a prepared source directory:
 .nf
-.B comprose import -p notes --pubname field-notes /tmp/source-entry
+.B comprose import --template middleman-blog --content-root source/posts /tmp/source-entry
 .fi
 .SH DEPENDENCIES
 .TP
 .B Node.js
 Used to run the command-line tool.
+.TP
+.B Mustache
+Used to render entry and stylesheet templates.
 .TP
 .B sharp
 Used to convert JPEG, WebP, and related image inputs to AVIF.

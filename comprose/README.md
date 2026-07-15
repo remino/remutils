@@ -2,9 +2,8 @@
 
 Create and import prose content entries.
 
-`comprose` is a generalized version of the `entry` scripts used by blog-style
-Astro projects. It creates dated Markdown entry folders, matching CSS files,
-public asset directories, and frontmatter fields commonly used by prose sites.
+`comprose` creates Markdown entries for prose-oriented static sites. It can use
+built-in or custom Mustache templates to support different site layouts.
 
 ## Install
 
@@ -20,12 +19,20 @@ comprose new [options] -s <slug>
 comprose import [options] <path>
 ```
 
-For projects with `src/content/<project>`, `src/styles/<project>`, and
-`public/<project>`, pass the section name with `-p`:
+The default `astro-content` template is for projects with
+`src/content/<project>`, `src/styles/<project>`, and `public/<project>`:
 
 ```sh
-comprose new -p journal --pubname example-journal -s my-new-entry
-comprose import -p notes --pubname field-notes /tmp/source-entry
+comprose new --template astro-content -p journal -s my-new-entry
+comprose import --template astro-content -p notes /tmp/source-entry
+```
+
+The `middleman-blog` template is for single-file blog entries with assets beside
+the entry:
+
+```sh
+comprose new --template middleman-blog --content-root source/posts -s my-entry
+comprose import --template middleman-blog --content-root source/posts /tmp/source-entry
 ```
 
 If `-p` is omitted, the current directory name is used. If `--pubname` is
@@ -42,7 +49,7 @@ Create a new entry scaffold:
 comprose new -p journal -t "My New Entry" -d 2026-05-06 -g terminal -g css
 ```
 
-This creates:
+With the default `astro-content` template, this creates:
 
 - `src/content/<project>/<date>-<slug>/index.md`
 - `src/styles/<project>/<slug>.css`
@@ -65,8 +72,8 @@ comprose import -p journal /tmp/source-entry
 The import command looks first for `entry.md`, `post.md`, `note.md`, or
 `article.md`, then falls back to the first Markdown file. It preserves selected
 frontmatter fields, removes the first Markdown heading when it becomes the
-generated title, copies `style.css` when present, and rewrites referenced local
-image links into the public asset folder.
+generated title, copies `style.css` when the selected template supports a
+stylesheet, and rewrites referenced local image links into the asset folder.
 
 Use `-f` to replace an existing generated entry:
 
@@ -76,6 +83,7 @@ comprose import -p journal /tmp/source-entry -f
 
 ## Options
 
+- `--template <name-or-path>`: Template layout. Defaults to `astro-content`.
 - `-s <slug>`: Entry slug.
 - `-t <title>`: Entry title.
 - `-d <iso-8601>`: Entry date.
@@ -95,8 +103,22 @@ comprose import -p journal /tmp/source-entry -f
 - `--images-prefix <path>`: Alias for `--public-prefix`.
 - `--style-prefix <path>`: Override style frontmatter prefix.
 
+## Templates
+
+Built-in templates:
+
+- `astro-content`: Writes `src/content/<project>/<date>-<slug>/index.md`, a
+  matching stylesheet, and assets under `public/<project>/<slug>/`.
+- `middleman-blog`: Writes `<content-root>/<slug>.html.md` and assets under
+  `<content-root>/<slug>/`. It does not create a stylesheet by default.
+
+Custom template directories can be passed to `--template`. They must contain
+`entry.md.mustache` and may contain `style.css.mustache`. A custom directory may
+also include `layout.json` with `{ "layout": "middleman-blog" }`; otherwise it
+uses the `astro-content` path layout.
+
 ## Dependencies
 
-`comprose` uses Node.js and `sharp`. Image imports that keep PNG/GIF/HEIC output
-also require ImageMagick. PNG and GIF outputs are passed through `image_optim`
-when that command is available.
+`comprose` uses Node.js, Mustache, and `sharp`. Image imports that keep
+PNG/GIF/HEIC output also require ImageMagick. PNG and GIF outputs are passed
+through `image_optim` when that command is available.
