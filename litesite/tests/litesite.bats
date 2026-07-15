@@ -26,99 +26,13 @@ EOF
 	chmod +x "$STUB_BIN/$name"
 }
 
-make_build_stubs() {
+make_external_stubs() {
 	PATH="$STUB_BIN:$PATH"
 	export PATH
 
 	make_stub npx '
-while [[ $# -gt 0 ]]; do
-	case "$1" in
-		--yes)
-			shift
-			;;
-		-p)
-			shift 2
-			;;
-		html-minifier-terser|terser|lightningcss)
-			cmd="$1"
-			shift
-			break
-			;;
-		*)
-			shift
-			;;
-	esac
-done
-
-	case "${cmd:-}" in
-	html-minifier-terser)
-		input="${@: -1}"
-		perl -0pe "s/<!--(?!\\!)[\\s\\S]*?-->//g" "$input"
-		;;
-	terser)
-		input="$1"
-		output=""
-		shift
-		while [[ $# -gt 0 ]]; do
-			case "$1" in
-				--output)
-					output="$2"
-					shift 2
-					;;
-				*)
-					shift
-					;;
-			esac
-		done
-		perl -0pe "s{/\*(?!\\!)(?:.|\\n)*?\*/}{}gs; s{//(?!\\!)[^\\n]*}{}g" "$input" > "$output"
-		;;
-	lightningcss)
-		input=""
-		output=""
-		while [[ $# -gt 0 ]]; do
-			case "$1" in
-				-m)
-					shift
-					;;
-				-o)
-					output="$2"
-					shift 2
-					;;
-				*)
-					if [[ -z "$input" && -f "$1" ]]; then
-						input="$1"
-					fi
-					shift
-					;;
-			esac
-		done
-
-		if [[ -n "$output" ]]; then
-			cp "$input" "$output"
-		else
-			cat
-		fi
-		;;
-	*)
-		echo "unexpected npx command: ${cmd:-}" >&2
-		exit 1
-		;;
-esac
-'
-
-	make_stub brotli '
-input="${@: -1}"
-cp "$input" "$input.br"
-'
-
-	make_stub gzip '
-input="${@: -1}"
-cp "$input" "$input.gz"
-'
-
-	make_stub zstd '
-input="${@: -1}"
-cp "$input" "$input.zst"
+echo "npx should not be called" >&2
+exit 1
 '
 
 	make_stub magick '
@@ -134,24 +48,6 @@ exit 1
 
 	make_stub rsdeploy '
 printf "%s\n" "$@" > "$TEST_ROOT/rsdeploy.args"
-'
-}
-
-make_serve_stub() {
-	PATH="$STUB_BIN:$PATH"
-	export PATH
-
-	make_stub npx '
-if [[ "${1:-}" == "--yes" && "${2:-}" == "live-server" ]]; then
-	shift 2
-	printf "Serving \"%s\" at http://127.0.0.1:8080\n" "$1"
-	printf "Ready for changes\n"
-	printf "Change detected %s/index.html\n" "$1"
-	exit 0
-fi
-
-echo "unexpected npx invocation" >&2
-exit 1
 '
 }
 
@@ -281,7 +177,7 @@ EOF
 
 @test "jpg and webp stay as avif siblings" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run "$SCRIPT" -C "$SITE_ROOT" jpg "$SITE_ROOT/src/public/sample.avif"
 	[ "$status" -eq 0 ]
@@ -294,7 +190,7 @@ EOF
 
 @test "serve rewrites absolute paths to relative" {
 	create_site
-	make_serve_stub
+	make_external_stubs
 	ln -s "$SITE_ROOT" "$TEST_ROOT/site-link"
 
 	run env LITESITE_SERVE_ONCE=1 "$SCRIPT" -C "$TEST_ROOT/site-link" serve
@@ -311,9 +207,9 @@ EOF
 	[[ "$output" == *"USAGE: litesite new <site_slug> [<dest_dir>]"* ]]
 }
 
-@test "build writes dist outputs with local stubs" {
+@test "build writes dist outputs with native build steps" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run "$SCRIPT" -C "$SITE_ROOT" build
 
@@ -333,7 +229,7 @@ EOF
 
 @test "compress regenerates compressed outputs" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run "$SCRIPT" -C "$SITE_ROOT" build
 	[ "$status" -eq 0 ]
@@ -349,7 +245,7 @@ EOF
 
 @test "build can disable optional outputs" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run env LITESITE_BUILD_BROTLI=0 LITESITE_BUILD_GZIP=0 LITESITE_BUILD_ZSTD=0 LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_AVIF_JPEG=0 LITESITE_BUILD_AVIF_WEBP=0 \
 		"$SCRIPT" -C "$SITE_ROOT" build
@@ -366,7 +262,7 @@ EOF
 
 @test "build can disable minification" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 	make_minify_fixture
 
 	run env LITESITE_BUILD_MINIFY=0 \
@@ -379,7 +275,7 @@ EOF
 
 @test "build expands html includes by default" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 	make_include_fixture
 
 	run env LITESITE_BUILD_MINIFY=0 \
@@ -393,7 +289,7 @@ EOF
 
 @test "build can disable html includes" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 	make_include_fixture
 
 	run env LITESITE_BUILD_MINIFY=0 LITESITE_BUILD_INCLUDES=0 \
@@ -405,7 +301,7 @@ EOF
 
 @test "build preserves important comments when minifying" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 	make_minify_fixture
 
 	run "$SCRIPT" -C "$SITE_ROOT" build
@@ -420,7 +316,7 @@ EOF
 
 @test "deploy passes wet run flag to rsdeploy" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run "$SCRIPT" -C "$SITE_ROOT" deploy
 
@@ -432,7 +328,7 @@ EOF
 
 @test "deploy -n omits wet run flag" {
 	create_site
-	make_build_stubs
+	make_external_stubs
 
 	run "$SCRIPT" -C "$SITE_ROOT" deploy -n
 
