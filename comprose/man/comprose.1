@@ -1,0 +1,115 @@
+.TH COMPROSE 1 "July 2026" "comprose 0.1.0"
+.SH NAME
+comprose \- Create and import prose content entries
+.SH SYNOPSIS
+.B comprose
+\fIhelp\fR
+.br
+.B comprose
+\fInew\fR [\fIOPTIONS\fR] [\fB-s\fR \fISLUG\fR] [\fB-t\fR \fITITLE\fR]
+.br
+.B comprose
+\fIimport\fR [\fIOPTIONS\fR] \fIPATH\fR
+.SH DESCRIPTION
+.B comprose
+creates dated Markdown entry scaffolds for prose-oriented static sites.
+It can also import a directory containing Markdown, optional CSS, and referenced images into an entry layout with content, style, and public asset roots.
+.SH COMMANDS
+.TP
+.B help
+Show the usage screen.
+.TP
+.B new
+Create a new content entry scaffold.
+.TP
+.B import
+Import a directory into a new content entry.
+.SH OPTIONS
+.TP
+.B \-s \fISLUG\fR
+Set the entry slug.
+.TP
+.B \-t \fITITLE\fR
+Set the entry title.
+.TP
+.B \-d \fIISO-8601\fR
+Set the entry date. Date-only, date-time, and date-time with offset values are accepted.
+.TP
+.B \-k\fR, \fB--type\fR, \fB--kind\fR \fIKIND\fR
+Set the entry kind. Valid values are \fIarticle\fR and \fInote\fR.
+.TP
+.B \-g \fITAG\fR
+Add a tag to frontmatter. May be repeated.
+.TP
+.B \-i \fIPATH\fR
+Copy an image into the entry public folder. May be repeated.
+.TP
+.B \-e
+Open created text files in \fBEDITOR\fR after scaffolding.
+.TP
+.B \-o
+Open the public folder in Finder after scaffolding.
+.TP
+.B \-f
+For \fBimport\fR, replace an existing generated entry.
+.TP
+.B \-p\fR, \fB--project\fR \fINAME\fR
+Set the content section name. Defaults to the current directory name.
+.TP
+.B --pubname \fINAME\fR
+Set the generated frontmatter \fBpubname\fR.
+.TP
+.B --content-root \fIPATH\fR
+Override the content root. Defaults to \fBsrc/content/<project>\fR.
+.TP
+.B --styles-root \fIPATH\fR
+Override the styles root. Defaults to \fBsrc/styles/<project>\fR.
+.TP
+.B --public-root \fIPATH\fR
+Override the public asset root. Defaults to \fBpublic/<project>\fR.
+.TP
+.B --images-root \fIPATH\fR
+Alias for \fB--public-root\fR.
+.TP
+.B --public-prefix \fIPATH\fR
+Override the public URL prefix. Defaults to \fB/<project>\fR.
+.TP
+.B --images-prefix \fIPATH\fR
+Alias for \fB--public-prefix\fR.
+.TP
+.B --style-prefix \fIPATH\fR
+Override the style frontmatter prefix. Defaults to \fB<project>\fR.
+.SH EXAMPLES
+.TP
+Create a new article:
+.nf
+.B comprose new -p journal --pubname example-journal -s my-new-entry
+.fi
+.TP
+Create a dated note with tags:
+.nf
+.B comprose new -p journal -d 2026-05-06 -k note -g terminal -g css -t "Terminal Notes"
+.fi
+.TP
+Import a prepared source directory:
+.nf
+.B comprose import -p notes --pubname field-notes /tmp/source-entry
+.fi
+.SH DEPENDENCIES
+.TP
+.B Node.js
+Used to run the command-line tool.
+.TP
+.B sharp
+Used to convert JPEG, WebP, and related image inputs to AVIF.
+.TP
+.B ImageMagick
+Used for HEIC, PNG, and GIF import processing.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -1,0 +1,50 @@
+{
+	"name": "@remino/comprose",
+	"version": "0.1.0",
+	"description": "Create and import prose content entries.",
+	"type": "module",
+	"bin": {
+		"comprose": "comprose"
+	},
+	"man": "./man/comprose.1",
+	"publishConfig": {
+		"access": "public"
+	},
+	"files": [
+		"comprose",
+		"bin",
+		"man"
+	],
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"test": "node --test",
+		"version:show": "../bin/version show ./comprose"
+	},
+	"keywords": [
+		"astro",
+		"blog",
+		"markdown",
+		"prose"
+	],
+	"author": {
+		"name": "Rémino Rem",
+		"url": "https://remino.net/"
+	},
+	"license": "ISC",
+	"homepage": "https://github.com/remino/remutils/tree/main/comprose",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/remino/remutils.git",
+		"directory": "comprose"
+	},
+	"bugs": {
+		"url": "https://github.com/remino/remutils/issues"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"dependencies": {
+		"sharp": "0.34.5"
+	}
+}
