@@ -20,24 +20,25 @@ comprose import [options] <path>
 ```
 
 The default `astro-content` template is for projects with
-`src/content/<project>`, `src/styles/<project>`, and `public/<project>`:
+`src/content/<collection>`, `src/styles/<collection>`, and
+`public/<collection>`:
 
 ```sh
-comprose new --template astro-content -p journal -s my-new-entry
-comprose import --template astro-content -p notes /tmp/source-entry
+comprose new --template astro-content -c journal -s my-new-entry
+comprose import --template astro-content -c notes /tmp/source-entry
 ```
 
 The `middleman-blog` template is for single-file blog entries with assets beside
 the entry:
 
 ```sh
-comprose new --template middleman-blog --content-root source/posts -s my-entry
-comprose import --template middleman-blog --content-root source/posts /tmp/source-entry
+comprose new --template middleman-blog -c posts -s my-entry
+comprose import --template middleman-blog -c posts /tmp/source-entry
 ```
 
-If `-p` is omitted, the current directory name is used. If `--pubname` is
-omitted, `comprose` tries to derive it from a reverse-DNS package name such as
-`com.example.journal`, producing `example-journal`.
+If `-c` is omitted, the current directory name is used as the collection. If
+`--pubname` is omitted, `comprose` tries to derive it from a reverse-DNS package
+name such as `com.example.journal`, producing `example-journal`.
 
 ## Commands
 
@@ -46,19 +47,19 @@ omitted, `comprose` tries to derive it from a reverse-DNS package name such as
 Create a new entry scaffold:
 
 ```sh
-comprose new -p journal -t "My New Entry" -d 2026-05-06 -g terminal -g css
+comprose new -c journal -t "My New Entry" -d 2026-05-06 -g terminal -g css
 ```
 
 With the default `astro-content` template, this creates:
 
-- `src/content/<project>/<date>-<slug>/index.md`
-- `src/styles/<project>/<slug>.css`
-- `public/<project>/<slug>/`
+- `src/content/<collection>/<date>-<slug>/index.md`
+- `src/styles/<collection>/<slug>.css`
+- `public/<collection>/<slug>/`
 
 Piped standard input seeds the Markdown body:
 
 ```sh
-printf 'Draft body.\n' | comprose new -p journal -s draft-entry
+printf 'Draft body.\n' | comprose new -c journal -s draft-entry
 ```
 
 ### `import`
@@ -66,7 +67,7 @@ printf 'Draft body.\n' | comprose new -p journal -s draft-entry
 Import a directory containing a Markdown file:
 
 ```sh
-comprose import -p journal /tmp/source-entry
+comprose import -c journal /tmp/source-entry
 ```
 
 The import command looks first for `entry.md`, `post.md`, `note.md`, or
@@ -78,7 +79,7 @@ stylesheet, and rewrites referenced local image links into the asset folder.
 Use `-f` to replace an existing generated entry:
 
 ```sh
-comprose import -p journal /tmp/source-entry -f
+comprose import -c journal /tmp/source-entry -f
 ```
 
 ## Options
@@ -89,33 +90,48 @@ comprose import -p journal /tmp/source-entry -f
 - `-d <iso-8601>`: Entry date.
 - `-k`, `--type`, `--kind <kind>`: `article` or `note`.
 - `-g <tag>`: Add a tag. Repeatable.
-- `-i <path>`: Copy an image into the public folder. Repeatable.
+- `-i <path>`: Copy an image into the entry asset directory. Repeatable.
 - `-e`: Open generated text files in `$EDITOR`.
 - `-o`: Open the public folder in Finder.
 - `-f`: Replace an existing imported entry.
-- `-p`, `--project <name>`: Project section name.
+- `-c`, `--collection <name>`: Content collection name.
 - `--pubname <name>`: Frontmatter `pubname`.
-- `--content-root <path>`: Override content root.
-- `--styles-root <path>`: Override styles root.
-- `--public-root <path>`: Override public root.
-- `--images-root <path>`: Alias for `--public-root`.
-- `--public-prefix <path>`: Override public URL prefix.
-- `--images-prefix <path>`: Alias for `--public-prefix`.
-- `--style-prefix <path>`: Override style frontmatter prefix.
 
 ## Templates
 
 Built-in templates:
 
-- `astro-content`: Writes `src/content/<project>/<date>-<slug>/index.md`, a
-  matching stylesheet, and assets under `public/<project>/<slug>/`.
-- `middleman-blog`: Writes `<content-root>/<slug>.html.md` and assets under
-  `<content-root>/<slug>/`. It does not create a stylesheet by default.
+- `astro-content`: Writes `src/content/<collection>/<date>-<slug>/index.md`, a
+  matching stylesheet, and assets under `public/<collection>/<slug>/`.
+- `middleman-blog`: Writes `source/<collection>/<slug>.html.md` and assets under
+  `source/<collection>/<slug>/`. It does not create a stylesheet by default.
 
-Custom template directories can be passed to `--template`. They must contain
-`entry.md.mustache` and may contain `style.css.mustache`. A custom directory may
-also include `layout.json` with `{ "layout": "middleman-blog" }`; otherwise it
-uses the `astro-content` path layout.
+Template directories define output paths directly. Directory and file names can
+include path variables such as `[collection]`, `[date]`, and `[slug]`. Files
+ending in `.mustache` are rendered and written without the `.mustache` suffix.
+Place a `.comprose-assets` marker file in the directory where copied images
+should be written.
+
+Template names are resolved in this order:
+
+1. Built-in templates bundled with `comprose`.
+2. `.comprose/templates/<name>` in the current directory or any parent
+   directory.
+3. `.config/comprose/templates/<name>` in the current directory or any parent
+   directory.
+4. `$XDG_CONFIG_HOME/comprose/templates/<name>`, or
+   `$HOME/.config/comprose/templates/<name>` when `XDG_CONFIG_HOME` is unset.
+5. A relative or absolute directory path passed to `--template`.
+
+For example:
+
+```text
+templates/example/
+  source/[collection]/
+    [slug].html.md.mustache
+    [slug]/
+      .comprose-assets
+```
 
 ## Dependencies
 

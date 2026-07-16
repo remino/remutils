@@ -10,7 +10,15 @@ import {
 	writeFile,
 } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import {
+	basename,
+	dirname,
+	extname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+} from 'node:path'
 import { once } from 'node:events'
 import { fileURLToPath } from 'node:url'
 import Mustache from 'mustache'
@@ -49,7 +57,7 @@ Content options:
   -k, --type, --kind <kind>
                   Entry type: article or note. Defaults to article.
   -g <tag>        Tag to add to frontmatter. Repeatable.
-  -i <path>       Image file to copy into the entry public folder. Repeatable.
+  -i <path>       Image file to copy into the entry asset directory. Repeatable.
   -e              Open created text files in $EDITOR after scaffolding.
   -o              Open the public folder in Finder after scaffolding.
   -f              Reimport and replace an existing generated entry.
@@ -57,35 +65,21 @@ Content options:
 Project options:
   --template <name-or-path>
                   Template layout. Defaults to astro-content.
-  -p, --project <name>
-                  Content section name. Defaults to the current directory name.
+  -c, --collection <name>
+                  Content collection name. Defaults to the current directory name.
   --pubname <name>
-                  Frontmatter pubname. Defaults to package.json name when it looks like reverse DNS, otherwise the project name.
-  --content-root <path>
-                  Content root. Defaults to src/content/<project>.
-  --styles-root <path>
-                  Styles root. Defaults to src/styles/<project>.
-  --public-root <path>
-                  Public asset root. Defaults to public/<project>.
-  --images-root <path>
-                  Alias for --public-root.
-  --public-prefix <path>
-                  Public URL prefix. Defaults to /<project>.
-  --images-prefix <path>
-                  Alias for --public-prefix.
-  --style-prefix <path>
-                  Style frontmatter prefix. Defaults to <project>.
+                  Frontmatter pubname. Defaults to package.json name when it looks like reverse DNS, otherwise the collection name.
 
 stdin            Seed the entry body from piped input.
 
 One of -s or -t is required for new entries.
 
 Examples:
-  comprose new --template astro-content -p journal --pubname example-journal -s my-new-entry
-  comprose new --template middleman-blog --content-root source/posts -t "My New Entry"
-  comprose new -p journal -d 2026-05-06T14:30+09:00 -k note -g terminal
-  comprose import --template astro-content -p journal --pubname example-journal /tmp/source-entry
-  comprose import --template middleman-blog --content-root source/posts /tmp/source-entry -f
+  comprose new --template astro-content -c journal --pubname example-journal -s my-new-entry
+  comprose new --template middleman-blog -c posts -t "My New Entry"
+  comprose new -c journal -d 2026-05-06T14:30+09:00 -k note -g terminal
+  comprose import --template astro-content -c journal --pubname example-journal /tmp/source-entry
+  comprose import --template middleman-blog -c posts /tmp/source-entry -f
 `)
 }
 
@@ -108,13 +102,8 @@ const parseArgs = argv => {
 		force: false,
 		sourceDir: undefined,
 		template: undefined,
-		project: undefined,
+		collection: undefined,
 		pubname: undefined,
-		contentRoot: undefined,
-		stylesRoot: undefined,
-		publicRoot: undefined,
-		publicPrefix: undefined,
-		stylePrefix: undefined,
 	}
 
 	if (argv.length === 0) {
@@ -189,38 +178,18 @@ const parseArgs = argv => {
 			continue
 		}
 
-		if (token === '-p' || token === '--project') {
-			args.project = normalizeProject(nextValue(token))
+		if (
+			token === '-c' ||
+			token === '--collection' ||
+			token === '-p' ||
+			token === '--project'
+		) {
+			args.collection = normalizeProject(nextValue(token))
 			continue
 		}
 
 		if (token === '--pubname') {
 			args.pubname = nextValue(token).trim()
-			continue
-		}
-
-		if (token === '--content-root') {
-			args.contentRoot = nextValue(token)
-			continue
-		}
-
-		if (token === '--styles-root') {
-			args.stylesRoot = nextValue(token)
-			continue
-		}
-
-		if (token === '--public-root' || token === '--images-root') {
-			args.publicRoot = nextValue(token)
-			continue
-		}
-
-		if (token === '--public-prefix' || token === '--images-prefix') {
-			args.publicPrefix = normalizePublicPrefix(nextValue(token))
-			continue
-		}
-
-		if (token === '--style-prefix') {
-			args.stylePrefix = nextValue(token).replace(/^\/+|\/+$/g, '')
 			continue
 		}
 
@@ -334,22 +303,12 @@ const normalizeSlug = value =>
 		.toLowerCase()
 
 const normalizeProject = value => {
-	const project = normalizeSlug(value)
-	if (!project) {
-		throw new Error(`project "${value}" normalised to an empty value`)
+	const collection = normalizeSlug(value)
+	if (!collection) {
+		throw new Error(`collection "${value}" normalised to an empty value`)
 	}
 
-	return project
-}
-
-const normalizePublicPrefix = value => {
-	const trimmed = value.trim().replace(/\/+$/g, '')
-
-	if (!trimmed || trimmed === '/') {
-		return ''
-	}
-
-	return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+	return collection
 }
 
 const humanizeSlug = slug =>
@@ -830,69 +789,88 @@ const pubnameFromPackageName = packageName => {
 	return parts.slice(1).join('-')
 }
 
-const templateEntryPath = templateDir => join(templateDir, 'entry.md.mustache')
+const findParentTemplateDir = async templateName => {
+	let dir = repoRoot
+
+	while (true) {
+		for (const candidate of [
+			join(dir, '.comprose', 'templates', templateName),
+			join(dir, '.config', 'comprose', 'templates', templateName),
+		]) {
+			if (await pathExists(candidate)) {
+				return candidate
+			}
+		}
+
+		const parent = dirname(dir)
+		if (parent === dir) {
+			return undefined
+		}
+
+		dir = parent
+	}
+}
+
+const findConfigTemplateDir = async templateName => {
+	const configHome =
+		process.env.XDG_CONFIG_HOME || join(process.env.HOME ?? '', '.config')
+	if (!configHome) {
+		return undefined
+	}
+
+	const candidate = join(configHome, 'comprose', 'templates', templateName)
+	return (await pathExists(candidate)) ? candidate : undefined
+}
 
 const resolveTemplate = async templateInput => {
 	const templateName = templateInput ?? 'astro-content'
 	const builtInDir = join(toolRoot, 'templates', templateName)
 
-	if (await pathExists(templateEntryPath(builtInDir))) {
+	if (await pathExists(builtInDir)) {
 		return {
 			dir: builtInDir,
-			layout: templateName,
+			name: templateName,
+		}
+	}
+
+	const parentTemplateDir = await findParentTemplateDir(templateName)
+	if (parentTemplateDir) {
+		return {
+			dir: parentTemplateDir,
+			name: templateName,
+		}
+	}
+
+	const configTemplateDir = await findConfigTemplateDir(templateName)
+	if (configTemplateDir) {
+		return {
+			dir: configTemplateDir,
 			name: templateName,
 		}
 	}
 
 	const customDir = resolve(repoRoot, templateName)
-	if (!(await pathExists(templateEntryPath(customDir)))) {
+	if (!(await pathExists(customDir))) {
 		throw new Error(`template not found: ${templateName}`)
-	}
-
-	let layout = 'astro-content'
-	try {
-		const layoutConfig = JSON.parse(
-			await readFile(join(customDir, 'layout.json'), 'utf8')
-		)
-		if (
-			layoutConfig.layout === 'astro-content' ||
-			layoutConfig.layout === 'middleman-blog'
-		) {
-			layout = layoutConfig.layout
-		}
-	} catch {
-		// Custom template directories default to the Astro content layout.
 	}
 
 	return {
 		dir: customDir,
-		layout,
 		name: templateName,
 	}
 }
 
 const resolveConfig = async args => {
 	const packageName = await readPackageName()
-	const project = args.project ?? normalizeProject(basename(repoRoot))
-	const pubname = args.pubname || pubnameFromPackageName(packageName) || project
-	const publicPrefix = args.publicPrefix ?? normalizePublicPrefix(project)
-	const stylePrefix = args.stylePrefix ?? project
+	const collection = args.collection ?? normalizeProject(basename(repoRoot))
+	const pubname =
+		args.pubname || pubnameFromPackageName(packageName) || collection
 	const template = await resolveTemplate(args.template)
 
 	return {
-		contentRoot: resolve(
-			repoRoot,
-			args.contentRoot ?? join('src', 'content', project)
-		),
-		project,
+		collection,
+		project: collection,
 		pubname,
-		publicPrefix,
-		publicRoot: resolve(repoRoot, args.publicRoot ?? join('public', project)),
-		stylePrefix,
-		stylesRoot: resolve(
-			repoRoot,
-			args.stylesRoot ?? join('src', 'styles', project)
-		),
 		template,
 	}
 }
@@ -960,50 +938,136 @@ const resolveMarkdownMetadata = async sourceDir => {
 	}
 }
 
-const publicAssetPath = (config, slug, fileName) =>
-	`${config.publicPrefix}/${slug}/${fileName}`.replace(/\/+/g, '/')
+const assetMarkerName = '.comprose-assets'
 
-const styleFrontmatterPath = (config, slug) =>
-	[config.stylePrefix, `${slug}.css`].filter(Boolean).join('/')
+const walkFiles = async dir => {
+	const entries = await readdir(dir, { withFileTypes: true })
+	const files = []
 
-const buildPaths = (config, { dateString, slug }) => {
-	if (config.template.layout === 'middleman-blog') {
-		const entryPath = join(config.contentRoot, `${slug}.html.md`)
+	for (const entry of entries) {
+		const entryPath = join(dir, entry.name)
 
-		return {
-			assetDir: join(config.contentRoot, slug),
-			contentDir: config.contentRoot,
-			entryPath,
-			label: slug,
-			publicAssetPath: fileName => fileName,
-			stylePath: undefined,
-			styleValue: undefined,
-			usesStyle: false,
+		if (entry.isDirectory()) {
+			for (const childPath of await walkFiles(entryPath)) {
+				files.push(join(entry.name, childPath))
+			}
+			continue
+		}
+
+		if (entry.isFile()) {
+			files.push(entry.name)
 		}
 	}
 
-	const datedSlug = `${dateString}-${slug}`
-
-	return {
-		assetDir: join(config.publicRoot, slug),
-		contentDir: join(config.contentRoot, datedSlug),
-		entryPath: join(config.contentRoot, datedSlug, 'index.md'),
-		label: datedSlug,
-		publicAssetPath: fileName => publicAssetPath(config, slug, fileName),
-		stylePath: join(config.stylesRoot, `${slug}.css`),
-		styleValue: styleFrontmatterPath(config, slug),
-		usesStyle: true,
-	}
+	return files.sort((left, right) => left.localeCompare(right))
 }
 
-const loadTemplate = async (config, fileName) => {
-	const templatePath = join(config.template.dir, fileName)
+const renderPathVariables = (value, variables) =>
+	value.replace(/\[([a-zA-Z0-9_]+)\]/g, (match, key) =>
+		variables[key] === undefined ? match : String(variables[key])
+	)
 
-	if (!(await pathExists(templatePath))) {
+const outputPathFor = relativePath => {
+	const outputPath = resolve(repoRoot, relativePath)
+	const relativeToRoot = relative(repoRoot, outputPath)
+
+	if (relativeToRoot.startsWith('..') || isAbsolute(relativeToRoot)) {
+		throw new Error(`template output escapes repository root: ${relativePath}`)
+	}
+
+	return outputPath
+}
+
+const publicAssetPathFromTemplate = (assetDirRelative, fileName) => {
+	if (!assetDirRelative) {
+		return fileName
+	}
+
+	const normalized = assetDirRelative.replace(/\\/g, '/')
+	if (normalized === 'public') {
+		return `/${fileName}`
+	}
+
+	if (normalized.startsWith('public/')) {
+		return `/${normalized.slice('public/'.length)}/${fileName}`.replace(
+			/\/+/g,
+			'/'
+		)
+	}
+
+	return fileName
+}
+
+const styleValueFromTemplate = styleRelativePath => {
+	if (!styleRelativePath) {
 		return undefined
 	}
 
-	return readFile(templatePath, 'utf8')
+	const normalized = styleRelativePath.replace(/\\/g, '/')
+	if (normalized.startsWith('src/styles/')) {
+		return normalized.slice('src/styles/'.length)
+	}
+
+	return normalized
+}
+
+const buildTemplatePlan = async (config, variables) => {
+	const files = await walkFiles(config.template.dir)
+	const renderedFiles = []
+	let assetDir
+	let assetDirRelative
+
+	for (const file of files) {
+		const renderedRelativePath = renderPathVariables(file, variables)
+
+		if (basename(renderedRelativePath) === assetMarkerName) {
+			assetDirRelative = dirname(renderedRelativePath)
+			assetDir = outputPathFor(assetDirRelative)
+			continue
+		}
+
+		const outputRelativePath = renderedRelativePath.endsWith('.mustache')
+			? renderedRelativePath.slice(0, -'.mustache'.length)
+			: renderedRelativePath
+
+		renderedFiles.push({
+			outputPath: outputPathFor(outputRelativePath),
+			outputRelativePath,
+			sourcePath: join(config.template.dir, file),
+			template: renderedRelativePath.endsWith('.mustache'),
+		})
+	}
+
+	const entryFile =
+		renderedFiles.find(file => file.outputRelativePath.endsWith('.md')) ??
+		renderedFiles.find(file => file.outputRelativePath.endsWith('.markdown'))
+	const styleFile = renderedFiles.find(file =>
+		file.outputRelativePath.endsWith('.css')
+	)
+
+	if (!entryFile) {
+		throw new Error(
+			`template has no Markdown entry file: ${config.template.name}`
+		)
+	}
+
+	return {
+		assetDir,
+		assetDirRelative,
+		contentDir: dirname(entryFile.outputPath),
+		entryPath: entryFile.outputPath,
+		files: renderedFiles,
+		label:
+			variables.datedSlug &&
+			entryFile.outputRelativePath.includes(variables.datedSlug)
+				? variables.datedSlug
+				: variables.slug,
+		publicAssetPath: fileName =>
+			publicAssetPathFromTemplate(assetDirRelative, fileName),
+		stylePath: styleFile?.outputPath,
+		styleValue: styleValueFromTemplate(styleFile?.outputRelativePath),
+		usesStyle: Boolean(styleFile),
+	}
 }
 
 const hasValue = value =>
@@ -1013,6 +1077,7 @@ const templateContext = ({
 	body,
 	config,
 	date,
+	dateString,
 	frontmatterDate,
 	image,
 	metadata = {},
@@ -1029,6 +1094,7 @@ const templateContext = ({
 		catname: metadata.catname ?? 'tips',
 		contentDir: paths.contentDir,
 		date,
+		dateString: dateString ?? date,
 		description: metadata.description,
 		draft: metadata.draft,
 		entryPath: paths.entryPath,
@@ -1036,14 +1102,15 @@ const templateContext = ({
 		image,
 		kicker: metadata.kicker,
 		original_date: metadata.original_date,
+		collection: config.collection,
 		project: config.project,
 		pubname: config.pubname,
-		publicPrefix: config.publicPrefix,
+		publicPrefix: `/${config.collection}`,
 		share_image: metadata.share_image,
 		slug,
 		style,
 		stylePath: paths.stylePath,
-		stylePrefix: config.stylePrefix,
+		stylePrefix: config.collection,
 		subtitle: metadata.subtitle,
 		summary: metadata.summary,
 		tags: Array.isArray(tags) ? tags.join(', ') : tags,
@@ -1067,36 +1134,11 @@ const templateContext = ({
 	return context
 }
 
-const renderTemplate = async (config, fileName, context) => {
-	const template = await loadTemplate(config, fileName)
-
-	return template === undefined ? undefined : Mustache.render(template, context)
-}
-
-const writeRenderedEntry = async (config, context) => {
-	const rendered = await renderTemplate(config, 'entry.md.mustache', context)
-	if (rendered === undefined) {
-		throw new Error(
-			`template missing entry.md.mustache: ${config.template.name}`
-		)
-	}
-
-	await writeFile(context.entryPath, rendered, { flag: 'wx' })
-}
-
-const writeRenderedStyle = async (config, context) => {
-	const rendered = await renderTemplate(config, 'style.css.mustache', context)
-	if (rendered === undefined || !context.stylePath) {
-		return false
-	}
-
-	await writeFile(context.stylePath, rendered, { flag: 'wx' })
-	return true
-}
-
 const removeExistingOutput = async paths => {
 	await rm(paths.entryPath, { force: true })
-	await rm(paths.assetDir, { force: true, recursive: true })
+	if (paths.assetDir) {
+		await rm(paths.assetDir, { force: true, recursive: true })
+	}
 	if (paths.stylePath) {
 		await rm(paths.stylePath, { force: true })
 	}
@@ -1107,7 +1149,7 @@ const existingOutputPath = async paths => {
 		return paths.entryPath
 	}
 
-	if (await pathExists(paths.assetDir)) {
+	if (paths.assetDir && (await pathExists(paths.assetDir))) {
 		return paths.assetDir
 	}
 
@@ -1116,6 +1158,36 @@ const existingOutputPath = async paths => {
 	}
 
 	return undefined
+}
+
+const writeTemplateFiles = async (
+	paths,
+	context,
+	{ skipOutputPaths = [] } = {}
+) => {
+	const written = []
+	const skipped = new Set(skipOutputPaths)
+
+	for (const file of paths.files) {
+		if (skipped.has(file.outputPath)) {
+			continue
+		}
+
+		await mkdir(dirname(file.outputPath), { recursive: true })
+
+		if (file.template) {
+			const template = await readFile(file.sourcePath, 'utf8')
+			await writeFile(file.outputPath, Mustache.render(template, context), {
+				flag: 'wx',
+			})
+		} else {
+			await copyFile(file.sourcePath, file.outputPath)
+		}
+
+		written.push(file.outputPath)
+	}
+
+	return written
 }
 
 const importDirectory = async (
@@ -1145,8 +1217,13 @@ const importDirectory = async (
 	const dateString = dateParts
 		? `${dateParts[1]}-${dateParts[2]}-${dateParts[3]}`
 		: toLocalDateString(new Date())
-	const paths = buildPaths(config, {
+	const datedSlug = `${dateString}-${markdownMetadata.slug}`
+	const paths = await buildTemplatePlan(config, {
+		collection: config.collection,
 		dateString,
+		date: dateString,
+		datedSlug,
+		project: config.collection,
 		slug: markdownMetadata.slug,
 	})
 	const styleSourcePath = join(sourceDir, 'style.css')
@@ -1171,12 +1248,13 @@ const importDirectory = async (
 		await removeExistingOutput(paths)
 	}
 
-	await mkdir(dirname(paths.entryPath), { recursive: true })
-	if (
-		imageFileNames.length > 0 ||
-		openFolder ||
-		config.template.layout !== 'middleman-blog'
-	) {
+	if (imageFileNames.length > 0 && !paths.assetDir) {
+		throw new Error(
+			`template has no ${assetMarkerName} marker for imported assets`
+		)
+	}
+
+	if (paths.assetDir) {
 		await mkdir(paths.assetDir, { recursive: true })
 	}
 	if (paths.stylePath && hasStyleCss) {
@@ -1261,6 +1339,7 @@ const importDirectory = async (
 			body,
 			config,
 			date: markdownMetadata.date,
+			dateString,
 			frontmatterDate: markdownMetadata.date,
 			image: fallbackImageFrontmatter,
 			metadata: {
@@ -1275,7 +1354,12 @@ const importDirectory = async (
 			type: markdownMetadata.type,
 		})
 
-		await writeRenderedEntry(config, context)
+		await writeTemplateFiles(paths, context, {
+			skipOutputPaths:
+				hasStyleCss && paths.stylePath && paths.usesStyle
+					? [paths.stylePath]
+					: [],
+		})
 	} catch (error) {
 		fail(
 			error instanceof Error
@@ -1293,13 +1377,15 @@ const importDirectory = async (
 	for (const imageAsset of imageAssets) {
 		console.log(`  ${join(paths.assetDir, imageAsset.outputFileName)}`)
 	}
-	if (await pathExists(paths.assetDir)) {
+	if (paths.assetDir && (await pathExists(paths.assetDir))) {
 		console.log(`  ${paths.assetDir}`)
 	}
 
 	if (openFolder) {
 		try {
-			openInFinder(paths.assetDir)
+			if (paths.assetDir) {
+				openInFinder(paths.assetDir)
+			}
 		} catch (error) {
 			fail(error instanceof Error ? error.message : String(error))
 		}
@@ -1333,8 +1419,16 @@ const createEntry = async (config, parsed) => {
 
 	const date = parsed.date?.parsed ?? new Date()
 	const dateString = parsed.date?.fileDate ?? toLocalDateString(date)
+	const datedSlug = `${dateString}-${slug}`
 	const title = rawTitle || humanizeSlug(slug) || slug
-	const paths = buildPaths(config, { dateString, slug })
+	const paths = await buildTemplatePlan(config, {
+		collection: config.collection,
+		date: dateString,
+		dateString,
+		datedSlug,
+		project: config.collection,
+		slug,
+	})
 	const filesToEdit = [paths.entryPath]
 	const frontmatterDate = parsed.date?.frontmatterDate ?? formatLocalIso(date)
 	const tags = normalizeTagList(parsed.tags)
@@ -1344,7 +1438,7 @@ const createEntry = async (config, parsed) => {
 
 		return {
 			fileName,
-			outputPath: join(paths.assetDir, fileName),
+			outputPath: paths.assetDir ? join(paths.assetDir, fileName) : undefined,
 			sourcePath: imagePath,
 			publicPath: paths.publicAssetPath(fileName),
 		}
@@ -1353,16 +1447,13 @@ const createEntry = async (config, parsed) => {
 	const body = stdinBody.trim() ? `${stdinBody.replace(/\s+$/u, '')}\n` : ''
 	const imageFrontmatter = imageAssets[0]?.publicPath
 
-	await mkdir(dirname(paths.entryPath), { recursive: true })
-	if (
-		imageAssets.length > 0 ||
-		parsed.openFolder ||
-		config.template.layout !== 'middleman-blog'
-	) {
-		await mkdir(paths.assetDir, { recursive: true })
+	if (imageAssets.length > 0 && !paths.assetDir) {
+		fail(`template has no ${assetMarkerName} marker for image assets`)
+		return
 	}
-	if (paths.stylePath && paths.usesStyle) {
-		await mkdir(dirname(paths.stylePath), { recursive: true })
+
+	if (paths.assetDir) {
+		await mkdir(paths.assetDir, { recursive: true })
 	}
 
 	try {
@@ -1373,10 +1464,8 @@ const createEntry = async (config, parsed) => {
 		const context = templateContext({
 			body,
 			config,
-			date:
-				config.template.layout === 'middleman-blog'
-					? dateString
-					: frontmatterDate,
+			date: frontmatterDate,
+			dateString,
 			frontmatterDate,
 			image: imageFrontmatter,
 			metadata: { catname: 'tips' },
@@ -1387,8 +1476,8 @@ const createEntry = async (config, parsed) => {
 			title,
 			type: parsed.type,
 		})
-		await writeRenderedEntry(config, context)
-		if (paths.usesStyle && (await writeRenderedStyle(config, context))) {
+		await writeTemplateFiles(paths, context)
+		if (paths.stylePath && (await pathExists(paths.stylePath))) {
 			filesToEdit.push(paths.stylePath)
 		}
 	} catch (error) {
@@ -1408,13 +1497,15 @@ const createEntry = async (config, parsed) => {
 	for (const imageAsset of imageAssets) {
 		console.log(`  ${imageAsset.outputPath}`)
 	}
-	if (await pathExists(paths.assetDir)) {
+	if (paths.assetDir && (await pathExists(paths.assetDir))) {
 		console.log(`  ${paths.assetDir}`)
 	}
 
 	if (parsed.openFolder) {
 		try {
-			openInFinder(paths.assetDir)
+			if (paths.assetDir) {
+				openInFinder(paths.assetDir)
+			}
 		} catch (error) {
 			fail(error instanceof Error ? error.message : String(error))
 		}

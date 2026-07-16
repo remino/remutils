@@ -45,7 +45,7 @@ Set the entry kind. Valid values are \fIarticle\fR and \fInote\fR.
 Add a tag to frontmatter. May be repeated.
 .TP
 .B \-i \fIPATH\fR
-Copy an image into the entry public folder. May be repeated.
+Copy an image into the entry asset directory. May be repeated.
 .TP
 .B \-e
 Open created text files in \fBEDITOR\fR after scaffolding.
@@ -56,56 +56,37 @@ Open the public folder in Finder after scaffolding.
 .B \-f
 For \fBimport\fR, replace an existing generated entry.
 .TP
-.B \-p\fR, \fB--project\fR \fINAME\fR
-Set the content section name. Defaults to the current directory name.
+.B \-c\fR, \fB--collection\fR \fINAME\fR
+Set the content collection name. Defaults to the current directory name.
 .TP
 .B --pubname \fINAME\fR
 Set the generated frontmatter \fBpubname\fR.
-.TP
-.B --content-root \fIPATH\fR
-Override the content root. Defaults to \fBsrc/content/<project>\fR.
-.TP
-.B --styles-root \fIPATH\fR
-Override the styles root. Defaults to \fBsrc/styles/<project>\fR.
-.TP
-.B --public-root \fIPATH\fR
-Override the public asset root. Defaults to \fBpublic/<project>\fR.
-.TP
-.B --images-root \fIPATH\fR
-Alias for \fB--public-root\fR.
-.TP
-.B --public-prefix \fIPATH\fR
-Override the public URL prefix. Defaults to \fB/<project>\fR.
-.TP
-.B --images-prefix \fIPATH\fR
-Alias for \fB--public-prefix\fR.
-.TP
-.B --style-prefix \fIPATH\fR
-Override the style frontmatter prefix. Defaults to \fB<project>\fR.
 .SH TEMPLATES
 .TP
 .B astro-content
-Writes \fBsrc/content/<project>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<project>/<slug>/\fR.
+Writes \fBsrc/content/<collection>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<collection>/<slug>/\fR.
 .TP
 .B middleman-blog
-Writes \fB<content-root>/<slug>.html.md\fR and assets under \fB<content-root>/<slug>/\fR. It does not create a stylesheet by default.
+Writes \fBsource/<collection>/<slug>.html.md\fR and assets under \fBsource/<collection>/<slug>/\fR. It does not create a stylesheet by default.
 .PP
-Custom template directories can be passed to \fB--template\fR. They must contain \fBentry.md.mustache\fR and may contain \fBstyle.css.mustache\fR. A custom directory may include \fBlayout.json\fR with \fB{ "layout": "middleman-blog" }\fR; otherwise it uses the \fBastro-content\fR path layout.
+Template directories define output paths directly. Directory and file names can contain path variables such as \fB[collection]\fR, \fB[date]\fR, and \fB[slug]\fR. Files ending in \fB.mustache\fR are rendered and written without the suffix. A \fB.comprose-assets\fR marker file marks the directory where copied images are written.
+.PP
+Template names are resolved as built-in templates first, then as \fB.comprose/templates/<name>\fR in the current directory or a parent directory, then as \fB.config/comprose/templates/<name>\fR in the current directory or a parent directory, then as \fB$XDG_CONFIG_HOME/comprose/templates/<name>\fR or \fB$HOME/.config/comprose/templates/<name>\fR, then as a relative or absolute path passed to \fB--template\fR.
 .SH EXAMPLES
 .TP
 Create a new article:
 .nf
-.B comprose new --template astro-content -p journal --pubname example-journal -s my-new-entry
+.B comprose new --template astro-content -c journal --pubname example-journal -s my-new-entry
 .fi
 .TP
 Create a Middleman-style entry:
 .nf
-.B comprose new --template middleman-blog --content-root source/posts -s my-new-entry
+.B comprose new --template middleman-blog -c posts -s my-new-entry
 .fi
 .TP
 Import a prepared source directory:
 .nf
-.B comprose import --template middleman-blog --content-root source/posts /tmp/source-entry
+.B comprose import --template middleman-blog -c posts /tmp/source-entry
 .fi
 .SH DEPENDENCIES
 .TP

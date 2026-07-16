@@ -1,5 +1,12 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	rm,
+	writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
@@ -27,6 +34,10 @@ const runComprose = (cwd, args, options = {}) =>
 		cwd,
 		encoding: 'utf8',
 		...options,
+		env: {
+			...process.env,
+			...options.env,
+		},
 	})
 
 const runComproseExpectFailure = (cwd, args) => {
@@ -47,7 +58,7 @@ describe('comprose new', () => {
 			projectDir,
 			[
 				'new',
-				'-p',
+				'-c',
 				'journal',
 				'--pubname',
 				'example-journal',
@@ -98,7 +109,7 @@ describe('comprose new', () => {
 
 		runComprose(projectDir, [
 			'new',
-			'-p',
+			'-c',
 			'notes',
 			'-d',
 			'2026-05-06',
@@ -115,52 +126,193 @@ describe('comprose new', () => {
 		assert.match(content, /^style: notes\/inferred-entry\.css$/m)
 	})
 
-	it('supports explicit style and image destinations', async () => {
+	it('supports custom template directory paths', async () => {
 		const projectDir = await createProject()
 		const imagePath = join(projectDir, 'source.png')
+		const templateDir = join(projectDir, 'my-template')
 
 		await writeFile(imagePath, 'not a real png, but new only copies images\n')
+		await mkdir(join(templateDir, 'content/[collection]/[slug]'), {
+			recursive: true,
+		})
+		await mkdir(join(templateDir, 'assets/[collection]/[slug]'), {
+			recursive: true,
+		})
+		await writeFile(
+			join(templateDir, 'content/[collection]/[slug]/entry.md.mustache'),
+			'---\ntitle: {{{title}}}\n{{#hasImage}}image: {{{image}}}\n{{/hasImage}}---\n\n{{{body}}}'
+		)
+		await writeFile(
+			join(templateDir, 'assets/[collection]/[slug]/.comprose-assets'),
+			'assets\n'
+		)
 
 		runComprose(projectDir, [
 			'new',
-			'-p',
+			'--template',
+			'my-template',
+			'-c',
 			'journal',
 			'-d',
 			'2026-05-06',
 			'-s',
 			'custom-paths',
-			'--styles-root',
-			'assets/css/journal',
-			'--style-prefix',
-			'assets/css/journal',
-			'--images-root',
-			'assets/img/journal',
-			'--images-prefix',
-			'/assets/img/journal',
 			'-i',
 			imagePath,
 		])
 
 		const content = await readFile(
-			join(projectDir, 'src/content/journal/2026-05-06-custom-paths/index.md'),
-			'utf8'
-		)
-		const style = await readFile(
-			join(projectDir, 'assets/css/journal/custom-paths.css'),
+			join(projectDir, 'content/journal/custom-paths/entry.md'),
 			'utf8'
 		)
 		const image = await readFile(
-			join(projectDir, 'assets/img/journal/custom-paths/source.png'),
+			join(projectDir, 'assets/journal/custom-paths/source.png'),
 			'utf8'
 		)
 
-		assert.match(content, /^style: assets\/css\/journal\/custom-paths\.css$/m)
-		assert.match(
-			content,
-			/^image: \/assets\/img\/journal\/custom-paths\/source\.png$/m
-		)
-		assert.match(style, /Add styles for custom-paths/)
+		assert.match(content, /^title: Custom Paths$/m)
+		assert.match(content, /^image: source\.png$/m)
 		assert.equal(image, 'not a real png, but new only copies images\n')
+	})
+
+	it('finds templates in parent .comprose/templates directories', async () => {
+		const projectDir = await createProject()
+		const nestedDir = join(projectDir, 'sites/example')
+		const templateDir = join(projectDir, '.comprose/templates/local-blog')
+
+		await mkdir(join(nestedDir), { recursive: true })
+		await mkdir(join(templateDir, 'entries/[collection]/[slug]'), {
+			recursive: true,
+		})
+		await writeFile(
+			join(templateDir, 'entries/[collection]/[slug]/index.md.mustache'),
+			'---\ntitle: {{{title}}}\n---\n\n{{{body}}}'
+		)
+
+		runComprose(nestedDir, [
+			'new',
+			'--template',
+			'local-blog',
+			'-c',
+			'posts',
+			'-t',
+			'Parent Template',
+		])
+
+		const content = await readFile(
+			join(nestedDir, 'entries/posts/parent-template/index.md'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Parent Template$/m)
+	})
+
+	it('finds templates in parent .config/comprose/templates directories', async () => {
+		const projectDir = await createProject()
+		const nestedDir = join(projectDir, 'sites/example')
+		const templateDir = join(
+			projectDir,
+			'.config/comprose/templates/project-config-blog'
+		)
+
+		await mkdir(join(nestedDir), { recursive: true })
+		await mkdir(join(templateDir, 'pages/[collection]'), {
+			recursive: true,
+		})
+		await writeFile(
+			join(templateDir, 'pages/[collection]/[slug].md.mustache'),
+			'---\ntitle: {{{title}}}\n---\n'
+		)
+
+		runComprose(nestedDir, [
+			'new',
+			'--template',
+			'project-config-blog',
+			'-c',
+			'posts',
+			'-t',
+			'Parent Config Template',
+		])
+
+		const content = await readFile(
+			join(nestedDir, 'pages/posts/parent-config-template.md'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Parent Config Template$/m)
+	})
+
+	it('finds templates in XDG_CONFIG_HOME comprose/templates', async () => {
+		const projectDir = await createProject()
+		const configDir = await mkdtemp(join(tmpdir(), 'comprose-config-'))
+		const templateDir = join(configDir, 'comprose/templates/config-blog')
+		cleanupPaths.push(configDir)
+
+		await mkdir(join(templateDir, 'entries/[collection]'), {
+			recursive: true,
+		})
+		await writeFile(
+			join(templateDir, 'entries/[collection]/[slug].md.mustache'),
+			'---\ntitle: {{{title}}}\n---\n'
+		)
+
+		runComprose(
+			projectDir,
+			[
+				'new',
+				'--template',
+				'config-blog',
+				'-c',
+				'posts',
+				'-t',
+				'Config Template',
+			],
+			{
+				env: {
+					XDG_CONFIG_HOME: configDir,
+				},
+			}
+		)
+
+		const content = await readFile(
+			join(projectDir, 'entries/posts/config-template.md'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Config Template$/m)
+	})
+
+	it('falls back to HOME .config comprose/templates', async () => {
+		const projectDir = await createProject()
+		const homeDir = await mkdtemp(join(tmpdir(), 'comprose-home-'))
+		const templateDir = join(homeDir, '.config/comprose/templates/home-blog')
+		cleanupPaths.push(homeDir)
+
+		await mkdir(join(templateDir, 'notes/[slug]'), {
+			recursive: true,
+		})
+		await writeFile(
+			join(templateDir, 'notes/[slug]/index.md.mustache'),
+			'---\ntitle: {{{title}}}\n---\n'
+		)
+
+		runComprose(
+			projectDir,
+			['new', '--template', 'home-blog', '-t', 'Home Template'],
+			{
+				env: {
+					HOME: homeDir,
+					XDG_CONFIG_HOME: '',
+				},
+			}
+		)
+
+		const content = await readFile(
+			join(projectDir, 'notes/home-template/index.md'),
+			'utf8'
+		)
+
+		assert.match(content, /^title: Home Template$/m)
 	})
 
 	it('supports explicitly selecting the default Astro content template', async () => {
@@ -170,7 +322,7 @@ describe('comprose new', () => {
 			'new',
 			'--template',
 			'astro-content',
-			'-p',
+			'-c',
 			'journal',
 			'-d',
 			'2026-05-06',
@@ -200,8 +352,8 @@ describe('comprose new', () => {
 			'new',
 			'--template',
 			'middleman-blog',
-			'--content-root',
-			'source/posts',
+			'-c',
+			'posts',
 			'-d',
 			'2026-05-06',
 			'-t',
@@ -267,7 +419,7 @@ describe('comprose import', () => {
 
 		const output = runComprose(projectDir, [
 			'import',
-			'-p',
+			'-c',
 			'notes',
 			'--pubname',
 			'field-notes',
@@ -306,10 +458,10 @@ describe('comprose import', () => {
 			'---\ndate: 2026-05-28\n---\n\n# Conflict Entry\n\nBody.\n'
 		)
 
-		runComprose(projectDir, ['import', '-p', 'journal', sourceDir])
+		runComprose(projectDir, ['import', '-c', 'journal', sourceDir])
 		const error = runComproseExpectFailure(projectDir, [
 			'import',
-			'-p',
+			'-c',
 			'journal',
 			sourceDir,
 		])
@@ -345,8 +497,8 @@ describe('comprose import', () => {
 			'import',
 			'--template',
 			'middleman-blog',
-			'--content-root',
-			'source/posts',
+			'-c',
+			'posts',
 			sourceDir,
 		])
 
@@ -390,8 +542,8 @@ describe('comprose import', () => {
 			'import',
 			'--template',
 			'middleman-blog',
-			'--content-root',
-			'source/posts',
+			'-c',
+			'posts',
 			sourceDir,
 		]
 
