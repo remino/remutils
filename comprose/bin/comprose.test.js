@@ -50,6 +50,19 @@ const runComproseExpectFailure = (cwd, args) => {
 	throw new Error('expected comprose to fail')
 }
 
+describe('comprose help', () => {
+	it('shows usage in the remutils style', async () => {
+		const projectDir = await createProject()
+		const output = runComprose(projectDir, ['help'])
+
+		assert.match(output, /^USAGE: comprose <command> \[<options>\] \[<args>\]/)
+		assert.match(output, /\nCOMMANDS:\n/)
+		assert.match(output, /\nOPTIONS:\n/)
+		assert.match(output, /\nEXAMPLES:\n/)
+		assert.doesNotMatch(output, /^Usage:/m)
+	})
+})
+
 describe('comprose new', () => {
 	it('creates a project-scoped article from title, tags, and stdin', async () => {
 		const projectDir = await createProject()

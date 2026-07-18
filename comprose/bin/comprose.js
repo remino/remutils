@@ -40,46 +40,44 @@ const supportedImageExtensions = new Set([
 ])
 
 const usage = () => {
-	console.log(`Usage:
-  comprose help
-  comprose new [options] [-s <slug>] [-t <title>]
-  comprose import [options] <path>
+	console.log(`USAGE: comprose <command> [<options>] [<args>]
 
-Commands:
-  help    Show this usage screen.
-  new     Create a new content entry scaffold.
-  import  Import a directory into a new content entry.
+Create and import prose content entries.
 
-Content options:
-  -s <slug>       Entry slug.
-  -t <title>      Entry title.
-  -d <iso-8601>   Date in ISO 8601 (date only, date-time, or date-time with offset).
-  -k, --type, --kind <kind>
-                  Entry type: article or note. Defaults to article.
-  -g <tag>        Tag to add to frontmatter. Repeatable.
-  -i <path>       Image file to copy into the entry asset directory. Repeatable.
-  -e              Open created text files in $EDITOR after scaffolding.
-  -o              Open the public folder in Finder after scaffolding.
-  -f              Reimport and replace an existing generated entry.
+COMMANDS:
 
-Project options:
-  --template <name-or-path>
-                  Template layout. Defaults to astro-content.
-  -c, --collection <name>
-                  Content collection name. Defaults to the current directory name.
-  --pubname <name>
-                  Frontmatter pubname. Defaults to package.json name when it looks like reverse DNS, otherwise the collection name.
+	help                         Show this help screen.
+	import <path>                Import a directory into a new content entry.
+	new                          Create a new content entry scaffold.
+	version                      Show script name and version number.
 
-stdin            Seed the entry body from piped input.
+OPTIONS:
 
-One of -s or -t is required for new entries.
+	-c, --collection <name>      Content collection name. Defaults to the current directory name.
+	-d <iso-8601>                Date in ISO 8601 format.
+	-e                           Open created text files in $EDITOR after scaffolding.
+	-f                           Reimport and replace an existing generated entry.
+	-g <tag>                     Tag to add to frontmatter. Can be repeated.
+	-h, --help                   Show this help screen.
+	-i <path>                    Image file to copy into the entry asset directory. Can be repeated.
+	-k, --type, --kind <kind>    Entry type: article or note. Default: article.
+	-o                           Open the asset directory after scaffolding.
+	-s <slug>                    Entry slug.
+	-t <title>                   Entry title.
+	-v, --version                Show script name and version number.
+	--pubname <name>             Frontmatter pubname.
+	--template <name-or-path>    Template layout. Default: astro-content.
 
-Examples:
-  comprose new --template astro-content -c journal --pubname example-journal -s my-new-entry
-  comprose new --template middleman-blog -c posts -t "My New Entry"
-  comprose new -c journal -d 2026-05-06T14:30+09:00 -k note -g terminal
-  comprose import --template astro-content -c journal --pubname example-journal /tmp/source-entry
-  comprose import --template middleman-blog -c posts /tmp/source-entry -f
+STDIN:
+
+	Piped input seeds the entry body for the new command.
+
+EXAMPLES:
+
+	comprose new -c journal -s my-new-entry
+	comprose new --template middleman-blog -c posts -t "My New Entry"
+	comprose import -c journal /tmp/source-entry
+	comprose import --template middleman-blog -c posts /tmp/source-entry -f
 `)
 }
 

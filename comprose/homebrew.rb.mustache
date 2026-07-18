@@ -22,6 +22,6 @@ class Comprose < Formula
 
   test do
     out = shell_output("#{bin}/{{name}} help")
-    assert_match "Usage:", out
+    assert_match "USAGE:", out
   end
 end
