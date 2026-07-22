@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.1.0](#v210)
 - [v2.0.0](#v200)
 - [v1.4.1](#v141)
 - [v1.4.0](#v140)
@@ -11,7 +11,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.1.0
 
 - Add top-level overwrite controls: prompt by default, `-y`/`--overwrite` to
   overwrite, `-i`/`--interactive` to always prompt, and `-N`/`--no-overwrite` to
