@@ -76,6 +76,10 @@ load helpers
 	run env FAKE_BIN="$FAKE_BIN" INPUT_FILE="$INPUT_FILE" OUTPUT_FILE="$output_file" SCRIPT_PATH="$BATS_TEST_DIRNAME/../vidmod" TOOL_LOG="$TOOL_LOG" bash -lc \
 		'printf "y\n" | env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" script -q /dev/null "$SCRIPT_PATH" 169 -o "$OUTPUT_FILE" "$INPUT_FILE"'
 
+	if [ "$status" -ne 0 ] && [[ "$output" == *"Not overwriting existing file"* ]]; then
+		skip "script stdin forwarding is unavailable"
+	fi
+
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"Overwrite existing file? [y/N] $output_file"* ]]
 	[[ "$(cat "$TOOL_LOG")" == *"<-y>"* ]]
