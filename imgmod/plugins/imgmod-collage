@@ -42,6 +42,8 @@ collage_start() {
 		output="$(collage_output_path "${COLLAGE_INPUTS[0]}")"
 	fi
 
+	imgmod_prepare_output "$output"
+
 	_require magick
 
 	if [ "$direction" = horizontal ]; then

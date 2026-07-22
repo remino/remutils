@@ -19,6 +19,13 @@ load helpers
 	[ "${output:0:7}" = "vidmod " ]
 }
 
+@test "rejects conflicting overwrite flags" {
+	run "$BATS_TEST_DIRNAME/../vidmod" -y -N mp4 "$OUTPUT_DIR/in.mov"
+
+	[ "$status" -eq 16 ]
+	[[ "$output" == *"Conflicting overwrite options"* ]]
+}
+
 @test "runs correctly through a symlink" {
 	local link_dir="$OUTPUT_DIR/link-bin"
 	local link="$link_dir/vidmod"

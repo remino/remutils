@@ -4,6 +4,7 @@
 E_ARGS=16
 E_NO_FILE=17
 E_MISSING_APP=19
+E_PROCESSING=20
 
 IMGMOD_PLUGIN_PREFIX="${IMGMOD_PLUGIN_PREFIX:-imgmod-}"
 
@@ -32,6 +33,71 @@ _fatal() {
 	shift
 	_error "$@"
 	exit "$exit_code"
+}
+
+imgmod_overwrite_mode() {
+	_echo "${IMGMOD_OVERWRITE_MODE:-prompt}"
+}
+
+imgmod_ffmpeg_overwrite_args() {
+	local output=$1
+	local mode
+
+	mode="$(imgmod_overwrite_mode)"
+
+	if [ "$mode" = force ] || [ "${IMGMOD_OVERWRITE_APPROVED_OUTPUT:-}" = "$output" ]; then
+		_echo -y
+	fi
+}
+
+imgmod_prepare_output() {
+	local output=$1
+	local mode
+	local reply=
+
+	[ ! -e "$output" ] && return
+	[ "${IMGMOD_OVERWRITE_APPROVED_OUTPUT:-}" = "$output" ] && return
+
+	mode="$(imgmod_overwrite_mode)"
+
+	case "$mode" in
+		force)
+			export IMGMOD_OVERWRITE_APPROVED_OUTPUT="$output"
+			return
+			;;
+		no-clobber)
+			_fatal "$E_PROCESSING" "Output file already exists: $output"
+			;;
+		interactive)
+			if [ ! -t 0 ] || [ ! -t 2 ]; then
+				_fatal "$E_PROCESSING" "Interactive overwrite requested, but no TTY is available: $output"
+			fi
+			;;
+		prompt)
+			if [ ! -t 0 ] || [ ! -t 2 ]; then
+				_fatal "$E_PROCESSING" "Output file already exists: $output. Use -y/--overwrite to overwrite or -N/--no-overwrite to fail without prompting."
+			fi
+			;;
+		*)
+			_fatal "$E_ARGS" "Invalid overwrite mode: $mode"
+			;;
+	esac
+
+	if [ -w /dev/tty ] && [ -r /dev/tty ]; then
+		printf 'Overwrite existing file? [y/N] %s\n' "$output" > /dev/tty
+		read -r reply < /dev/tty
+	else
+		printf 'Overwrite existing file? [y/N] %s\n' "$output" >&2
+		read -r reply
+	fi
+	case "${reply,,}" in
+		y | yes)
+			export IMGMOD_OVERWRITE_APPROVED_OUTPUT="$output"
+			;;
+		*)
+			_fatal "$E_PROCESSING" "Not overwriting existing file: $output"
+			;;
+	esac
 }
 
 imgmod_plugin_run() {

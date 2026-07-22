@@ -24,6 +24,11 @@ changes in sequence.
 The `169` and `43` commands crop the frame to the requested aspect ratio. They
 do not stretch or squash the image.
 
+When an output path already exists, `vidmod` prompts before overwriting it on a
+TTY. Use `-y` or `--overwrite` before the command to overwrite without
+prompting, `-i` or `--interactive` to always prompt, or `-N` or `--no-overwrite`
+to refuse overwrites.
+
 ## Commands
 
 The bundled legacy command plugins are:

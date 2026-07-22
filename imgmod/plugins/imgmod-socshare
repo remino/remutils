@@ -49,6 +49,8 @@ socshare_start() {
 		output="$(socshare_output_path "$input" "$format")"
 	fi
 
+	imgmod_prepare_output "$output"
+
 	_require magick
 
 	magick "$input" -auto-orient -resize 1200x630^ -gravity center -extent 1200x630 "$format:$output"

@@ -15,6 +15,9 @@
 
 - Change `169` and `43` to crop video frames to `16:9` and `4:3` instead of only
   rewriting display aspect ratio metadata.
+- Add top-level overwrite controls: prompt by default, `-y`/`--overwrite` to
+  overwrite, `-i`/`--interactive` to always prompt, and `-N`/`--no-overwrite` to
+  refuse overwrites.
 
 ## v3.0.0
 

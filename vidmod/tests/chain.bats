@@ -41,3 +41,16 @@ load helpers
 	[[ "$output" == *"USAGE: vidmod chain"* ]]
 	[ ! -e "$TOOL_LOG" ]
 }
+
+@test "chain fails before stage work when final output exists" {
+	local output_file="$OUTPUT_DIR/chained.mov"
+
+	_make_fake_video_tools
+	touch "$output_file"
+
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" chain 169 -- rotate90 -- "$INPUT_FILE" "$output_file"
+
+	[ "$status" -eq 20 ]
+	[[ "$output" == *"Output file already exists: $output_file"* ]]
+	[ ! -e "$TOOL_LOG" ]
+}

@@ -42,6 +42,8 @@ fit1080_start() {
 		output="$(fit1080_output_path "$input")"
 	fi
 
+	vidmod_prepare_output "$output"
+
 	_echo "<= $input"
 	_echo "=> $output"
 

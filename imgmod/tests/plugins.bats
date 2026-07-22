@@ -115,6 +115,42 @@ hookruntime_start() {
 	[ "$(cat "$OPTIM_LOG")" = "$EXPLICIT_OUTPUT" ]
 }
 
+@test "fails clearly when output exists in non-interactive mode" {
+	_make_fake_magick_with_identify
+	touch "$INPUT_FILE"
+	touch "$EXPLICIT_OUTPUT"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" png8 -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
+
+	[ "$status" -eq 20 ]
+	[[ "$output" == *"Output file already exists: $EXPLICIT_OUTPUT"* ]]
+	[[ "$output" == *"Use -y/--overwrite"* ]]
+	[ ! -e "$TOOL_LOG" ]
+}
+
+@test "overwrites existing output with top-level force flag" {
+	_make_fake_imgmod_tool ffmpeg
+	touch "$INPUT_FILE"
+	touch "$EXPLICIT_OUTPUT"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../imgmod" -y vidframe -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[[ "$(cat "$TOOL_LOG")" == *"<-y> <-i> <$INPUT_FILE>"* ]]
+}
+
+@test "optim plugin refuses to overwrite explicit output by default" {
+	_make_input_image
+	_make_fake_image_optim
+	touch "$EXPLICIT_OUTPUT"
+
+	run env PATH="$FAKE_BIN:$PATH" IMGMOD_OPTIM_LOG="$OPTIM_LOG" "$BATS_TEST_DIRNAME/../imgmod" optim -o "$EXPLICIT_OUTPUT" "$INPUT_FILE"
+
+	[ "$status" -eq 20 ]
+	[[ "$output" == *"Output file already exists: $EXPLICIT_OUTPUT"* ]]
+	[ ! -e "$OPTIM_LOG" ]
+}
+
 @test "fails when hook runtime plugin has no start hook" {
 	_write_hook_plugin nostart "
 nostart_help() {

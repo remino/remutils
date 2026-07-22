@@ -12,6 +12,10 @@ imgmod \- Image modification helpers
 [\fB-O\fR|\fB--optim\fR|\fB--optimize\fR] \fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
 .br
 .B imgmod
+[\fB-y\fR|\fB--overwrite\fR] [\fB-i\fR|\fB--interactive\fR] [\fB-N\fR|\fB--no-overwrite\fR]
+\fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
+.br
+.B imgmod
 \fB-n\fR \fINAME-OR-PATH\fR
 .SH DESCRIPTION
 .B imgmod
@@ -61,6 +65,15 @@ Show usage help.
 .TP
 .B \-n \fINAME-OR-PATH\fR
 Create a new plugin. This is a shortcut for \fBimgmod newplugin\fR.
+.TP
+.B \-y, --overwrite
+Overwrite an existing output file without prompting.
+.TP
+.B \-i, --interactive
+Prompt before overwriting an existing output file.
+.TP
+.B \-N, --no-overwrite
+Refuse to overwrite an existing output file.
 .TP
 .B \-O, --optim, --optimize
 Optimize plugin image outputs with \fBimage_optim\fR.

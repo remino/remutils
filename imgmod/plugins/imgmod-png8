@@ -41,6 +41,8 @@ png8_start() {
 		output="$(png8_output_path "$input")"
 	fi
 
+	imgmod_prepare_output "$output"
+
 	_require magick
 
 	magick "$input" "PNG8:$output"

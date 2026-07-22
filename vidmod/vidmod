@@ -30,42 +30,51 @@ vidmod_main() {
 
 	local newplugin=
 	local opt
+	local overwrite_mode=prompt
 
 	[ $# -lt 1 ] && _help && return
 
-	case "$1" in
-		--help)
-			_help
-			return
-			;;
-		--version)
-			_version
-			return
-			;;
-	esac
-
-	OPTIND=1
-	while getopts :hn:v opt; do
-		case $opt in
-			h)
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			-h)
 				_help
 				return
 				;;
-			n) newplugin="$OPTARG" ;;
-			v)
+			--help)
+				_help
+				return
+				;;
+			-v | --version)
 				_version
 				return
 				;;
-			:) _invalid_opt "$OPTARG" ;;
-			*) _invalid_opt "$OPTARG" ;;
+			-n)
+				shift
+				[ $# -lt 1 ] && _invalid_opt n
+				newplugin="$1"
+				shift
+				break
+				;;
+			-y | --overwrite)
+				vidmod_set_overwrite_mode overwrite_mode force "$1"
+				shift
+				;;
+			-i | --interactive)
+				vidmod_set_overwrite_mode overwrite_mode interactive "$1"
+				shift
+				;;
+			-N | --no-overwrite)
+				vidmod_set_overwrite_mode overwrite_mode no-clobber "$1"
+				shift
+				;;
+			-*) _invalid_opt "${1#-}" ;;
+			*) break ;;
 		esac
 	done
 
-	shift "$((OPTIND - 1))"
-
 	if [ -n "$newplugin" ]; then
 		[ $# -gt 0 ] && _help && return $E_ARGS
-		_run_plugin newplugin "$newplugin"
+		_run_plugin "$overwrite_mode" newplugin "$newplugin"
 		return
 	fi
 
@@ -82,10 +91,10 @@ vidmod_main() {
 				_help
 				return
 			fi
-			_run_plugin "$1" -h
+			_run_plugin "$overwrite_mode" "$1" -h
 			;;
 		*)
-			_run_plugin "$@"
+			_run_plugin "$overwrite_mode" "$@"
 			;;
 	esac
 }
@@ -127,9 +136,17 @@ COMMANDS:
 OPTIONS:
 
 	-h          Show this help screen.
+	-i          Prompt before overwriting an existing output file.
 	-n          Create a new plugin. Names create XDG plugins; paths create files
 	            exactly there.
+	-N          Refuse to overwrite an existing output file.
 	-v          Show script name and version number.
+	-y          Overwrite an existing output file without prompting.
+	--overwrite Same as -y.
+	--interactive
+	            Same as -i.
+	--no-overwrite
+	            Same as -N.
 
 Plugins are executable files found in XDG data directories under vidmod/plugins,
 or in the bundled plugins directory next to this script.
@@ -137,11 +154,25 @@ or in the bundled plugins directory next to this script.
 USAGE
 }
 
+vidmod_set_overwrite_mode() {
+	local var_name=$1
+	local new_mode=$2
+	local flag=$3
+	local current_mode="${!var_name}"
+
+	if [ "$current_mode" != prompt ] && [ "$current_mode" != "$new_mode" ]; then
+		_fatal "$E_ARGS" "Conflicting overwrite options: $flag"
+	fi
+
+	printf -v "$var_name" '%s' "$new_mode"
+}
+
 _run_plugin() {
-	local command_name=$1
+	local overwrite_mode=$1
+	local command_name=$2
 	local plugin
 
-	shift
+	shift 2
 
 	export VIDMOD_PLUGIN_DIR="$SCRIPT_DIR/plugins"
 
@@ -155,6 +186,8 @@ _run_plugin() {
 	export VIDMOD_LIB="$SCRIPT_DIR/lib/vidmod.sh"
 	export VIDMOD_APP_NAME="$SCRIPT_NAME"
 	export VIDMOD_PLUGIN_NAME="$command_name"
+	export VIDMOD_OVERWRITE_MODE="$overwrite_mode"
+	unset VIDMOD_OVERWRITE_APPROVED_OUTPUT
 
 	"$plugin" "$@"
 	local status=$?
@@ -162,6 +195,8 @@ _run_plugin() {
 	unset VIDMOD_APP_NAME
 	unset VIDMOD_PLUGIN_NAME
 	unset VIDMOD_PLUGIN_DIR
+	unset VIDMOD_OVERWRITE_MODE
+	unset VIDMOD_OVERWRITE_APPROVED_OUTPUT
 
 	return "$status"
 }

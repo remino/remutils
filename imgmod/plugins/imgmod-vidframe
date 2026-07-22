@@ -46,15 +46,17 @@ vidframe_start() {
 		output="$(vidframe_output_path "$input")"
 	fi
 
+	imgmod_prepare_output "$output"
+
 	_require ffmpeg
 
 	if [ -n "$timestamp" ]; then
-		ffmpeg -ss "$timestamp" -i "$input" -frames:v 1 "$output"
+		ffmpeg $(imgmod_ffmpeg_overwrite_args "$output") -ss "$timestamp" -i "$input" -frames:v 1 "$output"
 	elif [ -n "$frame" ]; then
 		vidframe_validate_frame "$frame"
-		ffmpeg -i "$input" -vf "select=eq(n\\,$frame)" -frames:v 1 -vsync 0 "$output"
+		ffmpeg $(imgmod_ffmpeg_overwrite_args "$output") -i "$input" -vf "select=eq(n\\,$frame)" -frames:v 1 -vsync 0 "$output"
 	else
-		ffmpeg -i "$input" -frames:v 1 "$output"
+		ffmpeg $(imgmod_ffmpeg_overwrite_args "$output") -i "$input" -frames:v 1 "$output"
 	fi
 
 	imgmod_output "$output"

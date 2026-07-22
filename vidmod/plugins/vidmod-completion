@@ -108,7 +108,7 @@ _vidmod()
 			-n | -f | -o | -t)
 				skip_next=1
 				;;
-			-h | --help | -v | --version)
+			-h | --help | -v | --version | -y | -i | -N | --overwrite | --interactive | --no-overwrite)
 				;;
 			-*)
 				;;
@@ -223,7 +223,7 @@ function __fish_vidmod_seen_command
         switch $token
             case -n -f -o -t
                 set skip_next 1
-            case -h --help -v --version
+            case -h --help -v --version -y -i -N --overwrite --interactive --no-overwrite
             case '-*'
             case '*'
                 return 0
@@ -247,7 +247,7 @@ function __fish_vidmod_using_command
         switch $token
             case -n -f -o -t
                 set skip_next 1
-            case -h --help -v --version
+            case -h --help -v --version -y -i -N --overwrite --interactive --no-overwrite
             case '-*'
             case '*'
                 test "$token" = "$expected"
@@ -271,7 +271,7 @@ function __fish_vidmod_current_command
         switch $token
             case -n -f -o -t
                 set skip_next 1
-            case -h --help -v --version
+            case -h --help -v --version -y -i -N --overwrite --interactive --no-overwrite
             case '-*'
             case '*'
                 echo "$token"
@@ -312,6 +312,12 @@ completion_options() {
 			completion_item --help
 			completion_item -v
 			completion_item --version
+			completion_item -y
+			completion_item -i
+			completion_item -N
+			completion_item --overwrite
+			completion_item --interactive
+			completion_item --no-overwrite
 			completion_item -n
 			;;
 		newplugin)

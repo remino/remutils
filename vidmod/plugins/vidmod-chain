@@ -95,6 +95,7 @@ chain_run() {
 
 	input="${args[last_sep + 1]}"
 	output="${args[last_sep + 2]}"
+	vidmod_prepare_output "$output"
 	output_ext="$(chain_output_extension "$output")"
 	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/vidmod-chain.XXXXXX")"
 	current_input="$input"

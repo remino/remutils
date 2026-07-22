@@ -30,6 +30,7 @@ imgmod_main() {
 
 	local newplugin=
 	local optimize=0
+	local overwrite_mode=prompt
 
 	[ $# -lt 1 ] && _help && return
 
@@ -47,6 +48,18 @@ imgmod_main() {
 				optimize=1
 				shift
 				;;
+			-y | --overwrite)
+				imgmod_set_overwrite_mode overwrite_mode force "$1"
+				shift
+				;;
+			-i | --interactive)
+				imgmod_set_overwrite_mode overwrite_mode interactive "$1"
+				shift
+				;;
+			-N | --no-overwrite)
+				imgmod_set_overwrite_mode overwrite_mode no-clobber "$1"
+				shift
+				;;
 			-n)
 				shift
 				[ $# -lt 1 ] && _invalid_opt n
@@ -61,7 +74,7 @@ imgmod_main() {
 
 	if [ -n "$newplugin" ]; then
 		[ $# -gt 0 ] && _help && return $E_ARGS
-		_run_plugin "$optimize" newplugin "$newplugin"
+		_run_plugin "$optimize" "$overwrite_mode" newplugin "$newplugin"
 		return
 	fi
 
@@ -78,10 +91,10 @@ imgmod_main() {
 				_help
 				return
 			fi
-			_run_plugin 0 "$1" -h
+			_run_plugin 0 "$overwrite_mode" "$1" -h
 			;;
 		*)
-			_run_plugin "$optimize" "$@"
+			_run_plugin "$optimize" "$overwrite_mode" "$@"
 			;;
 	esac
 }
@@ -109,12 +122,20 @@ COMMANDS:
 OPTIONS:
 
 	-h          Show this help screen.
+	-i          Prompt before overwriting an existing output file.
 	-n          Create a new plugin. Names create XDG plugins; paths create files
 	            exactly there.
+	-N          Refuse to overwrite an existing output file.
 	-O, --optim, --optimize
 	            Optimize plugin image outputs with image_optim.
 	-o          Deprecated alias for -O.
 	-v          Show script name and version number.
+	-y          Overwrite an existing output file without prompting.
+	--overwrite Same as -y.
+	--interactive
+	            Same as -i.
+	--no-overwrite
+	            Same as -N.
 
 Plugins are executable files found in XDG data directories under imgmod/plugins,
 or in the bundled plugins directory next to this script.
@@ -122,14 +143,28 @@ or in the bundled plugins directory next to this script.
 USAGE
 }
 
+imgmod_set_overwrite_mode() {
+	local var_name=$1
+	local new_mode=$2
+	local flag=$3
+	local current_mode="${!var_name}"
+
+	if [ "$current_mode" != prompt ] && [ "$current_mode" != "$new_mode" ]; then
+		_fatal "$E_ARGS" "Conflicting overwrite options: $flag"
+	fi
+
+	printf -v "$var_name" '%s' "$new_mode"
+}
+
 _run_plugin() {
 	local optimize=$1
-	local command_name=$2
+	local overwrite_mode=$2
+	local command_name=$3
 	local plugin
 	local outputs_file=
 	local status
 
-	shift 2
+	shift 3
 
 	export IMGMOD_PLUGIN_DIR="$SCRIPT_DIR/plugins"
 
@@ -143,6 +178,8 @@ _run_plugin() {
 	export IMGMOD_LIB="$SCRIPT_DIR/lib/imgmod.sh"
 	export IMGMOD_APP_NAME="$SCRIPT_NAME"
 	export IMGMOD_PLUGIN_NAME="$command_name"
+	export IMGMOD_OVERWRITE_MODE="$overwrite_mode"
+	unset IMGMOD_OVERWRITE_APPROVED_OUTPUT
 
 	if [ "$optimize" -ne 0 ]; then
 		_require image_optim
@@ -167,6 +204,8 @@ _run_plugin() {
 	unset IMGMOD_APP_NAME
 	unset IMGMOD_PLUGIN_NAME
 	unset IMGMOD_PLUGIN_DIR
+	unset IMGMOD_OVERWRITE_MODE
+	unset IMGMOD_OVERWRITE_APPROVED_OUTPUT
 
 	return "$status"
 }

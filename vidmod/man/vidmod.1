@@ -3,9 +3,29 @@
 vidmod \- video modification helpers
 .SH SYNOPSIS
 .B vidmod
+[\fB-y\fR|\fB--overwrite\fR] [\fB-i\fR|\fB--interactive\fR] [\fB-N\fR|\fB--no-overwrite\fR]
+\fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
+.br
+.B vidmod
+\fB-n\fR \fINAME-OR-PATH\fR
+.br
+.B vidmod
 <command> [<options>] [<args>]
 .SH DESCRIPTION
 Vidmod runs video modification command plugins.
+.SH OPTIONS
+.TP
+.B \-y, --overwrite
+Overwrite an existing output file without prompting.
+.TP
+.B \-i, --interactive
+Prompt before overwriting an existing output file.
+.TP
+.B \-N, --no-overwrite
+Refuse to overwrite an existing output file.
+.TP
+.B \-n \fINAME-OR-PATH\fR
+Create a new plugin. This is a shortcut for \fBvidmod newplugin\fR.
 .SH COMMANDS
 Legacy vidmod 1 changes and additional video helpers are provided as bundled
 plugins, including mp4, fit1080, twitter, rotate90, hevc, and the other

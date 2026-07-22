@@ -41,6 +41,8 @@ scale4x_start() {
 		output="$(scale4x_output_path "$input")"
 	fi
 
+	imgmod_prepare_output "$output"
+
 	_require magick
 
 	magick "$input" -filter point -resize 400% "$output"

@@ -39,6 +39,7 @@ optim_start() {
 	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
 
 	if [ "$output" != "$input" ]; then
+		imgmod_prepare_output "$output"
 		cp "$input" "$output"
 	fi
 

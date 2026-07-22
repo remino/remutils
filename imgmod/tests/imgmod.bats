@@ -36,6 +36,13 @@ load helpers
 	[ "$output" = "imgmod $version" ]
 }
 
+@test "rejects conflicting overwrite flags" {
+	run "$BATS_TEST_DIRNAME/../imgmod" -y -N png8 "$OUTPUT_DIR/in.png"
+
+	[ "$status" -eq 16 ]
+	[[ "$output" == *"Conflicting overwrite options"* ]]
+}
+
 @test "runs correctly through a symlink" {
 	local link_dir="$OUTPUT_DIR/link-bin"
 	local link="$link_dir/imgmod"

@@ -50,3 +50,17 @@ imgmod_output "$2"
 	[ "$status" -eq 16 ]
 	[[ "$output" == *"Command cannot be chained: completion"* ]]
 }
+
+@test "chain fails before stage work when final output exists" {
+	local output_file="$OUTPUT_DIR/chained.txt"
+
+	printf 'input' > "$INPUT_FILE"
+	_write_custom_plugin first 'cp "$3" "$2"; imgmod_output "$2"'
+	_write_custom_plugin second 'cp "$3" "$2"; imgmod_output "$2"'
+	touch "$output_file"
+
+	run "$BATS_TEST_DIRNAME/../imgmod" chain first -- second -- "$INPUT_FILE" "$output_file"
+
+	[ "$status" -eq 20 ]
+	[[ "$output" == *"Output file already exists: $output_file"* ]]
+}

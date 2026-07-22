@@ -35,6 +35,71 @@ _fatal() {
 	exit "$exit_code"
 }
 
+vidmod_overwrite_mode() {
+	_echo "${VIDMOD_OVERWRITE_MODE:-prompt}"
+}
+
+vidmod_ffmpeg_overwrite_args() {
+	local output=$1
+	local mode
+
+	mode="$(vidmod_overwrite_mode)"
+
+	if [ "$mode" = force ] || [ "${VIDMOD_OVERWRITE_APPROVED_OUTPUT:-}" = "$output" ]; then
+		_echo -y
+	fi
+}
+
+vidmod_prepare_output() {
+	local output=$1
+	local mode
+	local reply=
+
+	[ ! -e "$output" ] && return
+	[ "${VIDMOD_OVERWRITE_APPROVED_OUTPUT:-}" = "$output" ] && return
+
+	mode="$(vidmod_overwrite_mode)"
+
+	case "$mode" in
+		force)
+			export VIDMOD_OVERWRITE_APPROVED_OUTPUT="$output"
+			return
+			;;
+		no-clobber)
+			_fatal "$E_PROCESSING" "Output file already exists: $output"
+			;;
+		interactive)
+			if [ ! -t 0 ] || [ ! -t 2 ]; then
+				_fatal "$E_PROCESSING" "Interactive overwrite requested, but no TTY is available: $output"
+			fi
+			;;
+		prompt)
+			if [ ! -t 0 ] || [ ! -t 2 ]; then
+				_fatal "$E_PROCESSING" "Output file already exists: $output. Use -y/--overwrite to overwrite or -N/--no-overwrite to fail without prompting."
+			fi
+			;;
+		*)
+			_fatal "$E_ARGS" "Invalid overwrite mode: $mode"
+			;;
+	esac
+
+	if [ -w /dev/tty ] && [ -r /dev/tty ]; then
+		printf 'Overwrite existing file? [y/N] %s\n' "$output" > /dev/tty
+		read -r reply < /dev/tty
+	else
+		printf 'Overwrite existing file? [y/N] %s\n' "$output" >&2
+		read -r reply
+	fi
+	case "${reply,,}" in
+		y | yes)
+			export VIDMOD_OVERWRITE_APPROVED_OUTPUT="$output"
+			;;
+		*)
+			_fatal "$E_PROCESSING" "Not overwriting existing file: $output"
+			;;
+	esac
+}
+
 vidmod_plugin_run() {
 	local start_hook="${PLUGIN_PREFIX}_start"
 	local help_hook="${PLUGIN_PREFIX}_help"
@@ -168,6 +233,8 @@ vidmod_legacy_start() {
 		output="$(vidmod_legacy_output_path "$input" "$change_name")"
 	fi
 
+	vidmod_prepare_output "$output"
+
 	_echo "<= $input"
 	_echo "=> $output"
 
@@ -257,6 +324,10 @@ vidmod_ffmpeg_args() {
 	local ffmpeg_extra_opts=$1
 
 	VIDMOD_FFMPEG_ARGS=(-hide_banner -loglevel panic -nostdin)
+	local overwrite_arg=
+
+	overwrite_arg="$(vidmod_ffmpeg_overwrite_args "$2")"
+	[ -n "$overwrite_arg" ] && VIDMOD_FFMPEG_ARGS+=("$overwrite_arg")
 
 	[ -n "$ffmpeg_extra_opts" ] || return
 
@@ -273,7 +344,7 @@ vidmod_ffmpeg() {
 
 	shift 3
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
 	ffmpeg -i "$input" \
 		"${VIDMOD_FFMPEG_ARGS[@]}" \
@@ -286,9 +357,9 @@ vidmod_ffmpeg_hevc() {
 	local output=$2
 	local ffmpeg_extra_opts=$3
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
-	ffmpeg -y -i "$input" -c:v libx265 -c:a aac -tag:v hvc1 \
+	ffmpeg -i "$input" -c:v libx265 -c:a aac -tag:v hvc1 \
 		"${VIDMOD_FFMPEG_ARGS[@]}" \
 		"$output"
 }
@@ -299,7 +370,7 @@ vidmod_ffmpeg_loop() {
 	local ffmpeg_extra_opts=$3
 	local tmpfile
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
 	tmpfile="$(mktemp ".vidmod.XXXXXX")"
 
@@ -322,7 +393,7 @@ vidmod_ffmpeg_qt() {
 	local output=$2
 	local ffmpeg_extra_opts=$3
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
 	ffmpeg -i "$input" -tag:v hvc1 -c copy -c:s mov_text \
 		"${VIDMOD_FFMPEG_ARGS[@]}" \
@@ -334,7 +405,7 @@ vidmod_ffmpeg_slowdown() {
 	local output=$2
 	local ffmpeg_extra_opts=$3
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
 	ffmpeg -i "$input" -filter:a "atempo=0.8" \
 		"${VIDMOD_FFMPEG_ARGS[@]}" \
@@ -347,7 +418,7 @@ vidmod_ffmpeg_twitter() {
 	local output=$2
 	local ffmpeg_extra_opts=$3
 
-	vidmod_ffmpeg_args "$ffmpeg_extra_opts"
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
 
 	ffmpeg -i "$input" \
 		"${VIDMOD_FFMPEG_ARGS[@]}" \

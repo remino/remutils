@@ -76,6 +76,11 @@ imgmod_output "$file"
 
 Only files reported through this hook are optimized.
 
+When an output path already exists, `imgmod` prompts before overwriting it on a
+TTY. Use `-y` or `--overwrite` before the command to overwrite without
+prompting, `-i` or `--interactive` to always prompt, or `-N` or `--no-overwrite`
+to refuse overwrites.
+
 ### Completions
 
 Homebrew installs Bash, Zsh, and Fish completion files automatically. If your
