@@ -230,8 +230,8 @@ vidmod_legacy_apply() {
 	local ffmpeg_extra_opts=$4
 
 	case "$change_name" in
-		169) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -vf "setdar=16/9" ;;
-		43) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -vf "setdar=4/3" ;;
+		169) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -vf "crop='if(gte(iw/ih,16/9),ih*16/9,iw)':'if(gte(iw/ih,16/9),ih,iw*9/16)',setsar=1" ;;
+		43) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -vf "crop='if(gte(iw/ih,4/3),ih*4/3,iw)':'if(gte(iw/ih,4/3),ih,iw*3/4)',setsar=1" ;;
 		60fps) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -r 60 ;;
 		audio) vidmod_ffmpeg "$input" "$output" "$ffmpeg_extra_opts" -vn -acodec copy ;;
 		butter) butterflow "$input" -r 120 -audio --levels 6 -o "$output" ;;

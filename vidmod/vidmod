@@ -100,8 +100,8 @@ Video modification helpers.
 
 COMMANDS:
 
-	169         Set display aspect ratio to 16:9.
-	43          Set display aspect ratio to 4:3.
+	169         Crop video to 16:9.
+	43          Crop video to 4:3.
 	60fps       Change frame rate to 60 fps.
 	audio       Extract audio without video.
 	butter      Smooth motion with butterflow.

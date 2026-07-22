@@ -26,6 +26,7 @@ load helpers
 
 @test "uses explicit output file and extra ffmpeg options" {
 	local output_file="$OUTPUT_DIR/custom-169.mov"
+	local expected_filter="crop='if(gte(iw/ih,16/9),ih*16/9,iw)':'if(gte(iw/ih,16/9),ih,iw*9/16)',setsar=1"
 
 	_make_fake_video_tools
 
@@ -33,7 +34,7 @@ load helpers
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "<= $INPUT_FILE"$'\n'"=> $output_file" ]
-	[[ "$(cat "$TOOL_LOG")" == *"<-nostdin> <-y> <-stats> <-vf> <setdar=16/9> <$output_file>" ]]
+	[[ "$(cat "$TOOL_LOG")" == *"<-nostdin> <-y> <-stats> <-vf> <$expected_filter> <$output_file>" ]]
 }
 
 @test "rejects positional output file" {

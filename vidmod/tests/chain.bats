@@ -21,13 +21,14 @@ load helpers
 
 @test "chain passes stage options" {
 	local output_file="$OUTPUT_DIR/chained.mov"
+	local expected_filter="crop='if(gte(iw/ih,16/9),ih*16/9,iw)':'if(gte(iw/ih,16/9),ih,iw*9/16)',setsar=1"
 
 	_make_fake_video_tools
 
 	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" chain 169 -f "-y" -- rotate90 -- "$INPUT_FILE" "$output_file"
 
 	[ "$status" -eq 0 ]
-	[[ "$(sed -n '1p' "$TOOL_LOG")" == *"<-nostdin> <-y> <-vf> <setdar=16/9>"* ]]
+	[[ "$(sed -n '1p' "$TOOL_LOG")" == *"<-nostdin> <-y> <-vf> <$expected_filter>"* ]]
 	[[ "$(sed -n '2p' "$TOOL_LOG")" == *"<-vf> <transpose=1> <$output_file>" ]]
 }
 

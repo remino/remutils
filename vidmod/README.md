@@ -21,6 +21,9 @@ vidmod chain mp4 -- twitter -- input.mov twitter.mp4
 Each normal command processes one input file. Use `chain` when you need multiple
 changes in sequence.
 
+The `169` and `43` commands crop the frame to the requested aspect ratio. They
+do not stretch or squash the image.
+
 ## Commands
 
 The bundled legacy command plugins are:
