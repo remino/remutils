@@ -2,7 +2,7 @@
 # vidmod
 # Video modification helpers.
 
-VERSION='3.0.0'
+VERSION='3.1.0'
 
 vidmod_resolve_script_path() {
 	local source=$1

@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v3.1.0](#v310)
 - [v3.0.0](#v300)
 - [v2.4.1](#v241)
 - [v2.4.0](#v240)
@@ -11,7 +11,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v3.1.0
 
 - Change `169` and `43` to crop video frames to `16:9` and `4:3` instead of only
   rewriting display aspect ratio metadata.
