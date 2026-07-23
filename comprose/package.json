@@ -13,6 +13,7 @@
 	"files": [
 		"comprose",
 		"bin/comprose.js",
+		"lib",
 		"man",
 		"templates"
 	],
