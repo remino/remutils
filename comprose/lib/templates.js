@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {ParsedArgs, ResolvedConfig, TemplateContext, TemplateMetadata, TemplatePlan, TemplateRef} from './types.js' */
 
 import {
 	access,
@@ -170,7 +171,7 @@ const styleValueFromTemplate = styleRelativePath => {
  * lookup, or explicit relative/absolute path.
  *
  * @param {string | undefined} templateInput
- * @returns {Promise<import('./types.js').TemplateRef>}
+ * @returns {Promise<TemplateRef>}
  */
 export const resolveTemplate = async templateInput => {
 	const templateName = templateInput ?? 'default'
@@ -213,8 +214,8 @@ export const resolveTemplate = async templateInput => {
 /**
  * Resolve the runtime configuration for the current project directory.
  *
- * @param {import('./types.js').ParsedArgs} args
- * @returns {Promise<import('./types.js').ResolvedConfig>}
+ * @param {ParsedArgs} args
+ * @returns {Promise<ResolvedConfig>}
  */
 export const resolveConfig = async args => {
 	const packageName = await readPackageName()
@@ -238,9 +239,9 @@ export const resolveConfig = async args => {
  * and identifies the main markdown file, optional stylesheet, and optional
  * asset directory marker.
  *
- * @param {import('./types.js').ResolvedConfig} config
+ * @param {ResolvedConfig} config
  * @param {Record<string, string>} variables
- * @returns {Promise<import('./types.js').TemplatePlan>}
+ * @returns {Promise<TemplatePlan>}
  */
 export const buildTemplatePlan = async (config, variables) => {
 	const files = await walkFiles(config.template.dir)
@@ -305,22 +306,21 @@ export const buildTemplatePlan = async (config, variables) => {
 /**
  * Build the Mustache context exposed to template files.
  *
- * @param {{
- *   body: string,
- *   config: import('./types.js').ResolvedConfig,
- *   date: string,
- *   dateString?: string,
- *   frontmatterDate: string,
- *   image?: string,
- *   metadata?: import('./types.js').TemplateMetadata,
- *   paths: import('./types.js').TemplatePlan,
- *   slug: string,
- *   style?: string,
- *   tags?: string[] | string,
- *   title: string,
- *   type?: 'article' | 'note'
- * }} input
- * @returns {import('./types.js').TemplateContext}
+ * @param {object} input
+ * @param {string} input.body
+ * @param {ResolvedConfig} input.config
+ * @param {string} input.date
+ * @param {string} [input.dateString]
+ * @param {string} input.frontmatterDate
+ * @param {string} [input.image]
+ * @param {TemplateMetadata} [input.metadata]
+ * @param {TemplatePlan} input.paths
+ * @param {string} input.slug
+ * @param {string} [input.style]
+ * @param {string[] | string} [input.tags]
+ * @param {string} input.title
+ * @param {'article' | 'note'} [input.type]
+ * @returns {TemplateContext}
  */
 export const templateContext = ({
 	body,
@@ -337,7 +337,7 @@ export const templateContext = ({
 	title,
 	type = 'article',
 }) => {
-	/** @type {import('./types.js').TemplateContext} */
+	/** @type {TemplateContext} */
 	const context = {
 		assetDir: paths.assetDir,
 		body,
@@ -397,7 +397,7 @@ export const templateContext = ({
 /**
  * Remove previously generated output for a scaffold or import target.
  *
- * @param {import('./types.js').TemplatePlan} paths
+ * @param {TemplatePlan} paths
  * @returns {Promise<void>}
  */
 export const removeExistingOutput = async paths => {
@@ -413,7 +413,7 @@ export const removeExistingOutput = async paths => {
 /**
  * Return the first existing output path for a template plan, if any.
  *
- * @param {import('./types.js').TemplatePlan} paths
+ * @param {TemplatePlan} paths
  * @returns {Promise<string | undefined>}
  */
 export const existingOutputPath = async paths => {
@@ -435,9 +435,10 @@ export const existingOutputPath = async paths => {
 /**
  * Write all rendered and copied files described by a template plan.
  *
- * @param {import('./types.js').TemplatePlan} paths
- * @param {import('./types.js').TemplateContext} context
- * @param {{ skipOutputPaths?: string[] }} [options]
+ * @param {TemplatePlan} paths
+ * @param {TemplateContext} context
+ * @param {object} [options]
+ * @param {string[]} [options.skipOutputPaths]
  * @returns {Promise<string[]>}
  */
 export const writeTemplateFiles = async (

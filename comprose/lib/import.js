@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {ImageAsset, ImportHandlers, ImportOptions, ResolvedConfig} from './types.js' */
 
 import { copyFile, mkdir, readdir } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
@@ -35,10 +36,10 @@ import {
  * source content where possible while rewriting image references to match the
  * generated output tree.
  *
- * @param {import('./types.js').ResolvedConfig} config
+ * @param {ResolvedConfig} config
  * @param {string} sourceDirInput
- * @param {{ edit?: boolean, openFolder?: boolean, force?: boolean }} [options]
- * @param {{ fail: (message: string, exitCode?: number) => void }} [handlers]
+ * @param {ImportOptions} [options]
+ * @param {ImportHandlers} [handlers]
  */
 export const importDirectory = async (
 	config,
@@ -81,7 +82,7 @@ export const importDirectory = async (
 	const filesToEdit = [paths.entryPath]
 	const assetNames = new Set()
 	const assetMap = new Map()
-	/** @type {import('./types.js').ImageAsset[]} */
+	/** @type {ImageAsset[]} */
 	const imageAssets = []
 	const pngAndGifOutputs = []
 	let numericImageIndex = 0

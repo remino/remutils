@@ -139,3 +139,24 @@ templates/example/
 `comprose` uses Node.js, Mustache, and `sharp`. Image imports that keep
 PNG/GIF/HEIC output also require ImageMagick. PNG and GIF outputs are passed
 through `image_optim` when that command is available.
+
+## Maintainer docs
+
+The published docs site is generated into a separate `docs/` worktree checked
+out at the repo root on the orphan `docs` branch.
+
+The published layout is:
+
+- `docs/remutils/comprose/index.html`: README landing page
+- `docs/remutils/comprose/docs/`: generated JSDoc API site
+- `docs/.nojekyll`: GitHub Pages Jekyll bypass marker
+
+Build and publish docs with:
+
+```sh
+npm run docs:publish --prefix comprose
+```
+
+The docs scripts expect `../docs` from the `comprose/` directory to already be a
+Git worktree on the `docs` branch. If that worktree is missing or on another
+branch, the build fails with a descriptive error.

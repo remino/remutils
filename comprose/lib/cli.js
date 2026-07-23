@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {ParsedArgs} from './types.js' */
 
 import { parseDateInput } from './date.js'
 import { normalizeProject } from './text.js'
@@ -66,10 +67,10 @@ export const fail = (message, exitCode = 1) => {
  * Parse CLI arguments into the normalized shape used by the runtime.
  *
  * @param {string[]} argv
- * @returns {import('./types.js').ParsedArgs}
+ * @returns {ParsedArgs}
  */
 export const parseArgs = argv => {
-	/** @type {import('./types.js').ParsedArgs} */
+	/** @type {ParsedArgs} */
 	const args = {
 		command: undefined,
 		slugParts: [],

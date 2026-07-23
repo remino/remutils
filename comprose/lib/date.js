@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {ParsedDate} from './types.js' */
 
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/
 const dateTimePattern =
@@ -48,7 +49,7 @@ export const formatLocalIso = (
  *
  * @param {string} value
  * @param {Date} [now]
- * @returns {import('./types.js').ParsedDate}
+ * @returns {ParsedDate}
  */
 export const parseDateInput = (value, now = new Date()) => {
 	const trimmed = value.trim()

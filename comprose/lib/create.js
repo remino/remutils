@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {CliHandlers, ParsedArgs, ResolvedConfig} from './types.js' */
 
 import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, join } from 'node:path'
@@ -25,9 +26,9 @@ import { openInEditor, openInFinder, readStdin } from './system.js'
  * by the selected template and mirrors the asset/style behavior that import
  * uses, so templates stay the single source of layout truth.
  *
- * @param {import('./types.js').ResolvedConfig} config
- * @param {import('./types.js').ParsedArgs} parsed
- * @param {{ fail: (message: string, exitCode?: number) => void, usage: () => void }} handlers
+ * @param {ResolvedConfig} config
+ * @param {ParsedArgs} parsed
+ * @param {CliHandlers} handlers
  */
 export const createEntry = async (config, parsed, { fail, usage }) => {
 	const rawSlug = parsed.slugParts.join(' ').trim()

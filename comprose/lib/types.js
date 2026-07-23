@@ -3,8 +3,8 @@
 /**
  * Shared JSDoc typedefs for `comprose`.
  *
- * This file exists so the rest of the codebase can use `import('./types.js').X`
- * without duplicating object-shape annotations across modules.
+ * This file centralizes shared object-shape annotations so the rest of the
+ * codebase can reuse the same names in both `@ts-check` and generated docs.
  */
 
 /**
@@ -35,6 +35,14 @@
  * @property {string | undefined} template Template name or path.
  * @property {string | undefined} collection Normalized content collection.
  * @property {string | undefined} pubname Frontmatter pubname override.
+ */
+
+/**
+ * Common CLI error/reporting hooks used by top-level workflows.
+ *
+ * @typedef {object} CliHandlers
+ * @property {Function} fail User-facing error reporter.
+ * @property {Function} usage Help-screen printer.
  */
 
 /**
@@ -115,6 +123,22 @@
  * @property {string} outputPath Absolute output path.
  * @property {string} publicPath Published path reference written into markdown/frontmatter.
  * @property {string} [sourceName] Original source file name.
+ */
+
+/**
+ * Runtime options for the import workflow.
+ *
+ * @typedef {object} ImportOptions
+ * @property {boolean} [edit]
+ * @property {boolean} [openFolder]
+ * @property {boolean} [force]
+ */
+
+/**
+ * Handler hooks used by the import workflow.
+ *
+ * @typedef {object} ImportHandlers
+ * @property {Function} fail User-facing error reporter.
  */
 
 /**

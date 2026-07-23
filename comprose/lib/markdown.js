@@ -1,4 +1,5 @@
 // @ts-check
+/** @import {MarkdownMetadata} from './types.js' */
 
 import { readFile, readdir } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
@@ -239,7 +240,7 @@ export const collectReferencedImageFiles = (
  * and lifts frontmatter into a normalized shape that templates can consume.
  *
  * @param {string} sourceDir
- * @returns {Promise<import('./types.js').MarkdownMetadata>}
+ * @returns {Promise<MarkdownMetadata>}
  */
 export const resolveMarkdownMetadata = async sourceDir => {
 	const markdownFileName = await selectMarkdownFile(sourceDir)
