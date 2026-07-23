@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: templates.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: templates.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+/** @import {ParsedArgs, ResolvedConfig, TemplateContext, TemplateMetadata, TemplatePlan, TemplateRef} from './types.js' */
+
+import {
+	access,
+	copyFile,
+	mkdir,
+	readFile,
+	readdir,
+	rm,
+	writeFile,
+} from 'node:fs/promises'
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+} from 'node:path'
+import Mustache from 'mustache'
+import { assetMarkerName, repoRoot, toolRoot } from './constants.js'
+import { normalizeProject, hasValue } from './text.js'
+
+/**
+ * Check whether a path exists.
+ *
+ * @param {string} path
+ * @returns {Promise&lt;boolean>}
+ */
+export const pathExists = async path => {
+	try {
+		await access(path)
+		return true
+	} catch {
+		return false
+	}
+}
+
+const readPackageName = async () => {
+	try {
+		const source = await readFile(join(repoRoot, 'package.json'), 'utf8')
+		const packageJson = JSON.parse(source)
+
+		return typeof packageJson.name === 'string' ? packageJson.name : undefined
+	} catch {
+		return undefined
+	}
+}
+
+const pubnameFromPackageName = packageName => {
+	if (!packageName || packageName.startsWith('@')) {
+		return undefined
+	}
+
+	const parts = packageName.split('.').filter(Boolean)
+	if (parts.length &lt; 3) {
+		return undefined
+	}
+
+	return parts.slice(1).join('-')
+}
+
+const findParentTemplateDir = async templateName => {
+	let dir = repoRoot
+
+	while (true) {
+		for (const candidate of [
+			join(dir, '.comprose', 'templates', templateName),
+			join(dir, '.config', 'comprose', 'templates', templateName),
+		]) {
+			if (await pathExists(candidate)) {
+				return candidate
+			}
+		}
+
+		const parent = dirname(dir)
+		if (parent === dir) {
+			return undefined
+		}
+
+		dir = parent
+	}
+}
+
+const findConfigTemplateDir = async templateName => {
+	const configHome =
+		process.env.XDG_CONFIG_HOME || join(process.env.HOME ?? '', '.config')
+	if (!configHome) {
+		return undefined
+	}
+
+	const candidate = join(configHome, 'comprose', 'templates', templateName)
+	return (await pathExists(candidate)) ? candidate : undefined
+}
+
+/** @param {string} dir @returns {Promise&lt;string[]>} */
+const walkFiles = async dir => {
+	const entries = await readdir(dir, { withFileTypes: true })
+	const files = []
+
+	for (const entry of entries) {
+		const entryPath = join(dir, entry.name)
+
+		if (entry.isDirectory()) {
+			for (const childPath of await walkFiles(entryPath)) {
+				files.push(join(entry.name, childPath))
+			}
+			continue
+		}
+
+		if (entry.isFile()) {
+			files.push(entry.name)
+		}
+	}
+
+	return files.sort((left, right) => left.localeCompare(right))
+}
+
+const renderPathVariables = (value, variables) =>
+	value.replace(/\[([a-zA-Z0-9_]+)\]/g, (match, key) =>
+		variables[key] === undefined ? match : String(variables[key])
+	)
+
+const outputPathFor = relativePath => {
+	const outputPath = resolve(repoRoot, relativePath)
+	const relativeToRoot = relative(repoRoot, outputPath)
+
+	if (relativeToRoot.startsWith('..') || isAbsolute(relativeToRoot)) {
+		throw new Error(`template output escapes repository root: ${relativePath}`)
+	}
+
+	return outputPath
+}
+
+const publicAssetPathFromTemplate = (assetDirRelative, fileName) => {
+	if (!assetDirRelative) {
+		return fileName
+	}
+
+	const normalized = assetDirRelative.replace(/\\/g, '/')
+	if (normalized === 'public') {
+		return `/${fileName}`
+	}
+
+	if (normalized.startsWith('public/')) {
+		return `/${normalized.slice('public/'.length)}/${fileName}`.replace(
+			/\/+/g,
+			'/'
+		)
+	}
+
+	return fileName
+}
+
+const styleValueFromTemplate = styleRelativePath => {
+	if (!styleRelativePath) {
+		return undefined
+	}
+
+	const normalized = styleRelativePath.replace(/\\/g, '/')
+	if (normalized.startsWith('src/styles/')) {
+		return normalized.slice('src/styles/'.length)
+	}
+
+	return normalized
+}
+
+/**
+ * Resolve a template by built-in name, local dot-directory lookup, XDG config
+ * lookup, or explicit relative/absolute path.
+ *
+ * @param {string | undefined} templateInput
+ * @returns {Promise&lt;TemplateRef>}
+ */
+export const resolveTemplate = async templateInput => {
+	const templateName = templateInput ?? 'default'
+	const builtInDir = join(toolRoot, 'templates', templateName)
+
+	if (await pathExists(builtInDir)) {
+		return {
+			dir: builtInDir,
+			name: templateName,
+		}
+	}
+
+	const parentTemplateDir = await findParentTemplateDir(templateName)
+	if (parentTemplateDir) {
+		return {
+			dir: parentTemplateDir,
+			name: templateName,
+		}
+	}
+
+	const configTemplateDir = await findConfigTemplateDir(templateName)
+	if (configTemplateDir) {
+		return {
+			dir: configTemplateDir,
+			name: templateName,
+		}
+	}
+
+	const customDir = resolve(repoRoot, templateName)
+	if (!(await pathExists(customDir))) {
+		throw new Error(`template not found: ${templateName}`)
+	}
+
+	return {
+		dir: customDir,
+		name: templateName,
+	}
+}
+
+/**
+ * Resolve the runtime configuration for the current project directory.
+ *
+ * @param {ParsedArgs} args
+ * @returns {Promise&lt;ResolvedConfig>}
+ */
+export const resolveConfig = async args => {
+	const packageName = await readPackageName()
+	const collection = args.collection ?? normalizeProject(basename(repoRoot))
+	const pubname =
+		args.pubname || pubnameFromPackageName(packageName) || collection
+	const template = await resolveTemplate(args.template)
+
+	return {
+		collection,
+		project: collection,
+		pubname,
+		template,
+	}
+}
+
+/**
+ * Build the concrete output plan for a rendered entry template.
+ *
+ * This walks the selected template tree, substitutes bracketed path variables,
+ * and identifies the main markdown file, optional stylesheet, and optional
+ * asset directory marker.
+ *
+ * @param {ResolvedConfig} config
+ * @param {Record&lt;string, string>} variables
+ * @returns {Promise&lt;TemplatePlan>}
+ */
+export const buildTemplatePlan = async (config, variables) => {
+	const files = await walkFiles(config.template.dir)
+	const renderedFiles = []
+	let assetDir
+	/** @type {string | undefined} */
+	let assetDirRelative
+
+	for (const file of files) {
+		const renderedRelativePath = renderPathVariables(file, variables)
+
+		if (basename(renderedRelativePath) === assetMarkerName) {
+			assetDirRelative = dirname(renderedRelativePath)
+			assetDir = outputPathFor(assetDirRelative)
+			continue
+		}
+
+		const outputRelativePath = renderedRelativePath.endsWith('.mustache')
+			? renderedRelativePath.slice(0, -'.mustache'.length)
+			: renderedRelativePath
+
+		renderedFiles.push({
+			outputPath: outputPathFor(outputRelativePath),
+			outputRelativePath,
+			sourcePath: join(config.template.dir, file),
+			template: renderedRelativePath.endsWith('.mustache'),
+		})
+	}
+
+	const entryFile =
+		renderedFiles.find(file => file.outputRelativePath.endsWith('.md')) ??
+		renderedFiles.find(file => file.outputRelativePath.endsWith('.markdown'))
+	const styleFile = renderedFiles.find(file =>
+		file.outputRelativePath.endsWith('.css')
+	)
+
+	if (!entryFile) {
+		throw new Error(
+			`template has no Markdown entry file: ${config.template.name}`
+		)
+	}
+
+	return {
+		assetDir,
+		assetDirRelative,
+		contentDir: dirname(entryFile.outputPath),
+		entryPath: entryFile.outputPath,
+		files: renderedFiles,
+		label:
+			variables.datedSlug &amp;&amp;
+			entryFile.outputRelativePath.includes(variables.datedSlug)
+				? variables.datedSlug
+				: variables.slug,
+		publicAssetPath: fileName =>
+			publicAssetPathFromTemplate(assetDirRelative, fileName),
+		stylePath: styleFile?.outputPath,
+		styleValue: styleValueFromTemplate(styleFile?.outputRelativePath),
+		usesStyle: Boolean(styleFile),
+	}
+}
+
+/**
+ * Build the Mustache context exposed to template files.
+ *
+ * @param {object} input
+ * @param {string} input.body
+ * @param {ResolvedConfig} input.config
+ * @param {string} input.date
+ * @param {string} [input.dateString]
+ * @param {string} input.frontmatterDate
+ * @param {string} [input.image]
+ * @param {TemplateMetadata} [input.metadata]
+ * @param {TemplatePlan} input.paths
+ * @param {string} input.slug
+ * @param {string} [input.style]
+ * @param {string[] | string} [input.tags]
+ * @param {string} input.title
+ * @param {'article' | 'note'} [input.type]
+ * @returns {TemplateContext}
+ */
+export const templateContext = ({
+	body,
+	config,
+	date,
+	dateString,
+	frontmatterDate,
+	image,
+	metadata = {},
+	paths,
+	slug,
+	style,
+	tags = [],
+	title,
+	type = 'article',
+}) => {
+	/** @type {TemplateContext} */
+	const context = {
+		assetDir: paths.assetDir,
+		body,
+		catname: metadata.catname ?? 'tips',
+		contentDir: paths.contentDir,
+		date,
+		dateString: dateString ?? date,
+		deck: metadata.deck,
+		description: metadata.description,
+		draft: metadata.draft,
+		entryPath: paths.entryPath,
+		frontmatterDate,
+		hasDeck: false,
+		hasDescription: false,
+		hasDraft: false,
+		hasImage: false,
+		hasKicker: false,
+		hasOriginalDate: false,
+		hasShareImage: false,
+		hasStyle: false,
+		hasSubtitle: false,
+		hasSummary: false,
+		hasTags: false,
+		image,
+		kicker: metadata.kicker,
+		original_date: metadata.original_date,
+		collection: config.collection,
+		project: config.project,
+		pubname: config.pubname,
+		publicPrefix: `/${config.collection}`,
+		share_image: metadata.share_image,
+		slug,
+		style,
+		stylePath: paths.stylePath,
+		stylePrefix: config.collection,
+		subtitle: metadata.subtitle,
+		summary: metadata.summary,
+		tags: Array.isArray(tags) ? tags.join(', ') : tags,
+		title,
+		type,
+	}
+	context.hasDeck = hasValue(context.deck)
+	context.hasDescription = hasValue(context.description)
+	context.hasDraft = context.draft === true
+	context.hasImage = hasValue(context.image)
+	context.hasKicker = hasValue(context.kicker)
+	context.hasOriginalDate = hasValue(context.original_date)
+	context.hasShareImage = hasValue(context.share_image)
+	context.hasStyle = hasValue(context.style)
+	context.hasSubtitle = hasValue(context.subtitle)
+	context.hasSummary = hasValue(context.summary)
+	context.hasTags = hasValue(context.tags)
+
+	return context
+}
+
+/**
+ * Remove previously generated output for a scaffold or import target.
+ *
+ * @param {TemplatePlan} paths
+ * @returns {Promise&lt;void>}
+ */
+export const removeExistingOutput = async paths => {
+	await rm(paths.entryPath, { force: true })
+	if (paths.assetDir) {
+		await rm(paths.assetDir, { force: true, recursive: true })
+	}
+	if (paths.stylePath) {
+		await rm(paths.stylePath, { force: true })
+	}
+}
+
+/**
+ * Return the first existing output path for a template plan, if any.
+ *
+ * @param {TemplatePlan} paths
+ * @returns {Promise&lt;string | undefined>}
+ */
+export const existingOutputPath = async paths => {
+	if (await pathExists(paths.entryPath)) {
+		return paths.entryPath
+	}
+
+	if (paths.assetDir &amp;&amp; (await pathExists(paths.assetDir))) {
+		return paths.assetDir
+	}
+
+	if (paths.stylePath &amp;&amp; (await pathExists(paths.stylePath))) {
+		return paths.stylePath
+	}
+
+	return undefined
+}
+
+/**
+ * Write all rendered and copied files described by a template plan.
+ *
+ * @param {TemplatePlan} paths
+ * @param {TemplateContext} context
+ * @param {object} [options]
+ * @param {string[]} [options.skipOutputPaths]
+ * @returns {Promise&lt;string[]>}
+ */
+export const writeTemplateFiles = async (
+	paths,
+	context,
+	{ skipOutputPaths = [] } = {}
+) => {
+	const written = []
+	const skipped = new Set(skipOutputPaths)
+
+	for (const file of paths.files) {
+		if (skipped.has(file.outputPath)) {
+			continue
+		}
+
+		await mkdir(dirname(file.outputPath), { recursive: true })
+
+		if (file.template) {
+			const template = await readFile(file.sourcePath, 'utf8')
+			await writeFile(file.outputPath, Mustache.render(template, context), {
+				flag: 'wx',
+			})
+		} else {
+			await copyFile(file.sourcePath, file.outputPath)
+		}
+
+		written.push(file.outputPath)
+	}
+
+	return written
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#assertDocsWorktree">assertDocsWorktree</a></li><li><a href="global.html#buildApiDocs">buildApiDocs</a></li><li><a href="global.html#buildTemplatePlan">buildTemplatePlan</a></li><li><a href="global.html#collectReferencedImageFiles">collectReferencedImageFiles</a></li><li><a href="global.html#convertImageWithMagick">convertImageWithMagick</a></li><li><a href="global.html#convertImageWithSharp">convertImageWithSharp</a></li><li><a href="global.html#createEntry">createEntry</a></li><li><a href="global.html#dateOnlyPattern">dateOnlyPattern</a></li><li><a href="global.html#existingOutputPath">existingOutputPath</a></li><li><a href="global.html#fail">fail</a></li><li><a href="global.html#formatLocalIso">formatLocalIso</a></li><li><a href="global.html#formatOffset">formatOffset</a></li><li><a href="global.html#frontmatter">frontmatter</a></li><li><a href="global.html#frontmatterBoolean">frontmatterBoolean</a></li><li><a href="global.html#frontmatterString">frontmatterString</a></li><li><a href="global.html#getCurrentOffset">getCurrentOffset</a></li><li><a href="global.html#hasValue">hasValue</a></li><li><a href="global.html#humanizeSlug">humanizeSlug</a></li><li><a href="global.html#importDirectory">importDirectory</a></li><li><a href="global.html#main">main</a></li><li><a href="global.html#normalizeProject">normalizeProject</a></li><li><a href="global.html#normalizeSlug">normalizeSlug</a></li><li><a href="global.html#normalizeTagList">normalizeTagList</a></li><li><a href="global.html#openInEditor">openInEditor</a></li><li><a href="global.html#openInFinder">openInFinder</a></li><li><a href="global.html#pad2">pad2</a></li><li><a href="global.html#parseArgs">parseArgs</a></li><li><a href="global.html#parseDateInput">parseDateInput</a></li><li><a href="global.html#pathExists">pathExists</a></li><li><a href="global.html#preparePublishedSite">preparePublishedSite</a></li><li><a href="global.html#quoteShellArg">quoteShellArg</a></li><li><a href="global.html#readStdin">readStdin</a></li><li><a href="global.html#removeExistingOutput">removeExistingOutput</a></li><li><a href="global.html#renderLandingPage">renderLandingPage</a></li><li><a href="global.html#resolveConfig">resolveConfig</a></li><li><a href="global.html#resolveDocsRoot">resolveDocsRoot</a></li><li><a href="global.html#resolveMarkdownMetadata">resolveMarkdownMetadata</a></li><li><a href="global.html#resolvePublishedApiRoot">resolvePublishedApiRoot</a></li><li><a href="global.html#resolvePublishedSiteRoot">resolvePublishedSiteRoot</a></li><li><a href="global.html#resolveTemplate">resolveTemplate</a></li><li><a href="global.html#rewriteAssetReference">rewriteAssetReference</a></li><li><a href="global.html#rewriteAssetReferences">rewriteAssetReferences</a></li><li><a href="global.html#runImageOptim">runImageOptim</a></li><li><a href="global.html#stripDiacritics">stripDiacritics</a></li><li><a href="global.html#stripFirstHeading">stripFirstHeading</a></li><li><a href="global.html#stripFrontmatter">stripFrontmatter</a></li><li><a href="global.html#templateContext">templateContext</a></li><li><a href="global.html#toLocalDateString">toLocalDateString</a></li><li><a href="global.html#uniqueAssetName">uniqueAssetName</a></li><li><a href="global.html#uniqueName">uniqueName</a></li><li><a href="global.html#usage">usage</a></li><li><a href="global.html#walkFiles">walkFiles</a></li><li><a href="global.html#writeLandingPage">writeLandingPage</a></li><li><a href="global.html#writeTemplateFiles">writeTemplateFiles</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 18:53:13 GMT+0900 (Japan Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

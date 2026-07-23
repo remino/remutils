@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: date.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: date.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+/** @import {ParsedDate} from './types.js' */
+
+const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/
+const dateTimePattern =
+	/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/
+
+/** @param {Date} date */
+const getCurrentOffset = date => -date.getTimezoneOffset()
+
+/** @param {number} offsetMinutes */
+const formatOffset = offsetMinutes => {
+	const sign = offsetMinutes >= 0 ? '+' : '-'
+	const absoluteMinutes = Math.abs(offsetMinutes)
+	const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, '0')
+	const minutes = String(absoluteMinutes % 60).padStart(2, '0')
+
+	return `${sign}${hours}:${minutes}`
+}
+
+/**
+ * Format a `Date` into a local ISO string with an explicit offset.
+ *
+ * @param {Date} date
+ * @param {number} [offsetMinutes]
+ * @returns {string}
+ */
+export const formatLocalIso = (
+	date,
+	offsetMinutes = getCurrentOffset(date)
+) => {
+	const localDate = new Date(date.getTime() + offsetMinutes * 60_000)
+	const year = localDate.getUTCFullYear()
+	const month = String(localDate.getUTCMonth() + 1).padStart(2, '0')
+	const day = String(localDate.getUTCDate()).padStart(2, '0')
+	const hours = String(localDate.getUTCHours()).padStart(2, '0')
+	const minutes = String(localDate.getUTCMinutes()).padStart(2, '0')
+	const seconds = String(localDate.getUTCSeconds()).padStart(2, '0')
+
+	return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${formatOffset(offsetMinutes)}`
+}
+
+/**
+ * Parse CLI date input and normalize it for both path naming and frontmatter.
+ *
+ * Date-only input preserves the current local time so quick entry creation
+ * still gets a full timestamp in frontmatter without requiring the caller to
+ * pass one explicitly.
+ *
+ * @param {string} value
+ * @param {Date} [now]
+ * @returns {ParsedDate}
+ */
+export const parseDateInput = (value, now = new Date()) => {
+	const trimmed = value.trim()
+	const dateOnlyMatch = trimmed.match(dateOnlyPattern)
+	const dateTimeMatch = trimmed.match(dateTimePattern)
+
+	if (!dateOnlyMatch &amp;&amp; !dateTimeMatch) {
+		throw new Error(`invalid ISO 8601 date "${value}"`)
+	}
+
+	if (dateOnlyMatch) {
+		const parsed = new Date(now)
+		const offsetMinutes = getCurrentOffset(now)
+
+		return {
+			input: trimmed,
+			parsed,
+			fileDate: trimmed,
+			frontmatterDate: formatLocalIso(parsed, offsetMinutes),
+		}
+	}
+
+	const dateTime = /** @type {RegExpMatchArray} */ (dateTimeMatch)
+	const fileDate = `${dateTime[1]}-${dateTime[2]}-${dateTime[3]}`
+	const hasOffset = Boolean(dateTime[8])
+	const year = Number(dateTime[1])
+	const month = Number(dateTime[2])
+	const day = Number(dateTime[3])
+	const hours = Number(dateTime[4])
+	const minutes = Number(dateTime[5])
+	const seconds = Number(dateTime[6] ?? '0')
+	const milliseconds = Number((dateTime[7] ?? '0').padEnd(3, '0'))
+	const offsetMinutes = getCurrentOffset(now)
+	const parsed = hasOffset
+		? new Date(trimmed)
+		: new Date(
+				Date.UTC(year, month - 1, day, hours, minutes, seconds, milliseconds) -
+					offsetMinutes * 60_000
+			)
+
+	if (Number.isNaN(parsed.valueOf())) {
+		throw new Error(`invalid ISO 8601 date "${value}"`)
+	}
+
+	return {
+		input: trimmed,
+		parsed,
+		fileDate,
+		frontmatterDate: hasOffset
+			? trimmed
+			: formatLocalIso(parsed, offsetMinutes),
+	}
+}
+
+/** @param {number} value */
+const pad2 = value => String(value).padStart(2, '0')
+
+/** @param {Date} date */
+export const toLocalDateString = date =>
+	`${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#assertDocsWorktree">assertDocsWorktree</a></li><li><a href="global.html#buildApiDocs">buildApiDocs</a></li><li><a href="global.html#buildTemplatePlan">buildTemplatePlan</a></li><li><a href="global.html#collectReferencedImageFiles">collectReferencedImageFiles</a></li><li><a href="global.html#convertImageWithMagick">convertImageWithMagick</a></li><li><a href="global.html#convertImageWithSharp">convertImageWithSharp</a></li><li><a href="global.html#createEntry">createEntry</a></li><li><a href="global.html#dateOnlyPattern">dateOnlyPattern</a></li><li><a href="global.html#existingOutputPath">existingOutputPath</a></li><li><a href="global.html#fail">fail</a></li><li><a href="global.html#formatLocalIso">formatLocalIso</a></li><li><a href="global.html#formatOffset">formatOffset</a></li><li><a href="global.html#frontmatter">frontmatter</a></li><li><a href="global.html#frontmatterBoolean">frontmatterBoolean</a></li><li><a href="global.html#frontmatterString">frontmatterString</a></li><li><a href="global.html#getCurrentOffset">getCurrentOffset</a></li><li><a href="global.html#hasValue">hasValue</a></li><li><a href="global.html#humanizeSlug">humanizeSlug</a></li><li><a href="global.html#importDirectory">importDirectory</a></li><li><a href="global.html#main">main</a></li><li><a href="global.html#normalizeProject">normalizeProject</a></li><li><a href="global.html#normalizeSlug">normalizeSlug</a></li><li><a href="global.html#normalizeTagList">normalizeTagList</a></li><li><a href="global.html#openInEditor">openInEditor</a></li><li><a href="global.html#openInFinder">openInFinder</a></li><li><a href="global.html#pad2">pad2</a></li><li><a href="global.html#parseArgs">parseArgs</a></li><li><a href="global.html#parseDateInput">parseDateInput</a></li><li><a href="global.html#pathExists">pathExists</a></li><li><a href="global.html#preparePublishedSite">preparePublishedSite</a></li><li><a href="global.html#quoteShellArg">quoteShellArg</a></li><li><a href="global.html#readStdin">readStdin</a></li><li><a href="global.html#removeExistingOutput">removeExistingOutput</a></li><li><a href="global.html#renderLandingPage">renderLandingPage</a></li><li><a href="global.html#resolveConfig">resolveConfig</a></li><li><a href="global.html#resolveDocsRoot">resolveDocsRoot</a></li><li><a href="global.html#resolveMarkdownMetadata">resolveMarkdownMetadata</a></li><li><a href="global.html#resolvePublishedApiRoot">resolvePublishedApiRoot</a></li><li><a href="global.html#resolvePublishedSiteRoot">resolvePublishedSiteRoot</a></li><li><a href="global.html#resolveTemplate">resolveTemplate</a></li><li><a href="global.html#rewriteAssetReference">rewriteAssetReference</a></li><li><a href="global.html#rewriteAssetReferences">rewriteAssetReferences</a></li><li><a href="global.html#runImageOptim">runImageOptim</a></li><li><a href="global.html#stripDiacritics">stripDiacritics</a></li><li><a href="global.html#stripFirstHeading">stripFirstHeading</a></li><li><a href="global.html#stripFrontmatter">stripFrontmatter</a></li><li><a href="global.html#templateContext">templateContext</a></li><li><a href="global.html#toLocalDateString">toLocalDateString</a></li><li><a href="global.html#uniqueAssetName">uniqueAssetName</a></li><li><a href="global.html#uniqueName">uniqueName</a></li><li><a href="global.html#usage">usage</a></li><li><a href="global.html#walkFiles">walkFiles</a></li><li><a href="global.html#writeLandingPage">writeLandingPage</a></li><li><a href="global.html#writeTemplateFiles">writeTemplateFiles</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 18:53:13 GMT+0900 (Japan Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
