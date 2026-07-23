@@ -16,6 +16,7 @@ const dressCssFile = join(
 	'dist',
 	'dress.css'
 )
+const jsdocThemeRoot = join(packageRoot, 'jsdoc-theme')
 
 /**
  * Resolve the docs worktree root.
@@ -44,6 +45,13 @@ export const resolvePublishedSiteRoot = docsRoot => join(docsRoot, 'comprose')
  */
 export const resolvePublishedApiRoot = docsRoot =>
 	join(resolvePublishedSiteRoot(docsRoot), 'docs')
+
+/**
+ * Resolve the local JSDoc theme root.
+ *
+ * @returns {string}
+ */
+export const resolveJSDocThemeRoot = () => jsdocThemeRoot
 
 /**
  * Ensure the configured docs path is a `docs` branch worktree.
@@ -183,13 +191,6 @@ export const preparePublishedSite = async docsRoot => {
  * @returns {void}
  */
 export const buildApiDocs = docsRoot => {
-	const jsdocTemplate = join(
-		packageRoot,
-		'node_modules',
-		'jsdoc',
-		'templates',
-		'default'
-	)
 	const result = spawnSync(
 		'jsdoc',
 		[
@@ -198,7 +199,7 @@ export const buildApiDocs = docsRoot => {
 			'-d',
 			resolvePublishedApiRoot(docsRoot),
 			'-t',
-			jsdocTemplate,
+			resolveJSDocThemeRoot(),
 		],
 		{
 			encoding: 'utf8',

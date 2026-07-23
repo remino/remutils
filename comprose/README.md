@@ -151,6 +151,9 @@ The published layout is:
 - `docs/comprose/docs/`: generated JSDoc API site
 - `docs/.nojekyll`: GitHub Pages Jekyll bypass marker
 
+The API site uses the local `comprose/jsdoc-theme/` template, which keeps the
+JSDoc output aligned with the `dress.css` styling used by the landing page.
+
 Build and publish docs with:
 
 ```sh

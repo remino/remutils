@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
 	renderLandingPage,
+	resolveJSDocThemeRoot,
 	resolvePublishedApiRoot,
 	resolvePublishedSiteRoot,
 } from './docs.js'
@@ -28,5 +29,9 @@ describe('docs', () => {
 			resolvePublishedApiRoot('/tmp/docs-worktree'),
 			'/tmp/docs-worktree/comprose/docs'
 		)
+	})
+
+	it('resolves the local jsdoc theme root inside comprose', () => {
+		assert.match(resolveJSDocThemeRoot(), /\/comprose\/jsdoc-theme$/)
 	})
 })
