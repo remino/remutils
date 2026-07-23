@@ -1,6 +1,6 @@
 // @ts-check
 
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +8,14 @@ import { marked } from 'marked'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const defaultDocsRoot = resolve(packageRoot, '..', 'docs')
+const dressCssFile = join(
+	packageRoot,
+	'node_modules',
+	'@remino',
+	'dress.css',
+	'dist',
+	'dress.css'
+)
 
 /**
  * Resolve the docs worktree root.
@@ -103,54 +111,27 @@ export const renderLandingPage = markdown => {
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>comprose</title>
-	<style>
-		:root {
-			color-scheme: light dark;
-			font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-			line-height: 1.6;
-		}
-
-		body {
-			margin: 0;
-			padding: 2rem 1.25rem 4rem;
-		}
-
-		main {
-			margin: 0 auto;
-			max-width: 52rem;
-		}
-
-		h1, h2, h3 {
-			line-height: 1.2;
-		}
-
-		pre, code {
-			font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
-		}
-
-		pre {
-			overflow-x: auto;
-			padding: 1rem;
-			border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-			border-radius: 0.375rem;
-		}
-
-		a {
-			color: inherit;
-		}
-
-		.api-link {
-			display: inline-block;
-			margin: 0 0 2rem;
-			font-weight: 600;
-		}
-	</style>
+	<link rel="stylesheet" href="./dress.css" />
 </head>
 <body>
-	<main>
-		<p><a class="api-link" href="./docs/">API documentation</a></p>
+	<a href="#main">Skip to content</a>
+	<header>
+		<h1>comprose</h1>
+		<nav>
+			<ul>
+				<li><a href="./docs/">API documentation</a></li>
+				<li><a href="https://www.npmjs.com/package/@remino/comprose">npm package</a></li>
+			</ul>
+		</nav>
+	</header>
+	<main id="main">
+		<article>
 ${bodyHtml}
+		</article>
 	</main>
+	<footer>
+		<small>Generated from README and JSDoc.</small>
+	</footer>
 </body>
 </html>
 `
@@ -167,6 +148,18 @@ export const writeLandingPage = async docsRoot => {
 	const siteRoot = resolvePublishedSiteRoot(docsRoot)
 	await mkdir(siteRoot, { recursive: true })
 	await writeFile(join(siteRoot, 'index.html'), renderLandingPage(readme))
+}
+
+/**
+ * Copy the vendored `dress.css` bundle into the published site root.
+ *
+ * @param {string} docsRoot
+ * @returns {Promise<void>}
+ */
+export const copyDressCss = async docsRoot => {
+	const siteRoot = resolvePublishedSiteRoot(docsRoot)
+	await mkdir(siteRoot, { recursive: true })
+	await copyFile(dressCssFile, join(siteRoot, 'dress.css'))
 }
 
 /**

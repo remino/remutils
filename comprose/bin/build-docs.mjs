@@ -3,6 +3,7 @@
 import {
 	assertDocsWorktree,
 	buildApiDocs,
+	copyDressCss,
 	preparePublishedSite,
 	resolveDocsRoot,
 	resolvePublishedApiRoot,
@@ -14,6 +15,7 @@ const main = async () => {
 	const docsRoot = resolveDocsRoot()
 	assertDocsWorktree(docsRoot)
 	await preparePublishedSite(docsRoot)
+	await copyDressCss(docsRoot)
 	await writeLandingPage(docsRoot)
 	buildApiDocs(docsRoot)
 

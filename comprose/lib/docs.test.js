@@ -10,10 +10,11 @@ describe('docs', () => {
 	it('renders a landing page with a docs link and markdown content', () => {
 		const html = renderLandingPage('# comprose\n\nCreate and import prose.')
 
-		assert.match(
-			html,
-			/<a class="api-link" href="\.\/docs\/">API documentation<\/a>/
-		)
+		assert.match(html, /<link rel="stylesheet" href="\.\/dress\.css" \/>/)
+		assert.match(html, /<header>/)
+		assert.match(html, /<nav>/)
+		assert.match(html, /<main id="main">/)
+		assert.match(html, /<a href="\.\/docs\/">API documentation<\/a>/)
 		assert.match(html, /<h1>comprose<\/h1>/)
 		assert.match(html, /<p>Create and import prose\.<\/p>/)
 	})
