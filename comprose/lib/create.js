@@ -1,3 +1,5 @@
+// @ts-check
+
 import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { assetMarkerName } from './constants.js'
@@ -16,6 +18,17 @@ import {
 } from './text.js'
 import { openInEditor, openInFinder, readStdin } from './system.js'
 
+/**
+ * Create a new entry scaffold from CLI input and a resolved template.
+ *
+ * This workflow is intentionally conservative: it only writes files described
+ * by the selected template and mirrors the asset/style behavior that import
+ * uses, so templates stay the single source of layout truth.
+ *
+ * @param {import('./types.js').ResolvedConfig} config
+ * @param {import('./types.js').ParsedArgs} parsed
+ * @param {{ fail: (message: string, exitCode?: number) => void, usage: () => void }} handlers
+ */
 export const createEntry = async (config, parsed, { fail, usage }) => {
 	const rawSlug = parsed.slugParts.join(' ').trim()
 	const rawTitle = parsed.titleParts.join(' ').trim()
@@ -74,6 +87,11 @@ export const createEntry = async (config, parsed, { fail, usage }) => {
 
 	try {
 		for (const imageAsset of imageAssets) {
+			if (!imageAsset.outputPath) {
+				throw new Error(
+					`template has no ${assetMarkerName} marker for image assets`
+				)
+			}
 			await copyFile(imageAsset.sourcePath, imageAsset.outputPath)
 		}
 

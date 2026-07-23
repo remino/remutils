@@ -1,3 +1,5 @@
+// @ts-check
+
 import {
 	access,
 	copyFile,
@@ -19,6 +21,12 @@ import Mustache from 'mustache'
 import { assetMarkerName, repoRoot, toolRoot } from './constants.js'
 import { normalizeProject, hasValue } from './text.js'
 
+/**
+ * Check whether a path exists.
+ *
+ * @param {string} path
+ * @returns {Promise<boolean>}
+ */
 export const pathExists = async path => {
 	try {
 		await access(path)
@@ -85,6 +93,7 @@ const findConfigTemplateDir = async templateName => {
 	return (await pathExists(candidate)) ? candidate : undefined
 }
 
+/** @param {string} dir @returns {Promise<string[]>} */
 const walkFiles = async dir => {
 	const entries = await readdir(dir, { withFileTypes: true })
 	const files = []
@@ -156,6 +165,13 @@ const styleValueFromTemplate = styleRelativePath => {
 	return normalized
 }
 
+/**
+ * Resolve a template by built-in name, local dot-directory lookup, XDG config
+ * lookup, or explicit relative/absolute path.
+ *
+ * @param {string | undefined} templateInput
+ * @returns {Promise<import('./types.js').TemplateRef>}
+ */
 export const resolveTemplate = async templateInput => {
 	const templateName = templateInput ?? 'default'
 	const builtInDir = join(toolRoot, 'templates', templateName)
@@ -194,6 +210,12 @@ export const resolveTemplate = async templateInput => {
 	}
 }
 
+/**
+ * Resolve the runtime configuration for the current project directory.
+ *
+ * @param {import('./types.js').ParsedArgs} args
+ * @returns {Promise<import('./types.js').ResolvedConfig>}
+ */
 export const resolveConfig = async args => {
 	const packageName = await readPackageName()
 	const collection = args.collection ?? normalizeProject(basename(repoRoot))
@@ -209,10 +231,22 @@ export const resolveConfig = async args => {
 	}
 }
 
+/**
+ * Build the concrete output plan for a rendered entry template.
+ *
+ * This walks the selected template tree, substitutes bracketed path variables,
+ * and identifies the main markdown file, optional stylesheet, and optional
+ * asset directory marker.
+ *
+ * @param {import('./types.js').ResolvedConfig} config
+ * @param {Record<string, string>} variables
+ * @returns {Promise<import('./types.js').TemplatePlan>}
+ */
 export const buildTemplatePlan = async (config, variables) => {
 	const files = await walkFiles(config.template.dir)
 	const renderedFiles = []
 	let assetDir
+	/** @type {string | undefined} */
 	let assetDirRelative
 
 	for (const file of files) {
@@ -268,6 +302,26 @@ export const buildTemplatePlan = async (config, variables) => {
 	}
 }
 
+/**
+ * Build the Mustache context exposed to template files.
+ *
+ * @param {{
+ *   body: string,
+ *   config: import('./types.js').ResolvedConfig,
+ *   date: string,
+ *   dateString?: string,
+ *   frontmatterDate: string,
+ *   image?: string,
+ *   metadata?: import('./types.js').TemplateMetadata,
+ *   paths: import('./types.js').TemplatePlan,
+ *   slug: string,
+ *   style?: string,
+ *   tags?: string[] | string,
+ *   title: string,
+ *   type?: 'article' | 'note'
+ * }} input
+ * @returns {import('./types.js').TemplateContext}
+ */
 export const templateContext = ({
 	body,
 	config,
@@ -283,6 +337,7 @@ export const templateContext = ({
 	title,
 	type = 'article',
 }) => {
+	/** @type {import('./types.js').TemplateContext} */
 	const context = {
 		assetDir: paths.assetDir,
 		body,
@@ -290,10 +345,22 @@ export const templateContext = ({
 		contentDir: paths.contentDir,
 		date,
 		dateString: dateString ?? date,
+		deck: metadata.deck,
 		description: metadata.description,
 		draft: metadata.draft,
 		entryPath: paths.entryPath,
 		frontmatterDate,
+		hasDeck: false,
+		hasDescription: false,
+		hasDraft: false,
+		hasImage: false,
+		hasKicker: false,
+		hasOriginalDate: false,
+		hasShareImage: false,
+		hasStyle: false,
+		hasSubtitle: false,
+		hasSummary: false,
+		hasTags: false,
 		image,
 		kicker: metadata.kicker,
 		original_date: metadata.original_date,
@@ -312,8 +379,6 @@ export const templateContext = ({
 		title,
 		type,
 	}
-
-	context.deck = metadata.deck
 	context.hasDeck = hasValue(context.deck)
 	context.hasDescription = hasValue(context.description)
 	context.hasDraft = context.draft === true
@@ -329,6 +394,12 @@ export const templateContext = ({
 	return context
 }
 
+/**
+ * Remove previously generated output for a scaffold or import target.
+ *
+ * @param {import('./types.js').TemplatePlan} paths
+ * @returns {Promise<void>}
+ */
 export const removeExistingOutput = async paths => {
 	await rm(paths.entryPath, { force: true })
 	if (paths.assetDir) {
@@ -339,6 +410,12 @@ export const removeExistingOutput = async paths => {
 	}
 }
 
+/**
+ * Return the first existing output path for a template plan, if any.
+ *
+ * @param {import('./types.js').TemplatePlan} paths
+ * @returns {Promise<string | undefined>}
+ */
 export const existingOutputPath = async paths => {
 	if (await pathExists(paths.entryPath)) {
 		return paths.entryPath
@@ -355,6 +432,14 @@ export const existingOutputPath = async paths => {
 	return undefined
 }
 
+/**
+ * Write all rendered and copied files described by a template plan.
+ *
+ * @param {import('./types.js').TemplatePlan} paths
+ * @param {import('./types.js').TemplateContext} context
+ * @param {{ skipOutputPaths?: string[] }} [options]
+ * @returns {Promise<string[]>}
+ */
 export const writeTemplateFiles = async (
 	paths,
 	context,

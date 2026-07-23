@@ -1,3 +1,11 @@
+// @ts-check
+
+/**
+ * Return the raw YAML frontmatter block from a Markdown source string.
+ *
+ * @param {string} source
+ * @returns {string}
+ */
 export const frontmatter = source => {
 	const match = source.match(/^---\n([\s\S]*?)\n---(?:\n|$)/)
 
@@ -16,6 +24,13 @@ const unquoteYamlString = value => {
 	return value
 }
 
+/**
+ * Read a scalar frontmatter value by key.
+ *
+ * @param {string} source
+ * @param {string} key
+ * @returns {string | undefined}
+ */
 export const frontmatterString = (source, key) => {
 	const match = frontmatter(source).match(
 		new RegExp(`^${key}:\\s*(.+?)\\s*$`, 'm')
@@ -24,6 +39,16 @@ export const frontmatterString = (source, key) => {
 	return match ? unquoteYamlString(match[1]) : undefined
 }
 
+/**
+ * Read a boolean-like frontmatter value.
+ *
+ * Only canonical `true` and `false` values are accepted so callers can
+ * distinguish missing data from loosely formatted user content.
+ *
+ * @param {string} source
+ * @param {string} key
+ * @returns {boolean | undefined}
+ */
 export const frontmatterBoolean = (source, key) => {
 	const value = frontmatterString(source, key)
 
@@ -38,9 +63,24 @@ export const frontmatterBoolean = (source, key) => {
 	return undefined
 }
 
+/**
+ * Remove the first YAML frontmatter block from a Markdown source string.
+ *
+ * @param {string} source
+ * @returns {string}
+ */
 export const stripFrontmatter = source =>
 	source.replace(/^---\n[\s\S]*?\n---(?:\n|$)/, '')
 
+/**
+ * Strip the first top-level ATX heading from a Markdown document.
+ *
+ * This is used during import so title-only source files become clean body
+ * content without duplicating the title into template frontmatter.
+ *
+ * @param {string} source
+ * @returns {{ body: string, title: string | undefined }}
+ */
 export const stripFirstHeading = source => {
 	const lines = source.split('\n')
 	let inCodeFence = false

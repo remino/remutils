@@ -1,9 +1,13 @@
+// @ts-check
+
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/
 const dateTimePattern =
 	/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/
 
+/** @param {Date} date */
 const getCurrentOffset = date => -date.getTimezoneOffset()
 
+/** @param {number} offsetMinutes */
 const formatOffset = offsetMinutes => {
 	const sign = offsetMinutes >= 0 ? '+' : '-'
 	const absoluteMinutes = Math.abs(offsetMinutes)
@@ -13,6 +17,13 @@ const formatOffset = offsetMinutes => {
 	return `${sign}${hours}:${minutes}`
 }
 
+/**
+ * Format a `Date` into a local ISO string with an explicit offset.
+ *
+ * @param {Date} date
+ * @param {number} [offsetMinutes]
+ * @returns {string}
+ */
 export const formatLocalIso = (
 	date,
 	offsetMinutes = getCurrentOffset(date)
@@ -28,6 +39,17 @@ export const formatLocalIso = (
 	return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${formatOffset(offsetMinutes)}`
 }
 
+/**
+ * Parse CLI date input and normalize it for both path naming and frontmatter.
+ *
+ * Date-only input preserves the current local time so quick entry creation
+ * still gets a full timestamp in frontmatter without requiring the caller to
+ * pass one explicitly.
+ *
+ * @param {string} value
+ * @param {Date} [now]
+ * @returns {import('./types.js').ParsedDate}
+ */
 export const parseDateInput = (value, now = new Date()) => {
 	const trimmed = value.trim()
 	const dateOnlyMatch = trimmed.match(dateOnlyPattern)
@@ -49,15 +71,16 @@ export const parseDateInput = (value, now = new Date()) => {
 		}
 	}
 
-	const fileDate = `${dateTimeMatch[1]}-${dateTimeMatch[2]}-${dateTimeMatch[3]}`
-	const hasOffset = Boolean(dateTimeMatch[8])
-	const year = Number(dateTimeMatch[1])
-	const month = Number(dateTimeMatch[2])
-	const day = Number(dateTimeMatch[3])
-	const hours = Number(dateTimeMatch[4])
-	const minutes = Number(dateTimeMatch[5])
-	const seconds = Number(dateTimeMatch[6] ?? '0')
-	const milliseconds = Number((dateTimeMatch[7] ?? '0').padEnd(3, '0'))
+	const dateTime = /** @type {RegExpMatchArray} */ (dateTimeMatch)
+	const fileDate = `${dateTime[1]}-${dateTime[2]}-${dateTime[3]}`
+	const hasOffset = Boolean(dateTime[8])
+	const year = Number(dateTime[1])
+	const month = Number(dateTime[2])
+	const day = Number(dateTime[3])
+	const hours = Number(dateTime[4])
+	const minutes = Number(dateTime[5])
+	const seconds = Number(dateTime[6] ?? '0')
+	const milliseconds = Number((dateTime[7] ?? '0').padEnd(3, '0'))
 	const offsetMinutes = getCurrentOffset(now)
 	const parsed = hasOffset
 		? new Date(trimmed)
@@ -80,7 +103,9 @@ export const parseDateInput = (value, now = new Date()) => {
 	}
 }
 
+/** @param {number} value */
 const pad2 = value => String(value).padStart(2, '0')
 
+/** @param {Date} date */
 export const toLocalDateString = date =>
 	`${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`

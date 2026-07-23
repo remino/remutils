@@ -1,3 +1,5 @@
+// @ts-check
+
 import { readFile, readdir } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { defaultSlugTitleFiles, supportedImageExtensions } from './constants.js'
@@ -58,6 +60,13 @@ const rewriteRelativeAssetTarget = (value, assetMap) => {
 	)
 }
 
+/**
+ * Rewrite markdown image and link references using a generated asset map.
+ *
+ * @param {string} source
+ * @param {Map<string, string>} assetMap
+ * @returns {string}
+ */
 export const rewriteAssetReferences = (source, assetMap) => {
 	const rewriteInlineTarget = (match, prefix, target, suffix) => {
 		const replacement = rewriteRelativeAssetTarget(target, assetMap)
@@ -76,6 +85,13 @@ export const rewriteAssetReferences = (source, assetMap) => {
 		.replace(/^(\s*\[[^\]]+\]:\s*)(\S+)(.*)$/gm, rewriteDefinitionTarget)
 }
 
+/**
+ * Rewrite a single asset-like frontmatter reference.
+ *
+ * @param {string} value
+ * @param {Map<string, string>} assetMap
+ * @returns {string}
+ */
 export const rewriteAssetReference = (value, assetMap) => {
 	if (
 		/^[a-z]+:/i.test(value) ||
@@ -171,6 +187,15 @@ const collectReferencedAssetTargets = (body, frontmatterImage) => {
 	return targets
 }
 
+/**
+ * Return the set of image files from the source directory that are referenced
+ * by the markdown body or relevant frontmatter fields.
+ *
+ * @param {string} body
+ * @param {string | string[] | undefined} frontmatterImage
+ * @param {Map<string, string>} sourceFiles
+ * @returns {string[]}
+ */
 export const collectReferencedImageFiles = (
 	body,
 	frontmatterImage,
@@ -207,6 +232,15 @@ export const collectReferencedImageFiles = (
 	return referencedFiles
 }
 
+/**
+ * Resolve import metadata from a source directory.
+ *
+ * This chooses the primary markdown file, derives the output slug and type,
+ * and lifts frontmatter into a normalized shape that templates can consume.
+ *
+ * @param {string} sourceDir
+ * @returns {Promise<import('./types.js').MarkdownMetadata>}
+ */
 export const resolveMarkdownMetadata = async sourceDir => {
 	const markdownFileName = await selectMarkdownFile(sourceDir)
 	if (!markdownFileName) {

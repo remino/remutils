@@ -21,6 +21,7 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"test": "node --test",
+		"typecheck": "tsc -p tsconfig.json",
 		"version:show": "../bin/version show ./comprose"
 	},
 	"keywords": [
@@ -49,5 +50,9 @@
 	"dependencies": {
 		"mustache": "^4.2.0",
 		"sharp": "0.34.5"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"typescript": "^5.9.0"
 	}
 }

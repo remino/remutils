@@ -1,6 +1,14 @@
+// @ts-check
+
 import { parseDateInput } from './date.js'
 import { normalizeProject } from './text.js'
 
+/**
+ * Print the command help screen.
+ *
+ * The output intentionally follows the shared remutils CLI style used across
+ * the repository.
+ */
 export const usage = () => {
 	console.log(`USAGE: comprose <command> [<options>] [<args>]
 
@@ -43,12 +51,25 @@ EXAMPLES:
 `)
 }
 
+/**
+ * Report a user-facing error and set the process exit code.
+ *
+ * @param {string} message
+ * @param {number} [exitCode=1]
+ */
 export const fail = (message, exitCode = 1) => {
 	console.error(`error: ${message}`)
 	process.exitCode = exitCode
 }
 
+/**
+ * Parse CLI arguments into the normalized shape used by the runtime.
+ *
+ * @param {string[]} argv
+ * @returns {import('./types.js').ParsedArgs}
+ */
 export const parseArgs = argv => {
+	/** @type {import('./types.js').ParsedArgs} */
 	const args = {
 		command: undefined,
 		slugParts: [],
@@ -74,6 +95,7 @@ export const parseArgs = argv => {
 
 	for (let index = 1; index < argv.length; index += 1) {
 		const token = argv[index]
+		/** @param {string} option */
 		const nextValue = option => {
 			const value = argv[++index]
 			if (!value) {
@@ -104,7 +126,7 @@ export const parseArgs = argv => {
 				throw new Error(`invalid entry type "${value}"`)
 			}
 
-			args.type = normalizedType
+			args.type = /** @type {'article' | 'note'} */ (normalizedType)
 			continue
 		}
 

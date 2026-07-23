@@ -1,3 +1,5 @@
+// @ts-check
+
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +9,15 @@ import { createEntry } from './create.js'
 import { importDirectory } from './import.js'
 import { resolveConfig } from './templates.js'
 
+/**
+ * Run the comprose CLI.
+ *
+ * `main()` stays intentionally small: it owns argument parsing, top-level
+ * command dispatch, and exit-code normalization, while the actual workflows
+ * live in dedicated modules.
+ *
+ * @param {string[]} [argv]
+ */
 export const main = async (argv = process.argv.slice(2)) => {
 	let parsed
 	try {

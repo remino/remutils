@@ -1,3 +1,5 @@
+// @ts-check
+
 import { copyFile, mkdir, readdir } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { assetMarkerName, EXIT_IMPORT_CONFLICT, repoRoot } from './constants.js'
@@ -25,11 +27,24 @@ import {
 	runImageOptim,
 } from './system.js'
 
+/**
+ * Import an existing prose directory into the destination project.
+ *
+ * The import flow is responsible for reconciling source markdown, assets, and
+ * optional stylesheets with the selected template layout. It preserves the
+ * source content where possible while rewriting image references to match the
+ * generated output tree.
+ *
+ * @param {import('./types.js').ResolvedConfig} config
+ * @param {string} sourceDirInput
+ * @param {{ edit?: boolean, openFolder?: boolean, force?: boolean }} [options]
+ * @param {{ fail: (message: string, exitCode?: number) => void }} [handlers]
+ */
 export const importDirectory = async (
 	config,
 	sourceDirInput,
 	{ edit = false, openFolder = false, force = false } = {},
-	{ fail }
+	{ fail } = { fail: () => {} }
 ) => {
 	const sourceDir = resolve(repoRoot, sourceDirInput)
 	const sourceEntries = await readdir(sourceDir, { withFileTypes: true })
@@ -66,6 +81,7 @@ export const importDirectory = async (
 	const filesToEdit = [paths.entryPath]
 	const assetNames = new Set()
 	const assetMap = new Map()
+	/** @type {import('./types.js').ImageAsset[]} */
 	const imageAssets = []
 	const pngAndGifOutputs = []
 	let numericImageIndex = 0
@@ -89,6 +105,7 @@ export const importDirectory = async (
 			`template has no ${assetMarkerName} marker for imported assets`
 		)
 	}
+	const assetDir = paths.assetDir
 
 	if (paths.assetDir) {
 		await mkdir(paths.assetDir, { recursive: true })
@@ -116,7 +133,7 @@ export const importDirectory = async (
 			`${outputBaseName}${outputExtension}`,
 			assetNames
 		)
-		const outputPath = join(paths.assetDir, outputFileName)
+		const outputPath = join(assetDir, outputFileName)
 		const publicPath = paths.publicAssetPath(outputFileName)
 
 		assetMap.set(fileName.toLowerCase(), publicPath)
@@ -211,7 +228,7 @@ export const importDirectory = async (
 		console.log(`  ${paths.stylePath}`)
 	}
 	for (const imageAsset of imageAssets) {
-		console.log(`  ${join(paths.assetDir, imageAsset.outputFileName)}`)
+		console.log(`  ${join(assetDir, imageAsset.outputFileName)}`)
 	}
 	if (paths.assetDir && (await pathExists(paths.assetDir))) {
 		console.log(`  ${paths.assetDir}`)
