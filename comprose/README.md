@@ -19,13 +19,12 @@ comprose new [options] -s <slug>
 comprose import [options] <path>
 ```
 
-The default `astro-content` template is for projects with
-`src/content/<collection>`, `src/styles/<collection>`, and
-`public/<collection>`:
+The default `default` template is for projects with `src/content/<collection>`,
+`src/styles/<collection>`, and `public/<collection>`:
 
 ```sh
-comprose new --template astro-content -c journal -s my-new-entry
-comprose import --template astro-content -c notes /tmp/source-entry
+comprose new --template default -c journal -s my-new-entry
+comprose import --template default -c notes /tmp/source-entry
 ```
 
 The `middleman-blog` template is for single-file blog entries with assets beside
@@ -50,7 +49,7 @@ Create a new entry scaffold:
 comprose new -c journal -t "My New Entry" -d 2026-05-06 -g terminal -g css
 ```
 
-With the default `astro-content` template, this creates:
+With the default `default` template, this creates:
 
 - `src/content/<collection>/<date>-<slug>/index.md`
 - `src/styles/<collection>/<slug>.css`
@@ -84,7 +83,7 @@ comprose import -c journal /tmp/source-entry -f
 
 ## Options
 
-- `--template <name-or-path>`: Template layout. Defaults to `astro-content`.
+- `--template <name-or-path>`: Template layout. Defaults to `default`.
 - `-s <slug>`: Entry slug.
 - `-t <title>`: Entry title.
 - `-d <iso-8601>`: Entry date.
@@ -101,6 +100,8 @@ comprose import -c journal /tmp/source-entry -f
 
 Built-in templates:
 
+- `default`: Writes `src/content/<collection>/<date>-<slug>/index.md`, a
+  matching stylesheet, and assets under `public/<collection>/<slug>/`.
 - `astro-content`: Writes `src/content/<collection>/<date>-<slug>/index.md`, a
   matching stylesheet, and assets under `public/<collection>/<slug>/`.
 - `middleman-blog`: Writes `source/<collection>/<slug>.html.md` and assets under

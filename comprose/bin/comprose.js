@@ -66,7 +66,7 @@ OPTIONS:
 	-t <title>                   Entry title.
 	-v, --version                Show script name and version number.
 	--pubname <name>             Frontmatter pubname.
-	--template <name-or-path>    Template layout. Default: astro-content.
+	--template <name-or-path>    Template layout. Default: default.
 
 STDIN:
 
@@ -821,7 +821,7 @@ const findConfigTemplateDir = async templateName => {
 }
 
 const resolveTemplate = async templateInput => {
-	const templateName = templateInput ?? 'astro-content'
+	const templateName = templateInput ?? 'default'
 	const builtInDir = join(toolRoot, 'templates', templateName)
 
 	if (await pathExists(builtInDir)) {

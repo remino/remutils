@@ -27,7 +27,7 @@ Import a directory into a new content entry.
 .SH OPTIONS
 .TP
 .B --template \fINAME-OR-PATH\fR
-Set the template layout. Built-in templates are \fBastro-content\fR and \fBmiddleman-blog\fR. Defaults to \fBastro-content\fR.
+Set the template layout. Built-in templates are \fBdefault\fR, \fBastro-content\fR, and \fBmiddleman-blog\fR. Defaults to \fBdefault\fR.
 .TP
 .B \-s \fISLUG\fR
 Set the entry slug.
@@ -63,6 +63,9 @@ Set the content collection name. Defaults to the current directory name.
 Set the generated frontmatter \fBpubname\fR.
 .SH TEMPLATES
 .TP
+.B default
+Writes \fBsrc/content/<collection>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<collection>/<slug>/\fR.
+.TP
 .B astro-content
 Writes \fBsrc/content/<collection>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<collection>/<slug>/\fR.
 .TP
@@ -76,7 +79,7 @@ Template names are resolved as built-in templates first, then as \fB.comprose/te
 .TP
 Create a new article:
 .nf
-.B comprose new --template astro-content -c journal --pubname example-journal -s my-new-entry
+.B comprose new --template default -c journal --pubname example-journal -s my-new-entry
 .fi
 .TP
 Create a Middleman-style entry:

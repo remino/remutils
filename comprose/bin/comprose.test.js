@@ -328,7 +328,7 @@ describe('comprose new', () => {
 		assert.match(content, /^title: Home Template$/m)
 	})
 
-	it('supports explicitly selecting the default Astro content template', async () => {
+	it('supports explicitly selecting the astro-content template', async () => {
 		const projectDir = await createProject()
 
 		runComprose(projectDir, [
