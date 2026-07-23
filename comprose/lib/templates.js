@@ -1,6 +1,12 @@
 // @ts-check
 /** @import {ParsedArgs, ResolvedConfig, TemplateContext, TemplateMetadata, TemplatePlan, TemplateRef} from './types.js' */
 
+/**
+ * Template discovery, planning, and file emission.
+ *
+ * @module lib/templates
+ */
+
 import {
 	access,
 	copyFile,

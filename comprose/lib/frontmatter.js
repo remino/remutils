@@ -1,6 +1,12 @@
 // @ts-check
 
 /**
+ * Minimal frontmatter extraction helpers.
+ *
+ * @module lib/frontmatter
+ */
+
+/**
  * Return the raw YAML frontmatter block from a Markdown source string.
  *
  * @param {string} source

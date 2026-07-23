@@ -1,6 +1,12 @@
 // @ts-check
 /** @import {CliHandlers, ParsedArgs, ResolvedConfig} from './types.js' */
 
+/**
+ * Entry creation workflow.
+ *
+ * @module lib/create
+ */
+
 import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { assetMarkerName } from './constants.js'

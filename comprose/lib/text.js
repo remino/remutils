@@ -1,5 +1,11 @@
 // @ts-check
 
+/**
+ * Text normalization helpers for slugs, tags, and asset names.
+ *
+ * @module lib/text
+ */
+
 import { extname } from 'node:path'
 
 /**

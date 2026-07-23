@@ -1,6 +1,12 @@
 // @ts-check
 /** @import {ImageAsset, ImportHandlers, ImportOptions, ResolvedConfig} from './types.js' */
 
+/**
+ * Entry import workflow.
+ *
+ * @module lib/import
+ */
+
 import { copyFile, mkdir, readdir } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { assetMarkerName, EXIT_IMPORT_CONFLICT, repoRoot } from './constants.js'

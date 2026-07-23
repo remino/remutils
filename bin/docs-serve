@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PORT="${1:-4173}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOCS_ROOT="$REPO_ROOT/docs"
+
+if [ ! -d "$DOCS_ROOT" ]; then
+	echo "docs-serve: expected $DOCS_ROOT worktree" >&2
+	exit 1
+fi
+
+if lsof -n -P -iTCP:"$PORT" -sTCP:LISTEN > /dev/null 2>&1; then
+	echo "docs-serve: port $PORT is already in use" >&2
+	exit 1
+fi
+
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/remutils-docs-serve-XXXXXX")"
+cleanup() {
+	rm -rf "$tmpdir"
+}
+trap cleanup EXIT INT TERM
+
+mkdir -p "$tmpdir/src/public/remutils"
+: > "$tmpdir/.deploy-filter"
+: > "$tmpdir/.editorconfig"
+printf 'default:\n\t@true\n' > "$tmpdir/justfile"
+
+find "$DOCS_ROOT" -mindepth 1 -maxdepth 1 | while read -r path; do
+	ln -s "$path" "$tmpdir/src/public/remutils/$(basename "$path")"
+done
+
+{
+	printf '%s\n' '<!doctype html>'
+	printf '%s\n' '<html lang="en">'
+	printf '%s\n' '<head>'
+	printf '%s\n' '	<meta charset="utf-8" />'
+	printf '%s\n' '	<meta name="viewport" content="width=device-width, initial-scale=1" />'
+	printf '%s\n' '	<title>remutils docs</title>'
+	printf '%s\n' '	<link rel="stylesheet" href="./comprose/dress.css" />'
+	printf '%s\n' '</head>'
+	printf '%s\n' '<body>'
+	printf '%s\n' '	<a href="#main">Skip to content</a>'
+	printf '%s\n' '	<header><h1>remutils docs</h1></header>'
+	printf '%s\n' '	<main id="main">'
+	printf '%s\n' '		<ul>'
+	find "$DOCS_ROOT" -mindepth 1 -maxdepth 1 | sort | while read -r path; do
+		name="$(basename "$path")"
+		case "$name" in
+			.*) continue ;;
+		esac
+		if [ -d "$path" ]; then
+			printf '			<li><a href="./%s/">%s</a></li>\n' "$name" "$name"
+		else
+			printf '			<li><a href="./%s">%s</a></li>\n' "$name" "$name"
+		fi
+	done
+	printf '%s\n' '		</ul>'
+	printf '%s\n' '	</main>'
+	printf '%s\n' '</body>'
+	printf '%s\n' '</html>'
+} > "$tmpdir/src/public/remutils/index.html"
+
+echo "Serving ./docs at http://127.0.0.1:$PORT/remutils/"
+PORT="$PORT" "$REPO_ROOT/litesite/litesite" -C "$tmpdir" serve

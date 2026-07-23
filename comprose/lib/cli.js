@@ -1,6 +1,12 @@
 // @ts-check
 /** @import {ParsedArgs} from './types.js' */
 
+/**
+ * Command-line parsing and usage output.
+ *
+ * @module lib/cli
+ */
+
 import { parseDateInput } from './date.js'
 import { normalizeProject } from './text.js'
 

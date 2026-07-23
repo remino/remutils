@@ -1,5 +1,11 @@
 // @ts-check
 
+/**
+ * Docs-site build helpers for the README landing page and JSDoc output.
+ *
+ * @module lib/docs
+ */
+
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'

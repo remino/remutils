@@ -30,6 +30,12 @@ format-all dir=".":
 hooks:
 	lefthook install
 
+serve port="4173":
+	./bin/docs-serve {{port}}
+
+docs-serve port="4173":
+	just serve {{port}}
+
 lint name="":
 	if [ -n "{{name}}" ]; then \
 		just lint-all "{{name}}"; \

@@ -1,6 +1,12 @@
 // @ts-check
 /** @import {MarkdownMetadata} from './types.js' */
 
+/**
+ * Markdown metadata and asset-rewrite helpers.
+ *
+ * @module lib/markdown
+ */
+
 import { readFile, readdir } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { defaultSlugTitleFiles, supportedImageExtensions } from './constants.js'

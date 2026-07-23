@@ -1,5 +1,11 @@
 // @ts-check
 
+/**
+ * Shared constants for path resolution and exit codes.
+ *
+ * @module lib/constants
+ */
+
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

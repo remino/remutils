@@ -1,5 +1,11 @@
 // @ts-check
 
+/**
+ * System integration helpers for images, editor integration, and stdin.
+ *
+ * @module lib/system
+ */
+
 import { spawnSync } from 'node:child_process'
 import { once } from 'node:events'
 import sharp from 'sharp'

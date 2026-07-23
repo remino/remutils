@@ -1,5 +1,11 @@
 // @ts-check
 
+/**
+ * Top-level CLI dispatch.
+ *
+ * @module lib/main
+ */
+
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
