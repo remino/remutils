@@ -2,4 +2,5 @@
 /*.tar.gz.sha256
 /.lefthook-local/
 /litesite/target/
+/docs/
 node_modules/
