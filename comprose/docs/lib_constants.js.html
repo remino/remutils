@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>comprose API: Home</title>
+    <title>comprose API: Source: lib/constants.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -27,7 +27,7 @@
 <main id="main">
     <header>
         <p>JSDoc API reference</p>
-        <h1>Home</h1>
+        <h1>Source: lib/constants.js</h1>
     </header>
 
     <nav aria-label="API contents">
@@ -40,25 +40,42 @@
 
 
     
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
 
+/**
+ * Shared constants for path resolution and exit codes.
+ *
+ * @module lib/constants
+ */
 
-    <h3> </h3>
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
+export const repoRoot = process.cwd()
+export const toolRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+export const defaultSlugTitleFiles = new Set([
+	'entry',
+	'note',
+	'article',
+	'post',
+])
+export const EXIT_IMPORT_CONFLICT = 12
+export const assetMarkerName = '.comprose-assets'
+export const supportedImageExtensions = new Set([
+	'.avif',
+	'.gif',
+	'.heic',
+	'.heif',
+	'.jpeg',
+	'.jpg',
+	'.png',
+	'.webp',
+])
+</code></pre>
+        </article>
+    </section>
 
 
 

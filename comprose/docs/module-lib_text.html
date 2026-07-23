@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Module: lib/text</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link rel="stylesheet" href="../dress.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
+</head>
+
+<body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Module: lib/text</h1>
+    </header>
+
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Text normalization helpers for slugs, tags, and asset names.</div>
+        
+
+        
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".hasValue"><span class="type-signature">(static, constant) </span>hasValue<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Check whether a template value is present and non-empty.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line137">line 137</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".humanizeSlug"><span class="type-signature">(static, constant) </span>humanizeSlug<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Turn a slug into a title-cased label.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line56">line 56</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".normalizeProject"><span class="type-signature">(static, constant) </span>normalizeProject<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Normalize a collection or project name and fail if it becomes empty.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line41">line 41</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".normalizeSlug"><span class="type-signature">(static, constant) </span>normalizeSlug<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Normalize arbitrary text into a filesystem- and URL-safe slug.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line27">line 27</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".normalizeTagList"><span class="type-signature">(static, constant) </span>normalizeTagList<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Normalize repeated `-g` tag arguments into a unique list.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line79">line 79</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".quoteShellArg"><span class="type-signature">(static, constant) </span>quoteShellArg<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Quote a shell argument for use in a simple shell command string.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line71">line 71</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".stripDiacritics"><span class="type-signature">(static, constant) </span>stripDiacritics<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Remove diacritics so generated slugs stay stable across filesystems and
+templates.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".uniqueAssetName"><span class="type-signature">(static, constant) </span>uniqueAssetName<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Generate a unique asset filename by suffixing duplicates numerically.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line95">line 95</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".uniqueName"><span class="type-signature">(static, constant) </span>uniqueName<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Claim a unique output name and throw if it already exists.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_text.js.html">lib/text.js</a>, <a href="lib_text.js.html#line122">line 122</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</main>
+
+<footer>
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

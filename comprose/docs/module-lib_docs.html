@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Module: lib/docs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link rel="stylesheet" href="../dress.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
+</head>
+
+<body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Module: lib/docs</h1>
+    </header>
+
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Docs-site build helpers for the README landing page and JSDoc output.</div>
+        
+
+        
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".assertDocsWorktree"><span class="type-signature">(static, constant) </span>assertDocsWorktree<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Ensure the configured docs path is a `docs` branch worktree.
+
+The check can be bypassed for tests via `COMPROSE_SKIP_WORKTREE_CHECK=1`.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line70">line 70</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".buildApiDocs"><span class="type-signature">(static, constant) </span>buildApiDocs<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Build the JSDoc API site into the published docs subtree.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line199">line 199</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".copyDressCss"><span class="type-signature">(static, constant) </span>copyDressCss<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Copy the vendored `dress.css` bundle into the published site root.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line173">line 173</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".preparePublishedSite"><span class="type-signature">(static, constant) </span>preparePublishedSite<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Recreate the published site subtree for a fresh build.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line185">line 185</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".renderLandingPage"><span class="type-signature">(static, constant) </span>renderLandingPage<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Build the docs landing page HTML from the README body.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line119">line 119</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".resolveDocsRoot"><span class="type-signature">(static, constant) </span>resolveDocsRoot<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Resolve the docs worktree root.
+
+`COMPROSE_DOCS_ROOT` exists so tests and one-off dry runs can target a
+temporary directory without touching the real publish worktree.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line35">line 35</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".resolveJSDocThemeRoot"><span class="type-signature">(static, constant) </span>resolveJSDocThemeRoot<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Resolve the local JSDoc theme root.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line60">line 60</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".resolvePublishedApiRoot"><span class="type-signature">(static, constant) </span>resolvePublishedApiRoot<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Resolve the generated API docs root inside the published site.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line52">line 52</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".resolvePublishedSiteRoot"><span class="type-signature">(static, constant) </span>resolvePublishedSiteRoot<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Resolve the published site root inside the docs worktree.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".writeLandingPage"><span class="type-signature">(static, constant) </span>writeLandingPage<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Write the README-based landing page into the published site root.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_docs.js.html">lib/docs.js</a>, <a href="lib_docs.js.html#line160">line 160</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</main>
+
+<footer>
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

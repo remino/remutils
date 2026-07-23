@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Source: lib/frontmatter.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link rel="stylesheet" href="../dress.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
+</head>
+
+<body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Source: lib/frontmatter.js</h1>
+    </header>
+
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+
+/**
+ * Minimal frontmatter extraction helpers.
+ *
+ * @module lib/frontmatter
+ */
+
+/**
+ * Return the raw YAML frontmatter block from a Markdown source string.
+ *
+ * @param {string} source
+ * @returns {string}
+ */
+export const frontmatter = source => {
+	const match = source.match(/^---\n([\s\S]*?)\n---(?:\n|$)/)
+
+	return match?.[1] ?? ''
+}
+
+const unquoteYamlString = value => {
+	if (value.startsWith("'") &amp;&amp; value.endsWith("'")) {
+		return value.slice(1, -1).replace(/''/g, "'")
+	}
+
+	if (value.startsWith('"') &amp;&amp; value.endsWith('"')) {
+		return value.slice(1, -1).replace(/\\"/g, '"')
+	}
+
+	return value
+}
+
+/**
+ * Read a scalar frontmatter value by key.
+ *
+ * @param {string} source
+ * @param {string} key
+ * @returns {string | undefined}
+ */
+export const frontmatterString = (source, key) => {
+	const match = frontmatter(source).match(
+		new RegExp(`^${key}:\\s*(.+?)\\s*$`, 'm')
+	)
+
+	return match ? unquoteYamlString(match[1]) : undefined
+}
+
+/**
+ * Read a boolean-like frontmatter value.
+ *
+ * Only canonical `true` and `false` values are accepted so callers can
+ * distinguish missing data from loosely formatted user content.
+ *
+ * @param {string} source
+ * @param {string} key
+ * @returns {boolean | undefined}
+ */
+export const frontmatterBoolean = (source, key) => {
+	const value = frontmatterString(source, key)
+
+	if (value === undefined) {
+		return undefined
+	}
+
+	if (/^(true|false)$/i.test(value)) {
+		return value.toLowerCase() === 'true'
+	}
+
+	return undefined
+}
+
+/**
+ * Remove the first YAML frontmatter block from a Markdown source string.
+ *
+ * @param {string} source
+ * @returns {string}
+ */
+export const stripFrontmatter = source =>
+	source.replace(/^---\n[\s\S]*?\n---(?:\n|$)/, '')
+
+/**
+ * Strip the first top-level ATX heading from a Markdown document.
+ *
+ * This is used during import so title-only source files become clean body
+ * content without duplicating the title into template frontmatter.
+ *
+ * @param {string} source
+ * @returns {{ body: string, title: string | undefined }}
+ */
+export const stripFirstHeading = source => {
+	const lines = source.split('\n')
+	let inCodeFence = false
+
+	for (let index = 0; index &lt; lines.length; index += 1) {
+		const line = lines[index]
+		const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/)
+
+		if (fenceMatch) {
+			inCodeFence = !inCodeFence
+			continue
+		}
+
+		if (inCodeFence) {
+			continue
+		}
+
+		const headingMatch = line.match(/^\s*#\s+(.+?)\s*#*\s*$/)
+		if (!headingMatch) {
+			continue
+		}
+
+		const title = headingMatch[1].trim()
+		const bodyLines = [...lines.slice(0, index), ...lines.slice(index + 1)]
+
+		if (bodyLines[0]?.trim() === '') {
+			bodyLines.shift()
+		}
+
+		if (bodyLines[0]?.trim() === '') {
+			bodyLines.shift()
+		}
+
+		return {
+			body: bodyLines.join('\n'),
+			title,
+		}
+	}
+
+	return {
+		body: source,
+		title: undefined,
+	}
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</main>
+
+<footer>
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

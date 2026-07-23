@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Source: lib/text.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link rel="stylesheet" href="../dress.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
+</head>
+
+<body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Source: lib/text.js</h1>
+    </header>
+
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+
+/**
+ * Text normalization helpers for slugs, tags, and asset names.
+ *
+ * @module lib/text
+ */
+
+import { extname } from 'node:path'
+
+/**
+ * Remove diacritics so generated slugs stay stable across filesystems and
+ * templates.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export const stripDiacritics = value =>
+	value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+
+/**
+ * Normalize arbitrary text into a filesystem- and URL-safe slug.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export const normalizeSlug = value =>
+	stripDiacritics(value)
+		.replace(/[_\s]+/g, '-')
+		.replace(/[^a-zA-Z0-9-]+/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '')
+		.toLowerCase()
+
+/**
+ * Normalize a collection or project name and fail if it becomes empty.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export const normalizeProject = value => {
+	const collection = normalizeSlug(value)
+	if (!collection) {
+		throw new Error(`collection "${value}" normalised to an empty value`)
+	}
+
+	return collection
+}
+
+/**
+ * Turn a slug into a title-cased label.
+ *
+ * @param {string} slug
+ * @returns {string}
+ */
+export const humanizeSlug = slug =>
+	slug
+		.split('-')
+		.filter(Boolean)
+		.map(part => part.charAt(0).toUpperCase() + part.slice(1))
+		.join(' ')
+
+export const pad2 = value => String(value).padStart(2, '0')
+
+/**
+ * Quote a shell argument for use in a simple shell command string.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export const quoteShellArg = value => `'${value.replace(/'/g, `'\\''`)}'`
+
+/**
+ * Normalize repeated `-g` tag arguments into a unique list.
+ *
+ * @param {string[]} values
+ * @returns {string[]}
+ */
+export const normalizeTagList = values => [
+	...new Set(
+		values
+			.flatMap(value => value.split(','))
+			.map(value => value.trim())
+			.filter(Boolean)
+	),
+]
+
+/**
+ * Generate a unique asset filename by suffixing duplicates numerically.
+ *
+ * @param {string} name
+ * @param {Set&lt;string>} existingNames
+ * @returns {string}
+ */
+export const uniqueAssetName = (name, existingNames) => {
+	if (!existingNames.has(name)) {
+		existingNames.add(name)
+		return name
+	}
+
+	const extension = extname(name)
+	const stem = name.slice(0, name.length - extension.length)
+	let index = 2
+	let candidate = `${stem}-${index}${extension}`
+
+	while (existingNames.has(candidate)) {
+		index += 1
+		candidate = `${stem}-${index}${extension}`
+	}
+
+	existingNames.add(candidate)
+	return candidate
+}
+
+/**
+ * Claim a unique output name and throw if it already exists.
+ *
+ * @param {string} name
+ * @param {Set&lt;string>} existingNames
+ * @returns {string}
+ */
+export const uniqueName = (name, existingNames) => {
+	if (existingNames.has(name)) {
+		throw new Error(`duplicate output asset name "${name}"`)
+	}
+
+	existingNames.add(name)
+	return name
+}
+
+/**
+ * Check whether a template value is present and non-empty.
+ *
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export const hasValue = value =>
+	value !== undefined &amp;&amp; value !== null &amp;&amp; String(value).trim() !== ''
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</main>
+
+<footer>
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

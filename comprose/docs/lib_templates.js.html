@@ -2,22 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: templates.js</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Source: lib/templates.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link rel="stylesheet" href="../dress.css">
     <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
 </head>
 
 <body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
 
-<div id="main">
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Source: lib/templates.js</h1>
+    </header>
 
-    <h1 class="page-title">Source: templates.js</h1>
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
 
     
 
@@ -28,6 +44,12 @@
         <article>
             <pre class="prettyprint source linenums"><code>// @ts-check
 /** @import {ParsedArgs, ResolvedConfig, TemplateContext, TemplateMetadata, TemplatePlan, TemplateRef} from './types.js' */
+
+/**
+ * Template discovery, planning, and file emission.
+ *
+ * @module lib/templates
+ */
 
 import {
 	access,
@@ -505,16 +527,10 @@ export const writeTemplateFiles = async (
 
 
 
-</div>
-
-<nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#assertDocsWorktree">assertDocsWorktree</a></li><li><a href="global.html#buildApiDocs">buildApiDocs</a></li><li><a href="global.html#buildTemplatePlan">buildTemplatePlan</a></li><li><a href="global.html#collectReferencedImageFiles">collectReferencedImageFiles</a></li><li><a href="global.html#convertImageWithMagick">convertImageWithMagick</a></li><li><a href="global.html#convertImageWithSharp">convertImageWithSharp</a></li><li><a href="global.html#copyDressCss">copyDressCss</a></li><li><a href="global.html#createEntry">createEntry</a></li><li><a href="global.html#dateOnlyPattern">dateOnlyPattern</a></li><li><a href="global.html#existingOutputPath">existingOutputPath</a></li><li><a href="global.html#fail">fail</a></li><li><a href="global.html#formatLocalIso">formatLocalIso</a></li><li><a href="global.html#formatOffset">formatOffset</a></li><li><a href="global.html#frontmatter">frontmatter</a></li><li><a href="global.html#frontmatterBoolean">frontmatterBoolean</a></li><li><a href="global.html#frontmatterString">frontmatterString</a></li><li><a href="global.html#getCurrentOffset">getCurrentOffset</a></li><li><a href="global.html#hasValue">hasValue</a></li><li><a href="global.html#humanizeSlug">humanizeSlug</a></li><li><a href="global.html#importDirectory">importDirectory</a></li><li><a href="global.html#main">main</a></li><li><a href="global.html#normalizeProject">normalizeProject</a></li><li><a href="global.html#normalizeSlug">normalizeSlug</a></li><li><a href="global.html#normalizeTagList">normalizeTagList</a></li><li><a href="global.html#openInEditor">openInEditor</a></li><li><a href="global.html#openInFinder">openInFinder</a></li><li><a href="global.html#pad2">pad2</a></li><li><a href="global.html#parseArgs">parseArgs</a></li><li><a href="global.html#parseDateInput">parseDateInput</a></li><li><a href="global.html#pathExists">pathExists</a></li><li><a href="global.html#preparePublishedSite">preparePublishedSite</a></li><li><a href="global.html#quoteShellArg">quoteShellArg</a></li><li><a href="global.html#readStdin">readStdin</a></li><li><a href="global.html#removeExistingOutput">removeExistingOutput</a></li><li><a href="global.html#renderLandingPage">renderLandingPage</a></li><li><a href="global.html#resolveConfig">resolveConfig</a></li><li><a href="global.html#resolveDocsRoot">resolveDocsRoot</a></li><li><a href="global.html#resolveMarkdownMetadata">resolveMarkdownMetadata</a></li><li><a href="global.html#resolvePublishedApiRoot">resolvePublishedApiRoot</a></li><li><a href="global.html#resolvePublishedSiteRoot">resolvePublishedSiteRoot</a></li><li><a href="global.html#resolveTemplate">resolveTemplate</a></li><li><a href="global.html#rewriteAssetReference">rewriteAssetReference</a></li><li><a href="global.html#rewriteAssetReferences">rewriteAssetReferences</a></li><li><a href="global.html#runImageOptim">runImageOptim</a></li><li><a href="global.html#stripDiacritics">stripDiacritics</a></li><li><a href="global.html#stripFirstHeading">stripFirstHeading</a></li><li><a href="global.html#stripFrontmatter">stripFrontmatter</a></li><li><a href="global.html#templateContext">templateContext</a></li><li><a href="global.html#toLocalDateString">toLocalDateString</a></li><li><a href="global.html#uniqueAssetName">uniqueAssetName</a></li><li><a href="global.html#uniqueName">uniqueName</a></li><li><a href="global.html#usage">usage</a></li><li><a href="global.html#walkFiles">walkFiles</a></li><li><a href="global.html#writeLandingPage">writeLandingPage</a></li><li><a href="global.html#writeTemplateFiles">writeTemplateFiles</a></li></ul>
-</nav>
-
-<br class="clear">
+</main>
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 19:11:38 GMT+0900 (Japan Standard Time)
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
 </footer>
 
 <script> prettyPrint(); </script>

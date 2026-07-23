@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>comprose API: Source: lib/system.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <link rel="stylesheet" href="../dress.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/comprose-docs.css">
+</head>
+
+<body>
+<a href="#main">Skip to content</a>
+<header>
+    <h1><a href="../">comprose</a></h1>
+    <nav aria-label="Project">
+        <ul>
+            <li><a href="../">Overview</a></li>
+            <li><a href="./index.html">API index</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="main">
+    <header>
+        <p>JSDoc API reference</p>
+        <h1>Source: lib/system.js</h1>
+    </header>
+
+    <nav aria-label="API contents">
+        <h2>Contents</h2>
+        <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bin_comprose.html">bin/comprose</a></li><li><a href="module-lib_cli.html">lib/cli</a></li><li><a href="module-lib_constants.html">lib/constants</a></li><li><a href="module-lib_create.html">lib/create</a></li><li><a href="module-lib_date.html">lib/date</a></li><li><a href="module-lib_docs.html">lib/docs</a></li><li><a href="module-lib_frontmatter.html">lib/frontmatter</a></li><li><a href="module-lib_import.html">lib/import</a></li><li><a href="module-lib_main.html">lib/main</a></li><li><a href="module-lib_markdown.html">lib/markdown</a></li><li><a href="module-lib_system.html">lib/system</a></li><li><a href="module-lib_templates.html">lib/templates</a></li><li><a href="module-lib_text.html">lib/text</a></li></ul>
+    </nav>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+
+/**
+ * System integration helpers for images, editor integration, and stdin.
+ *
+ * @module lib/system
+ */
+
+import { spawnSync } from 'node:child_process'
+import { once } from 'node:events'
+import sharp from 'sharp'
+import { quoteShellArg } from './text.js'
+
+/**
+ * Convert an image to AVIF via `sharp`, preserving orientation and bounding it
+ * to a reasonable content size for the generated site.
+ *
+ * @param {string} sourcePath
+ * @param {string} destinationPath
+ * @returns {Promise&lt;void>}
+ */
+export const convertImageWithSharp = async (sourcePath, destinationPath) => {
+	await sharp(sourcePath)
+		.rotate()
+		.resize({
+			fit: 'inside',
+			height: 1280,
+			withoutEnlargement: true,
+			width: 1280,
+		})
+		.avif({ quality: 82 })
+		.toFile(destinationPath)
+}
+
+/**
+ * Convert or transform an image via ImageMagick.
+ *
+ * @param {string} sourcePath
+ * @param {string} destinationPath
+ * @returns {void}
+ */
+export const convertImageWithMagick = (sourcePath, destinationPath) => {
+	const result = spawnSync(
+		'magick',
+		[
+			sourcePath,
+			'-auto-orient',
+			'-resize',
+			'1280x1280>',
+			'-strip',
+			destinationPath,
+		],
+		{
+			stdio: 'inherit',
+		}
+	)
+
+	if (result.error) {
+		throw result.error
+	}
+
+	if (result.status !== 0) {
+		throw new Error(`magick exited with status ${result.status ?? 'unknown'}`)
+	}
+}
+
+/**
+ * Optimize already-generated PNG and GIF files with `image_optim` when it is
+ * available on the host machine.
+ *
+ * @param {string[]} paths
+ * @returns {void}
+ */
+export const runImageOptim = paths => {
+	if (paths.length === 0) {
+		return
+	}
+
+	const result = spawnSync('image_optim', paths, {
+		stdio: 'inherit',
+	})
+
+	if (result.error) {
+		const error = /** @type {NodeJS.ErrnoException} */ (result.error)
+		if (error.code === 'ENOENT') {
+			console.warn(
+				'warning: image_optim not found; skipping PNG/GIF optimization'
+			)
+			return
+		}
+
+		throw error
+	}
+
+	if (result.status !== 0) {
+		throw new Error(
+			`image_optim exited with status ${result.status ?? 'unknown'}`
+		)
+	}
+}
+
+/**
+ * Open files in the configured editor.
+ *
+ * @param {string[]} files
+ * @returns {void}
+ */
+export const openInEditor = files => {
+	const editor = process.env.EDITOR?.trim()
+	if (!editor) {
+		throw new Error('EDITOR is not set')
+	}
+
+	const command = `${editor} ${files.map(quoteShellArg).join(' ')}`
+	const result = spawnSync(command, {
+		stdio: 'inherit',
+		shell: true,
+	})
+
+	if (result.status !== 0) {
+		throw new Error(
+			`${editor} exited with status ${result.status ?? 'unknown'}`
+		)
+	}
+}
+
+/**
+ * Reveal a path in Finder.
+ *
+ * @param {string} path
+ * @returns {void}
+ */
+export const openInFinder = path => {
+	const result = spawnSync('open', [path], {
+		stdio: 'inherit',
+	})
+
+	if (result.status !== 0) {
+		throw new Error(`Finder exited with status ${result.status ?? 'unknown'}`)
+	}
+}
+
+/**
+ * Read piped stdin content if present.
+ *
+ * @returns {Promise&lt;string>}
+ */
+export const readStdin = async () => {
+	if (process.stdin.isTTY) {
+		return ''
+	}
+
+	process.stdin.setEncoding('utf8')
+
+	let body = ''
+
+	process.stdin.on('data', chunk => {
+		body += chunk
+	})
+
+	await once(process.stdin, 'end')
+
+	return body
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</main>
+
+<footer>
+    <p>Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 20:13:56 GMT+0900 (Japan Standard Time)</p>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
