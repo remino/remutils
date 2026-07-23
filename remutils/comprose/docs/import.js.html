@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: import.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: import.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+/** @import {ImageAsset, ImportHandlers, ImportOptions, ResolvedConfig} from './types.js' */
+
+import { copyFile, mkdir, readdir } from 'node:fs/promises'
+import { basename, dirname, extname, join, resolve } from 'node:path'
+import { assetMarkerName, EXIT_IMPORT_CONFLICT, repoRoot } from './constants.js'
+import { toLocalDateString } from './date.js'
+import {
+	collectReferencedImageFiles,
+	resolveMarkdownMetadata,
+	rewriteAssetReference,
+	rewriteAssetReferences,
+} from './markdown.js'
+import {
+	buildTemplatePlan,
+	existingOutputPath,
+	pathExists,
+	removeExistingOutput,
+	templateContext,
+	writeTemplateFiles,
+} from './templates.js'
+import { pad2, uniqueName } from './text.js'
+import {
+	convertImageWithMagick,
+	convertImageWithSharp,
+	openInEditor,
+	openInFinder,
+	runImageOptim,
+} from './system.js'
+
+/**
+ * Import an existing prose directory into the destination project.
+ *
+ * The import flow is responsible for reconciling source markdown, assets, and
+ * optional stylesheets with the selected template layout. It preserves the
+ * source content where possible while rewriting image references to match the
+ * generated output tree.
+ *
+ * @param {ResolvedConfig} config
+ * @param {string} sourceDirInput
+ * @param {ImportOptions} [options]
+ * @param {ImportHandlers} [handlers]
+ */
+export const importDirectory = async (
+	config,
+	sourceDirInput,
+	{ edit = false, openFolder = false, force = false } = {},
+	{ fail } = { fail: () => {} }
+) => {
+	const sourceDir = resolve(repoRoot, sourceDirInput)
+	const sourceEntries = await readdir(sourceDir, { withFileTypes: true })
+	const sourceFiles = new Map(
+		sourceEntries
+			.filter(entry => entry.isFile())
+			.map(entry => [entry.name.toLowerCase(), entry.name])
+	)
+	const markdownMetadata = await resolveMarkdownMetadata(sourceDir)
+	const imageFileNames = collectReferencedImageFiles(
+		markdownMetadata.body,
+		[
+			markdownMetadata.image,
+			markdownMetadata.share_image,
+			markdownMetadata.share,
+		],
+		sourceFiles
+	)
+	const hasStyleCss = sourceFiles.has('style.css')
+	const dateParts = markdownMetadata.date.match(/^(\d{4})-(\d{2})-(\d{2})/)
+	const dateString = dateParts
+		? `${dateParts[1]}-${dateParts[2]}-${dateParts[3]}`
+		: toLocalDateString(new Date())
+	const datedSlug = `${dateString}-${markdownMetadata.slug}`
+	const paths = await buildTemplatePlan(config, {
+		collection: config.collection,
+		dateString,
+		date: dateString,
+		datedSlug,
+		project: config.collection,
+		slug: markdownMetadata.slug,
+	})
+	const styleSourcePath = join(sourceDir, 'style.css')
+	const filesToEdit = [paths.entryPath]
+	const assetNames = new Set()
+	const assetMap = new Map()
+	/** @type {ImageAsset[]} */
+	const imageAssets = []
+	const pngAndGifOutputs = []
+	let numericImageIndex = 0
+
+	const existingImportPath = await existingOutputPath(paths)
+
+	if (existingImportPath) {
+		if (!force) {
+			fail(
+				`import would overwrite existing entry "${paths.label}" at ${existingImportPath}`,
+				EXIT_IMPORT_CONFLICT
+			)
+			return
+		}
+
+		await removeExistingOutput(paths)
+	}
+
+	if (imageFileNames.length > 0 &amp;&amp; !paths.assetDir) {
+		throw new Error(
+			`template has no ${assetMarkerName} marker for imported assets`
+		)
+	}
+	const assetDir = paths.assetDir
+
+	if (paths.assetDir) {
+		await mkdir(paths.assetDir, { recursive: true })
+	}
+	if (paths.stylePath &amp;&amp; hasStyleCss) {
+		await mkdir(dirname(paths.stylePath), { recursive: true })
+	}
+
+	for (const fileName of imageFileNames) {
+		const inputPath = join(sourceDir, fileName)
+		const baseName = basename(fileName, extname(fileName))
+		const extension = extname(fileName).toLowerCase()
+		const isSpecialAsset =
+			baseName.toLowerCase() === 'image' || baseName.toLowerCase() === 'share'
+		const outputBaseName = isSpecialAsset ? baseName : pad2(numericImageIndex++)
+		const outputExtension =
+			extension === '.jpg' ||
+			extension === '.jpeg' ||
+			extension === '.webp' ||
+			extension === '.heic' ||
+			extension === '.heif'
+				? '.avif'
+				: extension
+		const outputFileName = uniqueName(
+			`${outputBaseName}${outputExtension}`,
+			assetNames
+		)
+		const outputPath = join(assetDir, outputFileName)
+		const publicPath = paths.publicAssetPath(outputFileName)
+
+		assetMap.set(fileName.toLowerCase(), publicPath)
+		assetMap.set(baseName.toLowerCase(), publicPath)
+		imageAssets.push({
+			inputPath,
+			outputFileName,
+			outputPath,
+			publicPath,
+			sourceName: fileName,
+		})
+
+		if (extension === '.avif') {
+			await copyFile(inputPath, outputPath)
+		} else if (extension === '.heic' || extension === '.heif') {
+			convertImageWithMagick(inputPath, outputPath)
+		} else if (outputExtension === '.avif') {
+			await convertImageWithSharp(inputPath, outputPath)
+		} else {
+			convertImageWithMagick(inputPath, outputPath)
+			if (outputExtension === '.png' || outputExtension === '.gif') {
+				pngAndGifOutputs.push(outputPath)
+			}
+		}
+	}
+
+	const imageFrontmatter = markdownMetadata.image
+		? rewriteAssetReference(markdownMetadata.image, assetMap)
+		: undefined
+	const shareImageFrontmatter = markdownMetadata.share_image
+		? rewriteAssetReference(markdownMetadata.share_image, assetMap)
+		: undefined
+	const fallbackImageFrontmatter =
+		imageFrontmatter ??
+		assetMap.get('image') ??
+		assetMap.get('share') ??
+		imageAssets[0]?.publicPath
+	const fallbackShareImageFrontmatter =
+		shareImageFrontmatter ??
+		(markdownMetadata.share
+			? rewriteAssetReference(markdownMetadata.share, assetMap)
+			: undefined)
+	const body = rewriteAssetReferences(markdownMetadata.body, assetMap)
+
+	try {
+		if (pngAndGifOutputs.length > 0) {
+			runImageOptim(pngAndGifOutputs)
+		}
+
+		if (hasStyleCss &amp;&amp; paths.stylePath &amp;&amp; paths.usesStyle) {
+			await copyFile(styleSourcePath, paths.stylePath)
+			filesToEdit.push(paths.stylePath)
+		}
+
+		const context = templateContext({
+			body,
+			config,
+			date: markdownMetadata.date,
+			dateString,
+			frontmatterDate: markdownMetadata.date,
+			image: fallbackImageFrontmatter,
+			metadata: {
+				...markdownMetadata,
+				share_image: fallbackShareImageFrontmatter,
+			},
+			paths,
+			slug: markdownMetadata.slug,
+			style: hasStyleCss &amp;&amp; paths.usesStyle ? paths.styleValue : undefined,
+			tags: markdownMetadata.tags,
+			title: markdownMetadata.title,
+			type: markdownMetadata.type,
+		})
+
+		await writeTemplateFiles(paths, context, {
+			skipOutputPaths:
+				hasStyleCss &amp;&amp; paths.stylePath &amp;&amp; paths.usesStyle
+					? [paths.stylePath]
+					: [],
+		})
+	} catch (error) {
+		fail(
+			error instanceof Error
+				? error.message
+				: `failed to create files for ${paths.label}`
+		)
+		return
+	}
+
+	console.log(`Imported ${paths.label}`)
+	console.log(`  ${paths.entryPath}`)
+	if (hasStyleCss &amp;&amp; paths.stylePath &amp;&amp; paths.usesStyle) {
+		console.log(`  ${paths.stylePath}`)
+	}
+	for (const imageAsset of imageAssets) {
+		console.log(`  ${join(assetDir, imageAsset.outputFileName)}`)
+	}
+	if (paths.assetDir &amp;&amp; (await pathExists(paths.assetDir))) {
+		console.log(`  ${paths.assetDir}`)
+	}
+
+	if (openFolder) {
+		try {
+			if (paths.assetDir) {
+				openInFinder(paths.assetDir)
+			}
+		} catch (error) {
+			fail(error instanceof Error ? error.message : String(error))
+		}
+	}
+
+	if (edit) {
+		try {
+			openInEditor(filesToEdit)
+		} catch (error) {
+			fail(error instanceof Error ? error.message : String(error))
+		}
+	}
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#assertDocsWorktree">assertDocsWorktree</a></li><li><a href="global.html#buildApiDocs">buildApiDocs</a></li><li><a href="global.html#buildTemplatePlan">buildTemplatePlan</a></li><li><a href="global.html#collectReferencedImageFiles">collectReferencedImageFiles</a></li><li><a href="global.html#convertImageWithMagick">convertImageWithMagick</a></li><li><a href="global.html#convertImageWithSharp">convertImageWithSharp</a></li><li><a href="global.html#createEntry">createEntry</a></li><li><a href="global.html#dateOnlyPattern">dateOnlyPattern</a></li><li><a href="global.html#existingOutputPath">existingOutputPath</a></li><li><a href="global.html#fail">fail</a></li><li><a href="global.html#formatLocalIso">formatLocalIso</a></li><li><a href="global.html#formatOffset">formatOffset</a></li><li><a href="global.html#frontmatter">frontmatter</a></li><li><a href="global.html#frontmatterBoolean">frontmatterBoolean</a></li><li><a href="global.html#frontmatterString">frontmatterString</a></li><li><a href="global.html#getCurrentOffset">getCurrentOffset</a></li><li><a href="global.html#hasValue">hasValue</a></li><li><a href="global.html#humanizeSlug">humanizeSlug</a></li><li><a href="global.html#importDirectory">importDirectory</a></li><li><a href="global.html#main">main</a></li><li><a href="global.html#normalizeProject">normalizeProject</a></li><li><a href="global.html#normalizeSlug">normalizeSlug</a></li><li><a href="global.html#normalizeTagList">normalizeTagList</a></li><li><a href="global.html#openInEditor">openInEditor</a></li><li><a href="global.html#openInFinder">openInFinder</a></li><li><a href="global.html#pad2">pad2</a></li><li><a href="global.html#parseArgs">parseArgs</a></li><li><a href="global.html#parseDateInput">parseDateInput</a></li><li><a href="global.html#pathExists">pathExists</a></li><li><a href="global.html#preparePublishedSite">preparePublishedSite</a></li><li><a href="global.html#quoteShellArg">quoteShellArg</a></li><li><a href="global.html#readStdin">readStdin</a></li><li><a href="global.html#removeExistingOutput">removeExistingOutput</a></li><li><a href="global.html#renderLandingPage">renderLandingPage</a></li><li><a href="global.html#resolveConfig">resolveConfig</a></li><li><a href="global.html#resolveDocsRoot">resolveDocsRoot</a></li><li><a href="global.html#resolveMarkdownMetadata">resolveMarkdownMetadata</a></li><li><a href="global.html#resolvePublishedApiRoot">resolvePublishedApiRoot</a></li><li><a href="global.html#resolvePublishedSiteRoot">resolvePublishedSiteRoot</a></li><li><a href="global.html#resolveTemplate">resolveTemplate</a></li><li><a href="global.html#rewriteAssetReference">rewriteAssetReference</a></li><li><a href="global.html#rewriteAssetReferences">rewriteAssetReferences</a></li><li><a href="global.html#runImageOptim">runImageOptim</a></li><li><a href="global.html#stripDiacritics">stripDiacritics</a></li><li><a href="global.html#stripFirstHeading">stripFirstHeading</a></li><li><a href="global.html#stripFrontmatter">stripFrontmatter</a></li><li><a href="global.html#templateContext">templateContext</a></li><li><a href="global.html#toLocalDateString">toLocalDateString</a></li><li><a href="global.html#uniqueAssetName">uniqueAssetName</a></li><li><a href="global.html#uniqueName">uniqueName</a></li><li><a href="global.html#usage">usage</a></li><li><a href="global.html#walkFiles">walkFiles</a></li><li><a href="global.html#writeLandingPage">writeLandingPage</a></li><li><a href="global.html#writeTemplateFiles">writeTemplateFiles</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 23 2026 18:44:04 GMT+0900 (Japan Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

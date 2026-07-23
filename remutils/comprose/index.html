@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>comprose</title>
+	<style>
+		:root {
+			color-scheme: light dark;
+			font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			line-height: 1.6;
+		}
+
+		body {
+			margin: 0;
+			padding: 2rem 1.25rem 4rem;
+		}
+
+		main {
+			margin: 0 auto;
+			max-width: 52rem;
+		}
+
+		h1, h2, h3 {
+			line-height: 1.2;
+		}
+
+		pre, code {
+			font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+		}
+
+		pre {
+			overflow-x: auto;
+			padding: 1rem;
+			border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+			border-radius: 0.375rem;
+		}
+
+		a {
+			color: inherit;
+		}
+
+		.api-link {
+			display: inline-block;
+			margin: 0 0 2rem;
+			font-weight: 600;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<p><a class="api-link" href="./docs/">API documentation</a></p>
+<h1>comprose</h1>
+<p>Create and import prose content entries.</p>
+<p><code>comprose</code> creates Markdown entries for prose-oriented static sites. It can use
+built-in or custom Mustache templates to support different site layouts.</p>
+<h2>Install</h2>
+<pre><code class="language-sh">npm install -g @remino/comprose
+</code></pre>
+<h2>Usage</h2>
+<pre><code class="language-sh">comprose help
+comprose new [options] -s &lt;slug&gt;
+comprose import [options] &lt;path&gt;
+</code></pre>
+<p>The default <code>default</code> template is for projects with <code>src/content/&lt;collection&gt;</code>,
+<code>src/styles/&lt;collection&gt;</code>, and <code>public/&lt;collection&gt;</code>:</p>
+<pre><code class="language-sh">comprose new --template default -c journal -s my-new-entry
+comprose import --template default -c notes /tmp/source-entry
+</code></pre>
+<p>The <code>middleman-blog</code> template is for single-file blog entries with assets beside
+the entry:</p>
+<pre><code class="language-sh">comprose new --template middleman-blog -c posts -s my-entry
+comprose import --template middleman-blog -c posts /tmp/source-entry
+</code></pre>
+<p>If <code>-c</code> is omitted, the current directory name is used as the collection. If
+<code>--pubname</code> is omitted, <code>comprose</code> tries to derive it from a reverse-DNS package
+name such as <code>com.example.journal</code>, producing <code>example-journal</code>.</p>
+<h2>Commands</h2>
+<h3><code>new</code></h3>
+<p>Create a new entry scaffold:</p>
+<pre><code class="language-sh">comprose new -c journal -t &quot;My New Entry&quot; -d 2026-05-06 -g terminal -g css
+</code></pre>
+<p>With the default <code>default</code> template, this creates:</p>
+<ul>
+<li><code>src/content/&lt;collection&gt;/&lt;date&gt;-&lt;slug&gt;/index.md</code></li>
+<li><code>src/styles/&lt;collection&gt;/&lt;slug&gt;.css</code></li>
+<li><code>public/&lt;collection&gt;/&lt;slug&gt;/</code></li>
+</ul>
+<p>Piped standard input seeds the Markdown body:</p>
+<pre><code class="language-sh">printf &#39;Draft body.\n&#39; | comprose new -c journal -s draft-entry
+</code></pre>
+<h3><code>import</code></h3>
+<p>Import a directory containing a Markdown file:</p>
+<pre><code class="language-sh">comprose import -c journal /tmp/source-entry
+</code></pre>
+<p>The import command looks first for <code>entry.md</code>, <code>post.md</code>, <code>note.md</code>, or
+<code>article.md</code>, then falls back to the first Markdown file. It preserves selected
+frontmatter fields, removes the first Markdown heading when it becomes the
+generated title, copies <code>style.css</code> when the selected template supports a
+stylesheet, and rewrites referenced local image links into the asset folder.</p>
+<p>Use <code>-f</code> to replace an existing generated entry:</p>
+<pre><code class="language-sh">comprose import -c journal /tmp/source-entry -f
+</code></pre>
+<h2>Options</h2>
+<ul>
+<li><code>--template &lt;name-or-path&gt;</code>: Template layout. Defaults to <code>default</code>.</li>
+<li><code>-s &lt;slug&gt;</code>: Entry slug.</li>
+<li><code>-t &lt;title&gt;</code>: Entry title.</li>
+<li><code>-d &lt;iso-8601&gt;</code>: Entry date.</li>
+<li><code>-k</code>, <code>--type</code>, <code>--kind &lt;kind&gt;</code>: <code>article</code> or <code>note</code>.</li>
+<li><code>-g &lt;tag&gt;</code>: Add a tag. Repeatable.</li>
+<li><code>-i &lt;path&gt;</code>: Copy an image into the entry asset directory. Repeatable.</li>
+<li><code>-e</code>: Open generated text files in <code>$EDITOR</code>.</li>
+<li><code>-o</code>: Open the public folder in Finder.</li>
+<li><code>-f</code>: Replace an existing imported entry.</li>
+<li><code>-c</code>, <code>--collection &lt;name&gt;</code>: Content collection name.</li>
+<li><code>--pubname &lt;name&gt;</code>: Frontmatter <code>pubname</code>.</li>
+</ul>
+<h2>Templates</h2>
+<p>Built-in templates:</p>
+<ul>
+<li><code>default</code>: Writes <code>src/content/&lt;collection&gt;/&lt;date&gt;-&lt;slug&gt;/index.md</code>, a
+matching stylesheet, and assets under <code>public/&lt;collection&gt;/&lt;slug&gt;/</code>.</li>
+<li><code>astro-content</code>: Writes <code>src/content/&lt;collection&gt;/&lt;date&gt;-&lt;slug&gt;/index.md</code>, a
+matching stylesheet, and assets under <code>public/&lt;collection&gt;/&lt;slug&gt;/</code>.</li>
+<li><code>middleman-blog</code>: Writes <code>source/&lt;collection&gt;/&lt;slug&gt;.html.md</code> and assets under
+<code>source/&lt;collection&gt;/&lt;slug&gt;/</code>. It does not create a stylesheet by default.</li>
+</ul>
+<p>Template directories define output paths directly. Directory and file names can
+include path variables such as <code>[collection]</code>, <code>[date]</code>, and <code>[slug]</code>. Files
+ending in <code>.mustache</code> are rendered and written without the <code>.mustache</code> suffix.
+Place a <code>.comprose-assets</code> marker file in the directory where copied images
+should be written.</p>
+<p>Template names are resolved in this order:</p>
+<ol>
+<li>Built-in templates bundled with <code>comprose</code>.</li>
+<li><code>.comprose/templates/&lt;name&gt;</code> in the current directory or any parent
+directory.</li>
+<li><code>.config/comprose/templates/&lt;name&gt;</code> in the current directory or any parent
+directory.</li>
+<li><code>$XDG_CONFIG_HOME/comprose/templates/&lt;name&gt;</code>, or
+<code>$HOME/.config/comprose/templates/&lt;name&gt;</code> when <code>XDG_CONFIG_HOME</code> is unset.</li>
+<li>A relative or absolute directory path passed to <code>--template</code>.</li>
+</ol>
+<p>For example:</p>
+<pre><code class="language-text">templates/example/
+  source/[collection]/
+    [slug].html.md.mustache
+    [slug]/
+      .comprose-assets
+</code></pre>
+<h2>Dependencies</h2>
+<p><code>comprose</code> uses Node.js, Mustache, and <code>sharp</code>. Image imports that keep
+PNG/GIF/HEIC output also require ImageMagick. PNG and GIF outputs are passed
+through <code>image_optim</code> when that command is available.</p>
+<h2>Maintainer docs</h2>
+<p>The published docs site is generated into a separate <code>docs/</code> worktree checked
+out at the repo root on the orphan <code>docs</code> branch.</p>
+<p>The published layout is:</p>
+<ul>
+<li><code>docs/remutils/comprose/index.html</code>: README landing page</li>
+<li><code>docs/remutils/comprose/docs/</code>: generated JSDoc API site</li>
+<li><code>docs/.nojekyll</code>: GitHub Pages Jekyll bypass marker</li>
+</ul>
+<p>Build and publish docs with:</p>
+<pre><code class="language-sh">npm run docs:publish --prefix comprose
+</code></pre>
+<p>The docs scripts expect <code>../docs</code> from the <code>comprose/</code> directory to already be a
+Git worktree on the <code>docs</code> branch. If that worktree is missing or on another
+branch, the build fails with a descriptive error.</p>
+
+	</main>
+</body>
+</html>
