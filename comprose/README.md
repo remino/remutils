@@ -147,8 +147,8 @@ out at the repo root on the orphan `docs` branch.
 
 The published layout is:
 
-- `docs/remutils/comprose/index.html`: README landing page
-- `docs/remutils/comprose/docs/`: generated JSDoc API site
+- `docs/comprose/index.html`: README landing page
+- `docs/comprose/docs/`: generated JSDoc API site
 - `docs/.nojekyll`: GitHub Pages Jekyll bypass marker
 
 Build and publish docs with:

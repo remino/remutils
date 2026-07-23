@@ -18,14 +18,14 @@ describe('docs', () => {
 		assert.match(html, /<p>Create and import prose\.<\/p>/)
 	})
 
-	it('resolves the published site and api paths under remutils/comprose', () => {
+	it('resolves the published site and api paths under comprose', () => {
 		assert.equal(
 			resolvePublishedSiteRoot('/tmp/docs-worktree'),
-			'/tmp/docs-worktree/remutils/comprose'
+			'/tmp/docs-worktree/comprose'
 		)
 		assert.equal(
 			resolvePublishedApiRoot('/tmp/docs-worktree'),
-			'/tmp/docs-worktree/remutils/comprose/docs'
+			'/tmp/docs-worktree/comprose/docs'
 		)
 	})
 })

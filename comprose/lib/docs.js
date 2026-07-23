@@ -26,8 +26,7 @@ export const resolveDocsRoot = () =>
  * @param {string} docsRoot
  * @returns {string}
  */
-export const resolvePublishedSiteRoot = docsRoot =>
-	join(docsRoot, 'remutils', 'comprose')
+export const resolvePublishedSiteRoot = docsRoot => join(docsRoot, 'comprose')
 
 /**
  * Resolve the generated API docs root inside the published site.

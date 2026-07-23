@@ -19,7 +19,7 @@
 	],
 	"scripts": {
 		"docs:build": "node bin/build-docs.mjs",
-		"docs:commit": "export COMMIT=\"$(git rev-parse HEAD)\" && cd ../docs && git add .nojekyll remutils/comprose && git commit -m \"Add build for $COMMIT\"; true",
+		"docs:commit": "export COMMIT=\"$(git rev-parse HEAD)\" && cd ../docs && git add .nojekyll comprose && git commit -m \"Add build for $COMMIT\"; true",
 		"docs:publish": "npm run docs:build && npm run docs:commit && npm run docs:push",
 		"docs:push": "cd ../docs && git push origin docs",
 		"format": "prettier --write .",
