@@ -554,26 +554,33 @@ fn format_record(record: &Record<'_>) -> String {
     let file = record.file().unwrap_or("serve.rs");
     let line = record.line().unwrap_or(0);
     let message = record.args().to_string();
-    format_log_record(level, file, line, &message)
+    let tone = classify_log_tone(level, &message);
+    format_log_record(level, tone, file, line, &message)
 }
 
-fn format_log_record(level: LogLevel, file: &str, line: u32, message: &str) -> String {
+fn format_log_record(
+    level: LogLevel,
+    tone: LogTone,
+    file: &str,
+    line: u32,
+    message: &str,
+) -> String {
     let now = chrono::Local::now().format("%y%m%d %H:%M:%S");
     let module = Path::new(file)
         .file_stem()
         .and_then(|value| value.to_str())
         .unwrap_or("serve");
     let prefix = format!("[{} {now} {module}:{line}]", level.code());
-    let prefix = colorize_prefix(level, prefix);
+    let prefix = colorize_prefix(tone, prefix);
     format!("{prefix} {}", indent_newlines(message))
 }
 
-fn colorize_prefix(level: LogLevel, prefix: String) -> Cow<'static, str> {
+fn colorize_prefix(tone: LogTone, prefix: String) -> Cow<'static, str> {
     if !std::io::stderr().is_terminal() || env::var_os("NO_COLOR").is_some() {
         return Cow::Owned(prefix);
     }
 
-    Cow::Owned(format!("{}{}{}", level.ansi_code(), prefix, "\x1b[0m"))
+    Cow::Owned(format!("{}{}{}", tone.ansi_code(), prefix, "\x1b[0m"))
 }
 
 fn indent_newlines(message: &str) -> String {
@@ -588,12 +595,49 @@ impl LogLevel {
             LogLevel::Error => 'E',
         }
     }
+}
 
+#[derive(Clone, Copy)]
+enum LogTone {
+    CoolBlue,
+    CoolCyan,
+    CoolBrightCyan,
+    WarmYellow,
+    WarmRed,
+}
+
+impl LogTone {
     fn ansi_code(self) -> &'static str {
         match self {
-            LogLevel::Info => "\x1b[2;32m",
-            LogLevel::Warn => "\x1b[2;33m",
-            LogLevel::Error => "\x1b[2;31m",
+            LogTone::CoolBlue => "\x1b[34m",
+            LogTone::CoolCyan => "\x1b[36m",
+            LogTone::CoolBrightCyan => "\x1b[96m",
+            LogTone::WarmYellow => "\x1b[33m",
+            LogTone::WarmRed => "\x1b[31m",
+        }
+    }
+}
+
+fn classify_log_tone(level: LogLevel, message: &str) -> LogTone {
+    match level {
+        LogLevel::Error => LogTone::WarmRed,
+        LogLevel::Warn => LogTone::WarmYellow,
+        LogLevel::Info => {
+            if message.starts_with("Serving on")
+                || message.starts_with("Listening on")
+                || message.starts_with("SSE endpoint")
+                || message.starts_with("Root:")
+                || message.starts_with("Press ")
+            {
+                LogTone::CoolBlue
+            } else if message.starts_with("Change detected")
+                || message.starts_with("Reload ")
+                || message.starts_with("Start watching")
+            {
+                LogTone::CoolBrightCyan
+            } else {
+                LogTone::CoolCyan
+            }
         }
     }
 }
@@ -603,7 +647,7 @@ mod tests {
     use super::{
         ChangeKind, CLIENT_SNIPPET, WORKER_JS, display_relative_path, format_access_message,
         format_log_record, format_root_display, inject_client, sanitize_uri_path, classify,
-        LogLevel, SSE_PATH, WORKER_PATH,
+        LogLevel, LogTone, SSE_PATH, WORKER_PATH,
     };
     use axum::http::{Method, StatusCode};
     use std::path::Path;
@@ -641,7 +685,13 @@ mod tests {
 
     #[test]
     fn log_record_uses_tornado_style_prefix() {
-        let formatted = format_log_record(LogLevel::Info, "src/serve.rs", 42, "Serving on");
+        let formatted = format_log_record(
+            LogLevel::Info,
+            LogTone::CoolBlue,
+            "src/serve.rs",
+            42,
+            "Serving on",
+        );
         assert!(formatted.contains("[I "));
         assert!(formatted.contains(" serve:42] Serving on"));
     }
