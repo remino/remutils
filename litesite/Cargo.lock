@@ -1133,6 +1133,7 @@ dependencies = [
  "notify",
  "notify-debouncer-full",
  "regex",
+ "serde_json",
  "tokio",
  "tokio-stream",
  "walkdir",

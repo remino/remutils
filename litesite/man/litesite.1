@@ -46,10 +46,10 @@ Regenerate Brotli, gzip, and zstd files for \fBdist/\fR.
 Regenerate sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives in
 \fBdist/\fR.
 .TP
-.B new [\fB-t\fR|\fB--template\fR \fINAME-OR-PATH\fR] \fISLUG\fR [\fIDEST\fR]
+.B new [\fIOPTIONS\fR] \fISLUG\fR [\fIDEST\fR]
 Create a new site scaffold.
 .TP
-.B init [\fB-t\fR|\fB--template\fR \fINAME-OR-PATH\fR] \fISLUG\fR [\fIDEST\fR]
+.B init [\fIOPTIONS\fR] \fISLUG\fR [\fIDEST\fR]
 Alias for \fBnew\fR.
 .TP
 .B jpg \fIFILES...\fR
@@ -74,6 +74,14 @@ resolve as built-ins first, then from \fB.litesite/templates/\fR and
 \fB.config/litesite/templates/\fR in the current directory or a parent, then
 from \fB$XDG_CONFIG_HOME/litesite/templates/\fR or
 \fB$HOME/.config/litesite/templates/\fR, then as an explicit path.
+.TP
+.B --var \fIKEY=VALUE\fR
+Add a string variable to the selected template. This option may be repeated.
+Later options override earlier values.
+.TP
+.B --vars \fIFILE.json\fR
+Load string variables from a JSON object. Later options override earlier
+values.
 .SH ENVIRONMENT
 .TP
 .B LITESITE_BUILD_BROTLI
@@ -103,8 +111,16 @@ created as \fB./\fISLUG\fR\fR.
 .PP
 Template files ending in \fB.mustache\fR are rendered and written without the
 suffix. Paths may contain \fB[slug]\fR, matching comprose's path placeholder
-format. Templates receive \fBslug\fR, \fBlicense_year\fR, and
-\fBlicense_holder\fR for Mustache rendering.
+format, and may use any variable passed with \fB--var\fR or \fB--vars\fR.
+Templates receive those variables for Mustache rendering as well as default
+\fBslug\fR, \fByear\fR, and \fBauthor\fR values. Only \fBslug\fR is
+reserved. \fByear\fR defaults to the current year; \fBauthor\fR defaults to a
+local Git repository author, then \fBwhoami\fR, then \fBYour Name\fR. Either
+may be overridden by template or command-line variables.
+.PP
+A template may contain a root \fB.litesite.json\fR file with default string
+variables in its \fBvars\fR object. These values load before command-line
+variables and are never copied into the generated site.
 .SH AUTHOR
 Written by Rémino Rem: <https://remino.net/>
 .SH COPYRIGHT

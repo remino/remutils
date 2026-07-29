@@ -1,0 +1,5 @@
+{
+	"vars": {
+		"description": "A small-site boilerplate with a source-to-dist build, deploy, and preview workflow."
+	}
+}

@@ -93,8 +93,30 @@ or `.config/litesite/templates/` in the current directory or a parent, then
 `$XDG_CONFIG_HOME/litesite/templates/` (or `$HOME/.config/litesite/templates/`),
 then a relative or absolute directory path. Files ending in `.mustache` are
 rendered without that suffix. Paths can use `[slug]`, matching comprose's path
-placeholder format. Templates receive `slug`, `license_year`, and
-`license_holder` for Mustache rendering.
+placeholder format. Templates receive default `slug`, `year`, and `author`
+values for Mustache rendering.
+
+Pass additional string variables with a repeatable `--var KEY=VALUE` option or
+with `--vars FILE.json`. The JSON file must contain an object whose values are
+strings. Later options override earlier values:
+
+```sh
+litesite new -t portfolio --vars site.json --var title="My site" example
+```
+
+Those variables are available in Mustache content as `{{title}}` and in paths as
+`[title]`. Only `slug` is reserved. `year` defaults to the current year and
+`author` defaults to the local Git repository's author, then `whoami`, then
+`Your Name`; either may be overridden by template or command-line variables.
+
+A template can also include a root `.litesite.json` with default string
+variables in its `vars` object. Its values are loaded before `--vars` and
+`--var`, so callers can override them. This metadata file is never copied into
+the generated site.
+
+```json
+{ "vars": { "description": "A small site." } }
+```
 
 AVIF derivatives are written as sibling files:
 

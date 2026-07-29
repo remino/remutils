@@ -146,7 +146,11 @@ EOF
 }
 
 @test "init scaffolds a site" {
-	run env LITESITE_LICENSE_HOLDER="Site Owner" "$SCRIPT" init demo "$SITE_ROOT"
+	git -C "$TEST_ROOT" init -q
+	git -C "$TEST_ROOT" config user.name "Site Owner"
+	pushd "$TEST_ROOT" > /dev/null
+	run "$SCRIPT" init demo "$SITE_ROOT"
+	popd > /dev/null
 
 	[ "$status" -eq 0 ]
 	expected_year="$(date +%Y)"
@@ -159,9 +163,11 @@ EOF
 	[ -f "$SITE_ROOT/src/public/favicon.svg" ]
 	[ -f "$SITE_ROOT/src/public/share.svg" ]
 	[ -f "$SITE_ROOT/src/nginx/demo.conf" ]
+	[ ! -e "$SITE_ROOT/.litesite.json" ]
 	[[ "$(cat "$SITE_ROOT/README.md")" == *"# demo"* ]]
 	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Copyright (c) $expected_year Site Owner"* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"<title>demo</title>"* ]]
+	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *'content="A small-site boilerplate with a source-to-dist build, deploy, and preview workflow."'* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"/style.css"* ]]
 }
 
@@ -186,15 +192,55 @@ EOF
 <title>{{slug}}</title>
 EOF
 	cat > "$template_dir/LICENSE.txt.mustache" << 'EOF'
-Copyright {{license_year}} {{license_holder}}
+Copyright {{year}} {{author}}
 EOF
 
-	run env LITESITE_LICENSE_HOLDER="Template Owner" "$SCRIPT" new -t "$template_dir" custom "$SITE_ROOT"
+	run "$SCRIPT" new -t "$template_dir" --var author="Template Owner" --var year=1999 custom "$SITE_ROOT"
 
 	[ "$status" -eq 0 ]
 	[ "$(cat "$SITE_ROOT/README.md")" = "# custom" ]
 	[ "$(cat "$SITE_ROOT/src/public/custom.html")" = "<title>custom</title>" ]
-	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Template Owner"* ]]
+	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Copyright 1999 Template Owner"* ]]
+}
+
+@test "new renders CLI and JSON variables in content and paths" {
+	local template_dir="$TEST_ROOT/custom-template"
+	local vars_file="$TEST_ROOT/vars.json"
+	mkdir -p "$template_dir/src/public/[section]"
+
+	cat > "$template_dir/src/public/[section]/[slug].html.mustache" << 'EOF'
+<title>{{title}}</title>
+<p>{{section}} {{slug}}</p>
+EOF
+	cat > "$vars_file" << 'EOF'
+{
+  "section": "guides",
+  "title": "From JSON"
+}
+EOF
+	cat > "$template_dir/.litesite.json" << 'EOF'
+{
+  "vars": {
+    "section": "template-section",
+    "title": "From template"
+  }
+}
+EOF
+
+	run "$SCRIPT" new -t "$template_dir" --vars "$vars_file" --var title="From CLI" example "$SITE_ROOT"
+
+	[ "$status" -eq 0 ]
+	[ -f "$SITE_ROOT/src/public/guides/example.html" ]
+	[ ! -e "$SITE_ROOT/.litesite.json" ]
+	[[ "$(cat "$SITE_ROOT/src/public/guides/example.html")" == *"<title>From CLI</title>"* ]]
+	[[ "$(cat "$SITE_ROOT/src/public/guides/example.html")" == *"<p>guides example</p>"* ]]
+}
+
+@test "new rejects reserved template variables" {
+	run "$SCRIPT" new --var slug=other example "$SITE_ROOT"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"litesite: variable is reserved: slug"* ]]
 }
 
 @test "new finds templates in a parent .litesite directory" {
@@ -255,7 +301,7 @@ EOF
 	run "$SCRIPT" init
 
 	[ "$status" -eq 1 ]
-	[[ "$output" == *"USAGE: litesite new [--template <name-or-path>] <site_slug> [<dest_dir>]"* ]]
+	[[ "$output" == *"USAGE: litesite new [options] <site_slug> [<dest_dir>]"* ]]
 }
 
 @test "build writes dist outputs with native build steps" {

@@ -2,6 +2,9 @@ use crate::fsutil::{copy_file, write_file};
 use anyhow::{bail, Context, Result};
 use chrono::Datelike;
 use mustache::MapBuilder;
+use regex::Regex;
+use serde_json::Value;
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
@@ -10,15 +13,17 @@ use walkdir::WalkDir;
 
 const DEFAULT_TEMPLATE: &str = "default";
 const TEMPLATE_SUFFIX: &str = ".mustache";
+const TEMPLATE_VARIABLES_FILE: &str = ".litesite.json";
 
 pub fn init_site(
     slug: &str,
     dest_arg: Option<&String>,
     template_arg: Option<&str>,
+    extra_variables: &BTreeMap<String, String>,
     lookup_root: &Path,
 ) -> Result<()> {
     if slug.is_empty() {
-        bail!("USAGE: litesite new [--template <name-or-path>] <site_slug> [<dest_dir>]");
+        bail!("USAGE: litesite new [options] <site_slug> [<dest_dir>]");
     }
     if slug.contains('/') {
         bail!("litesite: SITE_SLUG must not contain /");
@@ -32,13 +37,19 @@ pub fn init_site(
     }
 
     let template = resolve_template(template_arg, lookup_root)?;
-    let license_year = chrono::Local::now().year().to_string();
-    let license_holder = license_holder();
-    let context = MapBuilder::new()
-        .insert_str("slug", slug)
-        .insert_str("license_year", &license_year)
-        .insert_str("license_holder", &license_holder)
-        .build();
+    let year = chrono::Local::now().year().to_string();
+    let author = author(lookup_root);
+    let mut variables = BTreeMap::from([
+        ("slug".to_string(), slug.to_string()),
+        ("year".to_string(), year),
+        ("author".to_string(), author),
+    ]);
+    variables.extend(load_template_variables(&template)?);
+    variables.extend(extra_variables.clone());
+    let context = variables.iter().fold(MapBuilder::new(), |builder, (key, value)| {
+        builder.insert_str(key, value)
+    });
+    let context = context.build();
 
     fs::create_dir_all(&dest)?;
     for entry in WalkDir::new(&template).into_iter().filter_map(Result::ok) {
@@ -47,7 +58,10 @@ pub fn init_site(
         }
 
         let relative = entry.path().strip_prefix(&template)?;
-        let output_relative = render_path(relative, slug);
+        if relative == Path::new(TEMPLATE_VARIABLES_FILE) {
+            continue;
+        }
+        let output_relative = render_path(relative, &variables);
         ensure_safe_relative_path(&output_relative)?;
         let output = dest.join(output_relative);
         let source = fs::read_to_string(entry.path())?;
@@ -71,6 +85,52 @@ pub fn init_site(
         .status();
     println!("Created {}", dest.display());
 
+    Ok(())
+}
+
+fn load_template_variables(template: &Path) -> Result<BTreeMap<String, String>> {
+    let path = template.join(TEMPLATE_VARIABLES_FILE);
+    if !path.is_file() {
+        return Ok(BTreeMap::new());
+    }
+
+    let content = fs::read_to_string(&path)
+        .with_context(|| format!("litesite: cannot read {}", path.display()))?;
+    let config = serde_json::from_str(&content)
+        .with_context(|| format!("litesite: invalid {}", path.display()))?;
+    let Value::Object(mut config) = config
+    else {
+        bail!("litesite: {} must contain a JSON object", path.display());
+    };
+    let Some(Value::Object(values)) = config.remove("vars") else {
+        bail!("litesite: {} must contain a vars object", path.display());
+    };
+
+    values
+        .into_iter()
+        .map(|(key, value)| {
+            validate_template_variable_key(&key)?;
+            let Value::String(value) = value else {
+                bail!("litesite: template variable {key} must be a string");
+            };
+            Ok((key, value))
+        })
+        .collect()
+}
+
+fn validate_template_variable_key(key: &str) -> Result<()> {
+    if key == "slug" {
+        bail!("litesite: template variable is reserved: {key}");
+    }
+    if key.is_empty()
+        || !key.chars().enumerate().all(|(index, character)| {
+            character == '_'
+                || character.is_ascii_alphanumeric()
+                    && (index > 0 || character.is_ascii_alphabetic())
+        })
+    {
+        bail!("litesite: invalid template variable name: {key}");
+    }
     Ok(())
 }
 
@@ -129,10 +189,20 @@ fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Pa
     bail!("litesite: template not found: {template_name}")
 }
 
-fn render_path(path: &Path, slug: &str) -> PathBuf {
+fn render_path(path: &Path, variables: &BTreeMap<String, String>) -> PathBuf {
     let path = path.to_string_lossy();
     let path = path.strip_suffix(TEMPLATE_SUFFIX).unwrap_or(&path);
-    PathBuf::from(path.replace("[slug]", slug))
+    let placeholder = Regex::new(r"\[([a-zA-Z0-9_]+)\]").expect("valid path placeholder regex");
+    PathBuf::from(
+        placeholder
+            .replace_all(path, |captures: &regex::Captures| {
+                variables
+                    .get(&captures[1])
+                    .cloned()
+                    .unwrap_or_else(|| captures[0].to_string())
+            })
+            .into_owned(),
+    )
 }
 
 fn render(template: &str, context: &mustache::Data) -> Result<String> {
@@ -156,13 +226,21 @@ fn ensure_safe_relative_path(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn license_holder() -> String {
-    if let Ok(value) = env::var("LITESITE_LICENSE_HOLDER") {
-        if !value.is_empty() {
-            return value;
+fn author(lookup_root: &Path) -> String {
+    if let Ok(output) = Command::new("git")
+        .arg("-C")
+        .arg(lookup_root)
+        .args(["config", "--local", "user.name"])
+        .output()
+    {
+        if output.status.success() {
+            let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !value.is_empty() {
+                return value;
+            }
         }
     }
-    if let Ok(output) = Command::new("git").args(["config", "user.name"]).output() {
+    if let Ok(output) = Command::new("whoami").output() {
         if output.status.success() {
             let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
             if !value.is_empty() {
@@ -186,9 +264,13 @@ mod tests {
 
     #[test]
     fn path_placeholders_match_comprose_format() {
+        let variables = BTreeMap::from([
+            ("slug".to_string(), "site".to_string()),
+            ("section".to_string(), "docs".to_string()),
+        ]);
         assert_eq!(
-            render_path(Path::new("src/[slug].html.mustache"), "site"),
-            PathBuf::from("src/site.html")
+            render_path(Path::new("src/[section]/[slug].html.mustache"), &variables),
+            PathBuf::from("src/docs/site.html")
         );
     }
 }

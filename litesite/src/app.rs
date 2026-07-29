@@ -7,7 +7,10 @@ use crate::media::{avif_to_jpg, avif_to_webp, build_media, MediaMode};
 use crate::scaffold::init_site;
 use crate::serve::serve_site;
 use anyhow::{bail, Context, Result};
+use serde_json::Value;
+use std::collections::BTreeMap;
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -84,8 +87,14 @@ pub async fn run() -> Result<()> {
             build_media(&site_root.join("dist"), MediaMode::All)?;
         }
         "new" | "init" => {
-            let (template, slug, dest) = parse_new_args(&args)?;
-            init_site(&slug, dest.as_ref(), template.as_deref(), &site_root)?;
+            let new_args = parse_new_args(&args)?;
+            init_site(
+                &new_args.slug,
+                new_args.dest.as_ref(),
+                new_args.template.as_deref(),
+                &new_args.variables,
+                &site_root,
+            )?;
         }
         "jpg" => {
             if args.is_empty() {
@@ -115,9 +124,17 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
-fn parse_new_args(args: &[String]) -> Result<(Option<String>, String, Option<String>)> {
+struct NewArgs {
+    template: Option<String>,
+    slug: String,
+    dest: Option<String>,
+    variables: BTreeMap<String, String>,
+}
+
+fn parse_new_args(args: &[String]) -> Result<NewArgs> {
     let mut template = None;
     let mut positional = Vec::new();
+    let mut variables = BTreeMap::new();
     let mut index = 0;
 
     while index < args.len() {
@@ -129,6 +146,23 @@ fn parse_new_args(args: &[String]) -> Result<(Option<String>, String, Option<Str
                 template = Some(value.clone());
                 index += 2;
             }
+            "--var" => {
+                let value = args
+                    .get(index + 1)
+                    .context("litesite: missing argument for --var")?;
+                let (key, value) = parse_variable(value)?;
+                variables.insert(key, value);
+                index += 2;
+            }
+            "--vars" => {
+                let path = args
+                    .get(index + 1)
+                    .context("litesite: missing argument for --vars")?;
+                for (key, value) in read_variables_file(path)? {
+                    variables.insert(key, value);
+                }
+                index += 2;
+            }
             value if value.starts_with('-') => bail!("litesite: unknown option: {value}"),
             value => {
                 positional.push(value.to_string());
@@ -138,14 +172,57 @@ fn parse_new_args(args: &[String]) -> Result<(Option<String>, String, Option<Str
     }
 
     if positional.len() > 2 {
-        bail!("USAGE: litesite new [--template <name-or-path>] <site_slug> [<dest_dir>]");
+        bail!("USAGE: litesite new [options] <site_slug> [<dest_dir>]");
     }
 
-    Ok((
+    Ok(NewArgs {
         template,
-        positional.first().cloned().unwrap_or_default(),
-        positional.get(1).cloned(),
-    ))
+        slug: positional.first().cloned().unwrap_or_default(),
+        dest: positional.get(1).cloned(),
+        variables,
+    })
+}
+
+fn parse_variable(value: &str) -> Result<(String, String)> {
+    let (key, value) = value
+        .split_once('=')
+        .context("litesite: --var must use KEY=VALUE")?;
+    validate_variable_key(key)?;
+    Ok((key.to_string(), value.to_string()))
+}
+
+fn read_variables_file(path: &str) -> Result<BTreeMap<String, String>> {
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("litesite: cannot read variables file: {path}"))?;
+    let values: BTreeMap<String, Value> = serde_json::from_str(&content)
+        .with_context(|| format!("litesite: invalid JSON variables file: {path}"))?;
+
+    values
+        .into_iter()
+        .map(|(key, value)| {
+            validate_variable_key(&key)?;
+            let Value::String(value) = value else {
+                bail!("litesite: JSON variable {key} must be a string");
+            };
+            Ok((key, value))
+        })
+        .collect()
+}
+
+fn validate_variable_key(key: &str) -> Result<()> {
+    if key == "slug" {
+        bail!("litesite: variable is reserved: {key}");
+    }
+    if key.is_empty()
+        || !key.chars().enumerate().all(|(index, character)| {
+            character == '_'
+                || character.is_ascii_alphanumeric()
+                    && (index > 0 || character.is_ascii_alphabetic())
+        })
+    {
+        bail!("litesite: invalid variable name: {key}");
+    }
+    Ok(())
 }
 
 fn print_usage() {
@@ -173,9 +250,9 @@ COMMANDS:
 \tdeploy                Build and deploy dist/; use -n for a dry-run
 \tcompress              Regenerate Brotli, gzip, and zstd files
 \tmedia                 Regenerate AVIF JPG and WebP derivatives
-\tnew [-t|--template <name-or-path>] <slug> [<dest>]
+\tnew [options] <slug> [<dest>]
 \t                      Create a new site scaffold
-\tinit [-t|--template <name-or-path>] <slug> [<dest>]
+\tinit [options] <slug> [<dest>]
 \t                      Alias for new
 \tjpg <files...>        Convert AVIF files to JPG
 \twebp <files...>       Convert AVIF files to WebP
@@ -183,6 +260,9 @@ COMMANDS:
 OPTIONS:
 
 \t-C <dir>    Run the command against a different site root.
+\t-t <name>   Select the template for new or init.
+\t--var K=V   Add a template variable; may be repeated.
+\t--vars FILE Add string variables from a JSON object.
 \t-h          Show this help screen.
 \t-v          Show version information.
 

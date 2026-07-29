@@ -15,6 +15,13 @@
 - Extract the default site scaffold into a Mustache template directory.
 - Add `litesite new --template` (and `-t`) with built-in, project-local, XDG
   config, and explicit-path template resolution.
+- Add repeatable `--var KEY=VALUE` and `--vars FILE.json` template variables for
+  both Mustache content and bracketed output paths.
+- Let templates set default variables in a root `.litesite.json`, without
+  copying that metadata file into generated sites.
+- Rename default license variables to `year` and `author`, and let templates or
+  command-line variables override them. `author` now falls back from local Git
+  configuration to `whoami`, then `Your Name`.
 
 ## v2.1.0
 
