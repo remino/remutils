@@ -6,7 +6,7 @@ class Litesite < Formula
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils/tree/main/litesite"
-  revision 1
+  revision 2
 
   depends_on "rust" => :build
   depends_on "imagemagick"
@@ -20,8 +20,8 @@ class Litesite < Formula
     system "cargo", "install", *std_cargo_args(root: libexec, path: ".")
     libexec.install "templates"
 
-    bin.write_env_script libexec / "bin/{{name}}",
-                         LITESITE_TEMPLATE_DIR: libexec / "templates"
+    (bin / "{{name}}").write_env_script libexec / "bin/{{name}}",
+                                        LITESITE_TEMPLATE_DIR: libexec / "templates"
     man1.install "man/{{name}}.1"
   end
 
