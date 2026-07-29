@@ -40,6 +40,11 @@ Run `man litesite` or `litesite --help` to see how to use it.
 
 With no arguments, `litesite` prints the usage screen.
 
+`litesite serve` now uses a Tornado-style logger prefix similar to
+`python-livereload`, including colored ANSI prefixes on terminals, and logs the
+served root directory, local URL, bind address, file access requests, and
+live-reload events while it runs.
+
 The command expects a site root with:
 
 - `src/`

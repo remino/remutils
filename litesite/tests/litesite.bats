@@ -196,7 +196,11 @@ EOF
 	run env LITESITE_SERVE_ONCE=1 "$SCRIPT" -C "$TEST_ROOT/site-link" serve
 
 	[ "$status" -eq 0 ]
-	[[ "$output" == *'Serving "./src/public"'* ]]
+	[[ "$output" == *'[I '* ]]
+	[[ "$output" == *'Serving on http://127.0.0.1:8080'* ]]
+	[[ "$output" == *'Root: ./src/public'* ]]
+	[[ "$output" == *'Listening on http://0.0.0.0:8080'* ]]
+	[[ "$output" == *'Press Ctrl-C to stop.'* ]]
 	[[ "$output" != *"$TEST_ROOT/site-link"* ]]
 }
 

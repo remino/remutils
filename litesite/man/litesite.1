@@ -30,7 +30,9 @@ compressed Brotli, gzip, and zstd variants.
 Remove \fBdist/\fR.
 .TP
 .B serve
-Run a local preview server against \fBsrc/public/\fR.
+Run a local preview server against \fBsrc/public/\fR with Tornado-style log
+prefixes, including the served root directory, local URL, bind address, file
+access requests, and live-reload events.
 .TP
 .B deploy
 Build the site and deploy \fBdist/\fR. Pass \fB-n\fR to preview a dry-run

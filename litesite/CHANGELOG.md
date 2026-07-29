@@ -2,11 +2,21 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.0.0](#v200)
 - [v1.3.1](#v131)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Make `litesite serve` print the program name, served root directory, local
+  URL, bind address, and a `Ctrl-C` stop hint when the preview server starts.
+- Make `litesite serve` log file access requests and live-reload events with a
+  shared output style.
+- Make `litesite serve` use Tornado-style log prefixes with ANSI colors similar
+  to `python-livereload`.
 
 ## v2.0.0
 
