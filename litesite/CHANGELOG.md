@@ -2,14 +2,14 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.1.0](#v210)
 - [v2.0.0](#v200)
 - [v1.3.1](#v131)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.1.0
 
 - Make `litesite serve` print the program name, served root directory, local
   URL, bind address, and a `Ctrl-C` stop hint when the preview server starts.
