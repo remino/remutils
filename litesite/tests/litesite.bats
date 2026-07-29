@@ -211,6 +211,17 @@ EOF
 	[ "$(cat "$SITE_ROOT/src/public/index.html")" = "<h1>parent-site</h1>" ]
 }
 
+@test "new uses templates supplied by LITESITE_TEMPLATE_DIR" {
+	local template_dir="$TEST_ROOT/installed/templates/default/src/public"
+	mkdir -p "$template_dir"
+	printf '<h1>installed {{slug}}</h1>\n' > "$template_dir/index.html.mustache"
+
+	run env LITESITE_TEMPLATE_DIR="$TEST_ROOT/installed/templates" "$SCRIPT" new demo "$SITE_ROOT"
+
+	[ "$status" -eq 0 ]
+	[ "$(cat "$SITE_ROOT/src/public/index.html")" = "<h1>installed demo</h1>" ]
+}
+
 @test "jpg and webp stay as avif siblings" {
 	create_site
 	make_external_stubs

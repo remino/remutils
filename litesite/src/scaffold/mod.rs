@@ -79,11 +79,15 @@ fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Pa
     let is_name = Path::new(template_name).components().count() == 1;
 
     if is_name {
-        let built_in = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("templates")
-            .join(template_name);
-        if built_in.is_dir() {
-            return Ok(built_in);
+        let template_roots = [
+            env::var_os("LITESITE_TEMPLATE_DIR").map(PathBuf::from),
+            Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("templates")),
+        ];
+        for template_root in template_roots.into_iter().flatten() {
+            let built_in = template_root.join(template_name);
+            if built_in.is_dir() {
+                return Ok(built_in);
+            }
         }
 
         let mut dir = lookup_root;
