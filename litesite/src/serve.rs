@@ -1,20 +1,22 @@
 use anyhow::{Context, Result, anyhow};
 use axum::body::Body;
-use axum::extract::ws::{Message, Utf8Bytes, WebSocket};
-use axum::extract::{Request, State, WebSocketUpgrade};
+use axum::extract::{Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::response::IntoResponse;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::routing::get;
 use axum::{Router, serve};
 use env_logger::fmt::Formatter;
-use futures::{SinkExt, StreamExt};
+use futures::StreamExt;
+use futures::stream;
 use log::{Level, LevelFilter, Record};
 use mime_guess::mime;
-use notify::{Error, EventKind, RecommendedWatcher, RecursiveMode};
+use notify::{Error, RecommendedWatcher, RecursiveMode};
 use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
 };
 use std::borrow::Cow;
+use std::convert::Infallible;
 use std::env;
 use std::fs;
 use std::io::ErrorKind as IoErrorKind;
@@ -22,19 +24,23 @@ use std::io::IsTerminal;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Once};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc::{Receiver, channel};
+use tokio_stream::wrappers::BroadcastStream;
 
-const WEBSOCKET_FUNCTION: &str = include_str!("serve_websocket.js");
-const RELOAD_PAYLOAD: &str = include_str!("serve_reload.js");
+const SSE_PATH: &str = "/__litesite/livereload";
+const WORKER_PATH: &str = "/__litesite/livereload-worker.js";
+const CLIENT_SNIPPET: &str = include_str!("serve_livereload_client.html");
+const WORKER_JS: &str = include_str!("serve_livereload_worker.js");
 static LOGGER_INIT: Once = Once::new();
 
 struct AppState {
     root: PathBuf,
-    tx: Arc<broadcast::Sender<()>>,
+    bus: Arc<broadcast::Sender<String>>,
+    boot_id: String,
 }
 
 #[derive(Clone, Copy)]
@@ -69,23 +75,29 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     let local_addr = listener
         .local_addr()
         .context("litesite: failed to read bound address")?;
+
+    let (bus, _) = broadcast::channel(16);
+    let bus = Arc::new(bus);
+    let boot_id = current_boot_id();
+
     log::info!("Serving on http://127.0.0.1:{}", local_addr.port());
     log::info!("Root: {public_display}");
     log::info!("Listening on http://{}:{}", local_addr.ip(), local_addr.port());
+    log::info!("SSE endpoint {SSE_PATH}");
     log::info!("Press Ctrl-C to stop.");
 
-    let (tx, _) = broadcast::channel(16);
-    let tx = Arc::new(tx);
     let state = Arc::new(AppState {
         root: serve_root.clone(),
-        tx: tx.clone(),
+        bus: bus.clone(),
+        boot_id,
     });
 
     let (debouncer, rx) = create_recommended_watcher().await?;
-    let watcher = tokio::spawn(watch_for_changes(serve_root, debouncer, rx, tx));
+    let watcher = tokio::spawn(watch_for_changes(serve_root, debouncer, rx, bus));
 
     let router = Router::new()
-        .route("/live-server-ws", get(ws_handler))
+        .route(SSE_PATH, get(sse_handler))
+        .route(WORKER_PATH, get(worker_handler))
         .route("/", get(static_assets))
         .route("/{*path}", get(static_assets))
         .with_state(state);
@@ -96,34 +108,33 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     result.map_err(|error| anyhow!("litesite: preview server failed: {error}"))
 }
 
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
-    let tx = state.tx.clone();
-    ws.on_upgrade(move |socket| on_websocket_upgrade(socket, tx))
-}
-
-async fn on_websocket_upgrade(socket: WebSocket, tx: Arc<broadcast::Sender<()>>) {
-    log::info!("Browser Connected");
-    let (mut sender, mut receiver) = socket.split();
-    let mut rx = tx.subscribe();
-
-    let mut send_task = tokio::spawn(async move {
-        while rx.recv().await.is_ok() {
-            if sender.send(Message::Text(Utf8Bytes::default())).await.is_err() {
-                break;
-            }
-        }
+async fn sse_handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let hello_state = state.clone();
+    let hello = stream::once(async move {
+        Ok::<_, Infallible>(Event::default().event("hello").data(hello_state.boot_id.clone()))
     });
 
-    let mut recv_task =
-        tokio::spawn(async move { while let Some(Ok(_)) = receiver.next().await {} });
+    let updates = BroadcastStream::new(state.bus.subscribe()).filter_map(|message| async move {
+        message
+            .ok()
+            .map(|data| Ok::<_, Infallible>(Event::default().event("change").data(data)))
+    });
 
-    tokio::select! {
-        _ = (&mut send_task) => recv_task.abort(),
-        _ = (&mut recv_task) => send_task.abort(),
-    };
+    Sse::new(hello.chain(updates)).keep_alive(
+        KeepAlive::new()
+            .interval(Duration::from_secs(15))
+            .text("keep-alive"),
+    )
+}
+
+async fn worker_handler() -> impl IntoResponse {
+    (
+        [(
+            header::CONTENT_TYPE,
+            "application/javascript; charset=utf-8",
+        )],
+        WORKER_JS,
+    )
 }
 
 async fn static_assets(
@@ -131,25 +142,16 @@ async fn static_assets(
     req: Request<Body>,
 ) -> (StatusCode, HeaderMap, Body) {
     let method = req.method().clone();
-    let is_reload = req.uri().query().is_some_and(|query| query == "reload");
     let uri_path = req.uri().path().to_string();
-
-    let response = serve_request(&state.root, &uri_path, is_reload);
-    if !is_reload {
-        log_access(&method, &uri_path, response.0, response.3.as_deref());
-    }
-
+    let response = serve_request(&state.root, &uri_path);
+    log_access(&method, &uri_path, response.0, response.3.as_deref());
     (response.0, response.1, response.2)
 }
 
-fn serve_request(
-    root: &Path,
-    uri_path: &str,
-    is_reload: bool,
-) -> (StatusCode, HeaderMap, Body, Option<String>) {
+fn serve_request(root: &Path, uri_path: &str) -> (StatusCode, HeaderMap, Body, Option<String>) {
     if uri_path.starts_with("//") {
         let redirect = format!("/{}", uri_path.trim_start_matches('/'));
-        let mut headers = HeaderMap::new();
+        let mut headers = no_store_headers();
         headers.append(header::LOCATION, HeaderValue::from_str(&redirect).unwrap());
         return (
             StatusCode::TEMPORARY_REDIRECT,
@@ -174,7 +176,7 @@ fn serve_request(
     if is_accessing_dir {
         if !uri_path.ends_with('/') {
             let redirect = format!("{uri_path}/");
-            let mut headers = HeaderMap::new();
+            let mut headers = no_store_headers();
             headers.append(header::LOCATION, HeaderValue::from_str(&redirect).unwrap());
             return (
                 StatusCode::TEMPORARY_REDIRECT,
@@ -190,11 +192,11 @@ fn serve_request(
     let mime = mime_guess::from_path(&path).first_or_text_plain();
     let headers = text_headers(content_type_for(&mime));
 
-    let mut file = match fs::read(&path) {
+    let file = match fs::read(&path) {
         Ok(file) => file,
         Err(err) => {
             if err.kind() == IoErrorKind::NotFound && is_accessing_dir {
-                let html = index_listing_html(uri_path, root, &path);
+                let html = inject_client(&index_listing_html(uri_path, root, &path));
                 return (
                     StatusCode::OK,
                     text_headers("text/html; charset=utf-8"),
@@ -212,7 +214,7 @@ fn serve_request(
                 status,
                 headers,
                 if mime == "text/html" {
-                    Body::from(error_html(&err.to_string(), is_reload))
+                    Body::from(inject_client(&error_html(&err.to_string())))
                 } else {
                     Body::from(err.to_string())
                 },
@@ -228,12 +230,18 @@ fn serve_request(
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     headers,
-                    Body::from(error_html(&err.to_string(), is_reload)),
+                    Body::from(inject_client(&error_html(&err.to_string()))),
                     access_target,
                 );
             }
         };
-        file = format!("{text}{}", format_script(is_reload)).into_bytes();
+
+        return (
+            StatusCode::OK,
+            headers,
+            Body::from(inject_client(&text)),
+            access_target,
+        );
     }
 
     (StatusCode::OK, headers, Body::from(file), access_target)
@@ -266,8 +274,17 @@ fn content_type_for(mime: &mime::Mime) -> String {
     }
 }
 
-fn text_headers(content_type: impl AsRef<str>) -> HeaderMap {
+fn no_store_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store, must-revalidate"),
+    );
+    headers
+}
+
+fn text_headers(content_type: impl AsRef<str>) -> HeaderMap {
+    let mut headers = no_store_headers();
     headers.append(
         header::CONTENT_TYPE,
         HeaderValue::from_str(content_type.as_ref()).unwrap(),
@@ -275,19 +292,10 @@ fn text_headers(content_type: impl AsRef<str>) -> HeaderMap {
     headers
 }
 
-fn format_script(is_reload: bool) -> String {
-    if is_reload {
-        format!("<script>{RELOAD_PAYLOAD}</script>")
-    } else {
-        format!(r#"<script>{WEBSOCKET_FUNCTION}(false)</script>"#)
-    }
-}
-
-fn error_html(message: &str, is_reload: bool) -> String {
+fn error_html(message: &str) -> String {
     format!(
-        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Error</title></head><body><pre>{}</pre>{}</body></html>",
-        html_escape(message),
-        format_script(is_reload)
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Error</title></head><body><pre>{}</pre></body></html>",
+        html_escape(message)
     )
 }
 
@@ -319,12 +327,26 @@ fn index_listing_html(uri_path: &str, root: &Path, index_path: &Path) -> String 
         .join("\n");
 
     format!(
-        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Index of {}</title></head><body><h1>Index of {}</h1><ul>{}</ul>{}</body></html>",
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Index of {}</title></head><body><h1>Index of {}</h1><ul>{}</ul></body></html>",
         html_escape(uri_path),
         html_escape(uri_path),
         items,
-        format_script(false)
     )
+}
+
+fn inject_client(html: &str) -> String {
+    if let Some(index) = html.rfind("</body>") {
+        let mut output = String::with_capacity(html.len() + CLIENT_SNIPPET.len());
+        output.push_str(&html[..index]);
+        output.push_str(CLIENT_SNIPPET);
+        output.push_str(&html[index..]);
+        output
+    } else {
+        let mut output = String::with_capacity(html.len() + CLIENT_SNIPPET.len());
+        output.push_str(html);
+        output.push_str(CLIENT_SNIPPET);
+        output
+    }
 }
 
 fn html_escape(input: &str) -> String {
@@ -390,7 +412,7 @@ async fn watch_for_changes(
     root: PathBuf,
     mut debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
     mut rx: Receiver<Result<Vec<DebouncedEvent>, Vec<Error>>>,
-    tx: Arc<broadcast::Sender<()>>,
+    bus: Arc<broadcast::Sender<String>>,
 ) {
     if let Err(error) = debouncer.watch(&root, RecursiveMode::Recursive) {
         log::error!("Watch failed: {error}");
@@ -399,15 +421,41 @@ async fn watch_for_changes(
     log::info!("Start watching changes");
 
     while let Some(result) = rx.recv().await {
-        let mut changed = false;
-
         match result {
             Ok(events) => {
+                let mut css_only = false;
+                let mut saw_change = false;
+                let mut saw_reload_type = false;
+
                 for event in events {
-                    if let Some(message) = describe_change(&root, &event) {
-                        log::info!("{message}");
-                        changed = true;
+                    for path in &event.event.paths {
+                        match classify(path) {
+                            Some(ChangeKind::Css) => {
+                                log::info!("Change detected: {}", display_change_path(&root, path));
+                                if !saw_change {
+                                    css_only = true;
+                                }
+                                saw_change = true;
+                            }
+                            Some(ChangeKind::Reload) => {
+                                log::info!("Change detected: {}", display_change_path(&root, path));
+                                saw_change = true;
+                                saw_reload_type = true;
+                                css_only = false;
+                            }
+                            None => {}
+                        }
                     }
+                }
+
+                if saw_change {
+                    let payload = if css_only && !saw_reload_type {
+                        r#"{"type":"css"}"#
+                    } else {
+                        r#"{"type":"reload"}"#
+                    };
+                    log::info!("Reload {} waiters", bus.receiver_count());
+                    let _ = bus.send(payload.to_string());
                 }
             }
             Err(errors) => {
@@ -416,43 +464,40 @@ async fn watch_for_changes(
                 }
             }
         }
-
-        if changed {
-            log::info!("Reload 1 waiters");
-            let _ = tx.send(());
-        }
     }
 }
 
-fn describe_change(root: &Path, event: &DebouncedEvent) -> Option<String> {
-    match &event.event.kind {
-        EventKind::Create(_) => event
-            .event
-            .paths
-            .first()
-            .map(|path| format!("Change detected: {}", display_change_path(root, path))),
-        EventKind::Modify(modify) => {
-            if let notify::event::ModifyKind::Name(notify::event::RenameMode::Both) = modify {
-                match (event.event.paths.first(), event.event.paths.get(1)) {
-                    (Some(from), Some(to)) => Some(format!(
-                        "Change detected: {} -> {}",
-                        display_change_path(root, from),
-                        display_change_path(root, to)
-                    )),
-                    _ => None,
-                }
-            } else {
-                event.event.paths.first().map(|path| {
-                    format!("Change detected: {}", display_change_path(root, path))
-                })
-            }
-        }
-        EventKind::Remove(_) => event
-            .event
-            .paths
-            .first()
-            .map(|path| format!("Change detected: {}", display_change_path(root, path))),
-        _ => None,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ChangeKind {
+    Css,
+    Reload,
+}
+
+fn classify(path: &Path) -> Option<ChangeKind> {
+    let path_str = path.to_string_lossy();
+    if path_str.ends_with('~')
+        || path_str.contains(".swp")
+        || path_str.contains(".swx")
+        || path_str.contains(".tmp")
+        || path_str.contains("/.git/")
+        || path_str.contains("/.hg/")
+        || path_str.contains("/node_modules/")
+        || path_str.contains("/target/")
+        || path_str.contains("/.idea/")
+        || path_str.contains("/.vscode/")
+    {
+        return None;
+    }
+
+    match path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("css") => Some(ChangeKind::Css),
+        Some("rs") | Some("lock") | Some("rlib") | Some("rmeta") | Some("d") | None => None,
+        _ => Some(ChangeKind::Reload),
     }
 }
 
@@ -477,6 +522,13 @@ fn format_root_display(root: &Path, public: &Path) -> String {
         .unwrap_or_else(|_| public.display().to_string())
 }
 
+fn current_boot_id() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos().to_string())
+        .unwrap_or_else(|_| "dev".to_string())
+}
+
 fn init_logger() {
     LOGGER_INIT.call_once(|| {
         let mut builder = colog::basic_builder();
@@ -484,7 +536,7 @@ fn init_logger() {
         if let Ok(rust_log) = env::var("RUST_LOG") {
             builder.parse_filters(&rust_log);
         }
-        builder.format(|buf, record| write_log_record(buf, record));
+        builder.format(write_log_record);
         let _ = builder.try_init();
     });
 }
@@ -549,8 +601,9 @@ impl LogLevel {
 #[cfg(test)]
 mod tests {
     use super::{
-        display_relative_path, format_access_message, format_log_record, format_root_display,
-        sanitize_uri_path, LogLevel,
+        ChangeKind, CLIENT_SNIPPET, WORKER_JS, display_relative_path, format_access_message,
+        format_log_record, format_root_display, inject_client, sanitize_uri_path, classify,
+        LogLevel, SSE_PATH, WORKER_PATH,
     };
     use axum::http::{Method, StatusCode};
     use std::path::Path;
@@ -588,9 +641,48 @@ mod tests {
 
     #[test]
     fn log_record_uses_tornado_style_prefix() {
-        let line = 42;
-        let formatted = format_log_record(LogLevel::Info, "src/serve.rs", line, "Serving on");
+        let formatted = format_log_record(LogLevel::Info, "src/serve.rs", 42, "Serving on");
         assert!(formatted.contains("[I "));
         assert!(formatted.contains(" serve:42] Serving on"));
+    }
+
+    #[test]
+    fn injects_before_closing_body() {
+        let html = "<html><body><h1>hi</h1></body></html>";
+        let output = inject_client(html);
+        assert!(output.contains("data-litesite-livereload"));
+        assert!(output.find("data-litesite-livereload").unwrap() < output.find("</body>").unwrap());
+    }
+
+    #[test]
+    fn client_prefers_shared_worker_with_eventsource_fallback() {
+        assert!(CLIENT_SNIPPET.contains("SharedWorker"));
+        assert!(CLIENT_SNIPPET.contains(WORKER_PATH));
+        let worker_at = CLIENT_SNIPPET.find("SharedWorker").unwrap();
+        let fallback_at = CLIENT_SNIPPET.find("new EventSource").unwrap();
+        assert!(worker_at < fallback_at);
+    }
+
+    #[test]
+    fn worker_holds_single_eventsource_and_fans_out() {
+        assert_eq!(WORKER_JS.matches("new EventSource").count(), 1);
+        assert!(WORKER_JS.contains("onconnect"));
+        assert!(WORKER_JS.contains("broadcast"));
+        assert!(WORKER_JS.contains(SSE_PATH));
+    }
+
+    #[test]
+    fn classify_routes_css_vs_reload_vs_ignore() {
+        assert_eq!(classify(Path::new("static/css/app.css")), Some(ChangeKind::Css));
+        assert_eq!(classify(Path::new("templates/home.html")), Some(ChangeKind::Reload));
+        assert_eq!(classify(Path::new("static/app.js")), Some(ChangeKind::Reload));
+        assert_eq!(classify(Path::new("content/post.md")), Some(ChangeKind::Reload));
+        assert_eq!(classify(Path::new("site.config.toml")), Some(ChangeKind::Reload));
+        assert_eq!(classify(Path::new("src/main.rs")), None);
+        assert_eq!(classify(Path::new("Cargo.lock")), None);
+        assert_eq!(classify(Path::new("templates/.home.html.swp")), None);
+        assert_eq!(classify(Path::new("templates/home.html~")), None);
+        assert_eq!(classify(Path::new("target/debug/foo")), None);
+        assert_eq!(classify(Path::new("templates")), None);
     }
 }

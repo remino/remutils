@@ -17,6 +17,8 @@
   shared output style.
 - Make `litesite serve` use Tornado-style log prefixes with ANSI colors similar
   to `python-livereload`.
+- Make `litesite serve` switch to SSE live reload with CSS-only hot swaps and
+  boot-id reconnect handling inspired by `umbral-livereload`.
 
 ## v2.0.0
 

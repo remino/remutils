@@ -6,7 +6,7 @@ license = "ISC"
 
 [dependencies]
 anyhow = "1"
-axum = { version = "0.8", features = ["ws"] }
+axum = "0.8"
 brotli = "8"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 colog = "1.4"
@@ -21,5 +21,6 @@ notify = "8"
 notify-debouncer-full = "0.7"
 regex = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 walkdir = "2"
 zstd = "0.13"
