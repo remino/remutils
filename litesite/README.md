@@ -78,6 +78,24 @@ required only for `litesite deploy`.
 `litesite new <slug>` creates `./<slug>` by default. `init` remains available as
 an alias.
 
+### Scaffold templates
+
+`litesite new` renders the bundled `default` Mustache template unless you choose
+another one with `-t` or `--template`:
+
+```sh
+litesite new -t portfolio my-site
+litesite new --template ./templates/portfolio my-site
+```
+
+Template names resolve in this order: bundled templates, `.litesite/templates/`
+or `.config/litesite/templates/` in the current directory or a parent, then
+`$XDG_CONFIG_HOME/litesite/templates/` (or `$HOME/.config/litesite/templates/`),
+then a relative or absolute directory path. Files ending in `.mustache` are
+rendered without that suffix. Paths can use `[slug]`, matching comprose's path
+placeholder format. Templates receive `slug`, `license_year`, and
+`license_holder` for Mustache rendering.
+
 AVIF derivatives are written as sibling files:
 
 - `*.avif.jpg`

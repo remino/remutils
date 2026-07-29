@@ -347,7 +347,7 @@ checksum = "df62599ba6adc9c6c04a54278c8209125343dc4775f57b9d76c9a4287e58f2bd"
 dependencies = [
  "colored",
  "env_logger",
- "log",
+ "log 0.4.33",
 ]
 
 [[package]]
@@ -582,7 +582,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "900d271a03799a1ee8d1ca9b19893b48ca674a9284fefcfb85f05e74ed314217"
 dependencies = [
- "log",
+ "log 0.4.33",
  "regex",
 ]
 
@@ -596,7 +596,7 @@ dependencies = [
  "anstyle",
  "env_filter",
  "jiff",
- "log",
+ "log 0.4.33",
 ]
 
 [[package]]
@@ -902,7 +902,7 @@ dependencies = [
  "core-foundation-sys",
  "iana-time-zone-haiku",
  "js-sys",
- "log",
+ "log 0.4.33",
  "wasm-bindgen",
  "windows-core",
 ]
@@ -987,7 +987,7 @@ dependencies = [
  "defmt",
  "jiff-core",
  "jiff-static",
- "log",
+ "log 0.4.33",
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
@@ -1126,9 +1126,10 @@ dependencies = [
  "env_logger",
  "flate2",
  "futures",
- "log",
+ "log 0.4.33",
  "mime_guess",
  "minify-html",
+ "mustache",
  "notify",
  "notify-debouncer-full",
  "regex",
@@ -1145,6 +1146,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
 dependencies = [
  "scopeguard",
+]
+
+[[package]]
+name = "log"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
+dependencies = [
+ "log 0.4.33",
 ]
 
 [[package]]
@@ -1238,9 +1248,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30d65c71f1ce40ab09135ce117d742b9f8a19ff91a41a8b57ed50bc2de59c427"
 dependencies = [
  "libc",
- "log",
+ "log 0.4.33",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "mustache"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51956ef1c5d20a1384524d91e616fb44dfc7d8f249bf696d49c97dd3289ecab5"
+dependencies = [
+ "log 0.3.9",
+ "serde",
 ]
 
 [[package]]
@@ -1260,7 +1280,7 @@ dependencies = [
  "inotify",
  "kqueue",
  "libc",
- "log",
+ "log 0.4.33",
  "mio",
  "notify-types",
  "walkdir",
@@ -1274,7 +1294,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c02b49179cfebc9932238d04d6079912d26de0379328872846118a0fa0dbb302"
 dependencies = [
  "file-id",
- "log",
+ "log 0.4.33",
  "notify",
  "notify-types",
  "walkdir",
@@ -1697,7 +1717,7 @@ checksum = "d05f71e01edca03d245ab0a9f7ce13a974ceb79baaae8faf2ba0b11de6b90913"
 dependencies = [
  "bitflags 2.13.1",
  "cssparser",
- "log",
+ "log 0.4.33",
  "phf 0.11.3",
  "phf_codegen",
  "precomputed-hash",
@@ -2411,7 +2431,7 @@ version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100"
 dependencies = [
- "log",
+ "log 0.4.33",
  "pin-project-lite",
  "tracing-core",
 ]

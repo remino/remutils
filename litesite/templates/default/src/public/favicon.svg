@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="LiteSite">
+  <rect width="128" height="128" rx="28" fill="#17120d" />
+  <path d="M34 32h22v64H34z" fill="#f4efe6" />
+  <path d="M58 32h12l24 64H82L58 32Z" fill="#2f5dff" />
+  <circle cx="94" cy="96" r="12" fill="#f4efe6" />
+</svg>

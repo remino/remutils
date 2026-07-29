@@ -1,0 +1,25 @@
+/* @import url('https://unpkg.com/@remino/dress.css'); */
+
+* {
+	box-sizing: border-box;
+}
+
+:root {
+	color-scheme: dark;
+}
+
+body {
+	align-content: center;
+	background: #000;
+	color: #fff;
+	margin: 0 auto;
+	width: max-content;
+	min-height: 100%;
+	max-width: min(30rem, 100%);
+}
+
+html {
+	font-family: system-ui, sans-serif;
+	font-size: clamp(16px, 2vmin, 24px);
+	height: 100%;
+}

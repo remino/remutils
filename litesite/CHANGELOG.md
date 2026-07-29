@@ -2,12 +2,19 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.1.0](#v210)
 - [v2.0.0](#v200)
 - [v1.3.1](#v131)
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Extract the default site scaffold into a Mustache template directory.
+- Add `litesite new --template` (and `-t`) with built-in, project-local, XDG
+  config, and explicit-path template resolution.
 
 ## v2.1.0
 

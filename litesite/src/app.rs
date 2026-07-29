@@ -83,7 +83,10 @@ pub async fn run() -> Result<()> {
             ensure_site_root(&site_root)?;
             build_media(&site_root.join("dist"), MediaMode::All)?;
         }
-        "new" | "init" => init_site(args.first().map(String::as_str).unwrap_or(""), args.get(1))?,
+        "new" | "init" => {
+            let (template, slug, dest) = parse_new_args(&args)?;
+            init_site(&slug, dest.as_ref(), template.as_deref(), &site_root)?;
+        }
         "jpg" => {
             if args.is_empty() {
                 bail!("USAGE: litesite jpg <file.avif> [<file.avif...>]");
@@ -112,6 +115,39 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
+fn parse_new_args(args: &[String]) -> Result<(Option<String>, String, Option<String>)> {
+    let mut template = None;
+    let mut positional = Vec::new();
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "-t" | "--template" => {
+                let value = args
+                    .get(index + 1)
+                    .context(format!("litesite: missing argument for {}", args[index]))?;
+                template = Some(value.clone());
+                index += 2;
+            }
+            value if value.starts_with('-') => bail!("litesite: unknown option: {value}"),
+            value => {
+                positional.push(value.to_string());
+                index += 1;
+            }
+        }
+    }
+
+    if positional.len() > 2 {
+        bail!("USAGE: litesite new [--template <name-or-path>] <site_slug> [<dest_dir>]");
+    }
+
+    Ok((
+        template,
+        positional.first().cloned().unwrap_or_default(),
+        positional.get(1).cloned(),
+    ))
+}
+
 fn print_usage() {
     print!("{}", usage());
 }
@@ -137,8 +173,10 @@ COMMANDS:
 \tdeploy                Build and deploy dist/; use -n for a dry-run
 \tcompress              Regenerate Brotli, gzip, and zstd files
 \tmedia                 Regenerate AVIF JPG and WebP derivatives
-\tnew <slug> [<dest>]   Create a new site scaffold
-\tinit <slug> [<dest>]  Alias for new
+\tnew [-t|--template <name-or-path>] <slug> [<dest>]
+\t                      Create a new site scaffold
+\tinit [-t|--template <name-or-path>] <slug> [<dest>]
+\t                      Alias for new
 \tjpg <files...>        Convert AVIF files to JPG
 \twebp <files...>       Convert AVIF files to WebP
 

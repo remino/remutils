@@ -175,6 +175,42 @@ EOF
 	[ -f "$TEST_ROOT/demo/src/nginx/demo.conf" ]
 }
 
+@test "new renders an explicit Mustache template with -t" {
+	local template_dir="$TEST_ROOT/custom-template"
+	mkdir -p "$template_dir/src/public"
+
+	cat > "$template_dir/README.md.mustache" << 'EOF'
+# {{slug}}
+EOF
+	cat > "$template_dir/src/public/[slug].html.mustache" << 'EOF'
+<title>{{slug}}</title>
+EOF
+	cat > "$template_dir/LICENSE.txt.mustache" << 'EOF'
+Copyright {{license_year}} {{license_holder}}
+EOF
+
+	run env LITESITE_LICENSE_HOLDER="Template Owner" "$SCRIPT" new -t "$template_dir" custom "$SITE_ROOT"
+
+	[ "$status" -eq 0 ]
+	[ "$(cat "$SITE_ROOT/README.md")" = "# custom" ]
+	[ "$(cat "$SITE_ROOT/src/public/custom.html")" = "<title>custom</title>" ]
+	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Template Owner"* ]]
+}
+
+@test "new finds templates in a parent .litesite directory" {
+	local template_dir="$TEST_ROOT/.litesite/templates/project"
+	local nested_dir="$TEST_ROOT/work/nested"
+	mkdir -p "$template_dir/src/public" "$nested_dir"
+	printf '<h1>{{slug}}</h1>\n' > "$template_dir/src/public/index.html.mustache"
+
+	pushd "$nested_dir" > /dev/null
+	run "$SCRIPT" new --template project parent-site "$SITE_ROOT"
+	popd > /dev/null
+
+	[ "$status" -eq 0 ]
+	[ "$(cat "$SITE_ROOT/src/public/index.html")" = "<h1>parent-site</h1>" ]
+}
+
 @test "jpg and webp stay as avif siblings" {
 	create_site
 	make_external_stubs
@@ -208,7 +244,7 @@ EOF
 	run "$SCRIPT" init
 
 	[ "$status" -eq 1 ]
-	[[ "$output" == *"USAGE: litesite new <site_slug> [<dest_dir>]"* ]]
+	[[ "$output" == *"USAGE: litesite new [--template <name-or-path>] <site_slug> [<dest_dir>]"* ]]
 }
 
 @test "build writes dist outputs with native build steps" {
