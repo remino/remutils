@@ -37,6 +37,36 @@ const CLIENT_SNIPPET: &str = include_str!("serve_livereload_client.html");
 const WORKER_JS: &str = include_str!("serve_livereload_worker.js");
 static LOGGER_INIT: Once = Once::new();
 
+macro_rules! log_startup {
+    ($($arg:tt)*) => {
+        log::info!(target: "serve.startup", $($arg)*)
+    };
+}
+
+macro_rules! log_activity {
+    ($($arg:tt)*) => {
+        log::info!(target: "serve.activity", $($arg)*)
+    };
+}
+
+macro_rules! log_access_ok {
+    ($($arg:tt)*) => {
+        log::info!(target: "serve.access.ok", $($arg)*)
+    };
+}
+
+macro_rules! log_access_warn {
+    ($($arg:tt)*) => {
+        log::warn!(target: "serve.access.warn", $($arg)*)
+    };
+}
+
+macro_rules! log_error_warm {
+    ($($arg:tt)*) => {
+        log::error!(target: "serve.error", $($arg)*)
+    };
+}
+
 struct AppState {
     root: PathBuf,
     bus: Arc<broadcast::Sender<String>>,
@@ -62,10 +92,10 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     let addr = format!("0.0.0.0:{port}");
 
     if env::var("LITESITE_SERVE_ONCE").is_ok() {
-        log::info!("Serving on http://127.0.0.1:{port}");
-        log::info!("Root: {public_display}");
-        log::info!("Listening on http://{addr}");
-        log::info!("Press Ctrl-C to stop.");
+        log_startup!("Serving on http://127.0.0.1:{port}");
+        log_startup!("Root: {public_display}");
+        log_startup!("Listening on http://{addr}");
+        log_startup!("Press Ctrl-C to stop.");
         return Ok(());
     }
 
@@ -80,11 +110,11 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     let bus = Arc::new(bus);
     let boot_id = current_boot_id();
 
-    log::info!("Serving on http://127.0.0.1:{}", local_addr.port());
-    log::info!("Root: {public_display}");
-    log::info!("Listening on http://{}:{}", local_addr.ip(), local_addr.port());
-    log::info!("SSE endpoint {SSE_PATH}");
-    log::info!("Press Ctrl-C to stop.");
+    log_startup!("Serving on http://127.0.0.1:{}", local_addr.port());
+    log_startup!("Root: {public_display}");
+    log_startup!("Listening on http://{}:{}", local_addr.ip(), local_addr.port());
+    log_startup!("SSE endpoint {SSE_PATH}");
+    log_startup!("Press Ctrl-C to stop.");
 
     let state = Arc::new(AppState {
         root: serve_root.clone(),
@@ -358,11 +388,11 @@ fn html_escape(input: &str) -> String {
 
 fn log_access(method: &Method, uri_path: &str, status: StatusCode, target: Option<&str>) {
     if status.is_server_error() {
-        log::error!("{}", format_access_message(method, uri_path, status, target));
+        log_error_warm!("{}", format_access_message(method, uri_path, status, target));
     } else if status.is_client_error() {
-        log::warn!("{}", format_access_message(method, uri_path, status, target));
+        log_access_warn!("{}", format_access_message(method, uri_path, status, target));
     } else {
-        log::info!("{}", format_access_message(method, uri_path, status, target));
+        log_access_ok!("{}", format_access_message(method, uri_path, status, target));
     }
 }
 
@@ -415,10 +445,10 @@ async fn watch_for_changes(
     bus: Arc<broadcast::Sender<String>>,
 ) {
     if let Err(error) = debouncer.watch(&root, RecursiveMode::Recursive) {
-        log::error!("Watch failed: {error}");
+        log_error_warm!("Watch failed: {error}");
         return;
     }
-    log::info!("Start watching changes");
+    log_activity!("Start watching changes");
 
     while let Some(result) = rx.recv().await {
         match result {
@@ -431,14 +461,14 @@ async fn watch_for_changes(
                     for path in &event.event.paths {
                         match classify(path) {
                             Some(ChangeKind::Css) => {
-                                log::info!("Change detected: {}", display_change_path(&root, path));
+                                log_activity!("Change detected: {}", display_change_path(&root, path));
                                 if !saw_change {
                                     css_only = true;
                                 }
                                 saw_change = true;
                             }
                             Some(ChangeKind::Reload) => {
-                                log::info!("Change detected: {}", display_change_path(&root, path));
+                                log_activity!("Change detected: {}", display_change_path(&root, path));
                                 saw_change = true;
                                 saw_reload_type = true;
                                 css_only = false;
@@ -454,13 +484,13 @@ async fn watch_for_changes(
                     } else {
                         r#"{"type":"reload"}"#
                     };
-                    log::info!("Reload {} waiters", bus.receiver_count());
+                    log_activity!("Reload {} waiters", bus.receiver_count());
                     let _ = bus.send(payload.to_string());
                 }
             }
             Err(errors) => {
                 for error in errors {
-                    log::error!("Watch error: {error}");
+                    log_error_warm!("Watch error: {error}");
                 }
             }
         }
@@ -554,7 +584,7 @@ fn format_record(record: &Record<'_>) -> String {
     let file = record.file().unwrap_or("serve.rs");
     let line = record.line().unwrap_or(0);
     let message = record.args().to_string();
-    let tone = classify_log_tone(level, &message);
+    let tone = classify_log_tone(level, record.target());
     format_log_record(level, tone, file, line, &message)
 }
 
@@ -618,27 +648,13 @@ impl LogTone {
     }
 }
 
-fn classify_log_tone(level: LogLevel, message: &str) -> LogTone {
+fn classify_log_tone(level: LogLevel, target: &str) -> LogTone {
     match level {
         LogLevel::Error => LogTone::WarmRed,
         LogLevel::Warn => LogTone::WarmYellow,
-        LogLevel::Info => {
-            if message.starts_with("Serving on")
-                || message.starts_with("Listening on")
-                || message.starts_with("SSE endpoint")
-                || message.starts_with("Root:")
-                || message.starts_with("Press ")
-            {
-                LogTone::CoolBlue
-            } else if message.starts_with("Change detected")
-                || message.starts_with("Reload ")
-                || message.starts_with("Start watching")
-            {
-                LogTone::CoolBrightCyan
-            } else {
-                LogTone::CoolCyan
-            }
-        }
+        LogLevel::Info if target == "serve.startup" => LogTone::CoolBlue,
+        LogLevel::Info if target == "serve.activity" => LogTone::CoolBrightCyan,
+        LogLevel::Info => LogTone::CoolCyan,
     }
 }
 
