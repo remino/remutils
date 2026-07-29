@@ -6,7 +6,9 @@ class Litesite < Formula
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils/tree/main/litesite"
-  revision 1
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "rust" => :build
   depends_on "imagemagick"
