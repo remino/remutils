@@ -25,6 +25,7 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Once};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Instant;
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::broadcast;
@@ -171,10 +172,19 @@ async fn static_assets(
     State(state): State<Arc<AppState>>,
     req: Request<Body>,
 ) -> (StatusCode, HeaderMap, Body) {
+    let started_at = Instant::now();
     let method = req.method().clone();
     let uri_path = req.uri().path().to_string();
+    let remote_ip = request_remote_ip(&req);
     let response = serve_request(&state.root, &uri_path);
-    log_access(&method, &uri_path, response.0, response.3.as_deref());
+    log_access(
+        &method,
+        &uri_path,
+        &remote_ip,
+        started_at.elapsed(),
+        response.0,
+        response.3.as_deref(),
+    );
     (response.0, response.1, response.2)
 }
 
@@ -386,27 +396,60 @@ fn html_escape(input: &str) -> String {
         .replace('>', "&gt;")
 }
 
-fn log_access(method: &Method, uri_path: &str, status: StatusCode, target: Option<&str>) {
+fn request_remote_ip(req: &Request<Body>) -> String {
+    req.headers()
+        .get("x-forwarded-for")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .or_else(|| {
+            req.headers()
+                .get("x-real-ip")
+                .and_then(|value| value.to_str().ok())
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+        })
+        .unwrap_or("-")
+        .to_string()
+}
+
+fn log_access(
+    method: &Method,
+    uri_path: &str,
+    remote_ip: &str,
+    elapsed: Duration,
+    status: StatusCode,
+    target: Option<&str>,
+) {
     if status.is_server_error() {
-        log_error_warm!("{}", format_access_message(method, uri_path, status, target));
+        log_error_warm!(
+            "{}",
+            format_access_message(method, uri_path, remote_ip, elapsed, status, target)
+        );
     } else if status.is_client_error() {
-        log_access_warn!("{}", format_access_message(method, uri_path, status, target));
+        log_access_warn!(
+            "{}",
+            format_access_message(method, uri_path, remote_ip, elapsed, status, target)
+        );
     } else {
-        log_access_ok!("{}", format_access_message(method, uri_path, status, target));
+        log_access_ok!(
+            "{}",
+            format_access_message(method, uri_path, remote_ip, elapsed, status, target)
+        );
     }
 }
 
 fn format_access_message(
     method: &Method,
     uri_path: &str,
+    remote_ip: &str,
+    elapsed: Duration,
     status: StatusCode,
     target: Option<&str>,
 ) -> String {
-    let mut message = format!("{method} {uri_path} -> {}", status.as_u16());
-    if let Some(reason) = status.canonical_reason() {
-        message.push(' ');
-        message.push_str(reason);
-    }
+    let elapsed_ms = elapsed.as_secs_f64() * 1000.0;
+    let mut message = format!("{} {method} {uri_path} ({remote_ip}) {:.2} ms", status.as_u16(), elapsed_ms);
     if let Some(target) = target {
         message.push_str(" (");
         message.push_str(target);
@@ -667,6 +710,7 @@ mod tests {
     };
     use axum::http::{Method, StatusCode};
     use std::path::Path;
+    use std::time::Duration;
 
     #[test]
     fn root_display_is_relative() {
@@ -692,10 +736,12 @@ mod tests {
             format_access_message(
                 &Method::GET,
                 "/style.css",
+                "127.0.0.1",
+                Duration::from_micros(1234),
                 StatusCode::OK,
                 Some("./style.css"),
             ),
-            "GET /style.css -> 200 OK (./style.css)"
+            "200 GET /style.css (127.0.0.1) 1.23 ms (./style.css)"
         );
     }
 
