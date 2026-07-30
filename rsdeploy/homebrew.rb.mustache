@@ -6,7 +6,9 @@ class Rsdeploy < Formula
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
-  revision 1
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
 

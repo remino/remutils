@@ -6,6 +6,9 @@ class Mkiso < Formula
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
   uses_from_macos "hdiutil"

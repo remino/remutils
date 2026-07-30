@@ -6,6 +6,9 @@ class Vid2gif < Formula
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
   depends_on "ffmpeg"
