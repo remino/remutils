@@ -2,7 +2,7 @@
 
 Wait until a specified time and optionally execute a command.
 
-Rémino Rem <https://remino.net/>, 2022
+2022 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

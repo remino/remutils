@@ -2,7 +2,7 @@
 
 Capture a webpage as an image.
 
-Rémino Rem <https://remino.net/>, 2026
+2026 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

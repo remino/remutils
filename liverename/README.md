@@ -3,7 +3,7 @@
 Watches a file with `watchexec` and renames it with a timestamp when it is
 created.
 
-Rémino Rem <https://remino.net/>, 2026
+2026 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

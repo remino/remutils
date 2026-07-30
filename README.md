@@ -2,7 +2,7 @@
 
 Collection of utility scripts.
 
-Rémino Rem <https://remino.net/>, 2026
+2026 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

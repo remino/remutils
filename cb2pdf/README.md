@@ -2,7 +2,7 @@
 
 Convert `.cbz` and `.cbr` comic book archives into PDF files.
 
-Rémino Rem <https://remino.net/>, 2026
+2026 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

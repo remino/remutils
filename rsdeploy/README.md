@@ -2,7 +2,7 @@
 
 Deploy directory to remote server by using rsync.
 
-Rémino Rem <https://remino.net/>, 2022
+2022 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 

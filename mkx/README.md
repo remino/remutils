@@ -2,7 +2,7 @@
 
 Make new executable shell script file from template.
 
-Rémino Rem <https://remino.net/>, 2022
+2022 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 
