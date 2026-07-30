@@ -1,0 +1,332 @@
+#!/usr/bin/env bash
+# Convert a video file into an animated GIF file.
+
+VERSION='2.0.0'
+
+_usage() {
+	cat << USAGE
+USAGE: $(basename "$0") [<options>] <input> [<output>]
+
+Convert a video file into an animated GIF file.
+
+OPTIONS:
+  -a, --time-scale <factor>       Scale presentation time. Values below 1
+                                  speed up; values above 1 slow down.
+  -c, --colors <count>            Palette colours. Default: 32.
+  -C, --crop <filter>             Crop filter: out_w:out_h:x:y.
+  -d, --duration <seconds>        Limit the converted duration.
+  -f, --filters <filters>         Replace the generated ffmpeg filters.
+  -h, --help                      Show this help.
+  -i, --interactive               Always ask before overwriting output.
+  -m, --append-filter <filters>   Append ffmpeg filters.
+  -n, --dry-run                   Print commands without writing files.
+  -N, --no-overwrite              Refuse to overwrite an existing output.
+  -O, --optim                     Require image_optim after conversion.
+  +O, --no-optim                  Do not run image_optim.
+      --auto-optim
+                                  Run image_optim when it is available (default).
+  -p, --palette <file>            Use or write this palette PNG.
+  -r, --fps <fps>                 Output frame rate. Default: 10.
+  -s, --start <seconds>           Start time in the input video.
+  -H, --height <pixels>           Output height. Default: -1 (keep ratio).
+  -v, --version                   Show script name and version number.
+  -V, --verbose                   Show ffmpeg commands and settings.
+  -w, --width <pixels>            Output width. Default: 720.
+  -y, --overwrite                 Overwrite an existing output without asking.
+
+The output defaults to the input filename with a .gif extension. Any arguments
+after input and output are passed to ffmpeg for both conversion passes.
+USAGE
+}
+
+vid2gif_main() {
+	set -euo pipefail
+
+	E_ARGS=16
+	E_MISSING_FILE=17
+	E_MISSING_APP=18
+
+	COLORS=32
+	FPS=10
+	HEIGHT=-1
+	WIDTH=720
+	DRY_RUN=0
+	VERBOSE=0
+	OVERWRITE_MODE=prompt
+	OPTIM_MODE=auto
+	FILTERS=
+	APPEND_FILTERS=()
+	EXTRA_ARGS=()
+	PALETTE=
+	START=
+	DURATION=
+	TIME_SCALE=
+	CROP=
+	PALETTE_TO_CLEAN=
+
+	[ $# -eq 0 ] && _usage && return
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			-h | --help)
+				_usage
+				return
+				;;
+			-v | --version)
+				echo "$(basename "$0") $VERSION"
+				return
+				;;
+			-a | --time-scale)
+				TIME_SCALE="$(_option_value "$@")"
+				shift 2
+				;;
+			-c | --colors)
+				COLORS="$(_option_value "$@")"
+				shift 2
+				;;
+			-C | --crop | -o)
+				CROP="$(_option_value "$@")"
+				shift 2
+				;;
+			-d | --duration)
+				DURATION="$(_option_value "$@")"
+				shift 2
+				;;
+			-f | --filters)
+				FILTERS="$(_option_value "$@")"
+				shift 2
+				;;
+			-i | --interactive)
+				_set_overwrite_mode interactive "$1"
+				shift
+				;;
+			-m | --append-filter)
+				APPEND_FILTERS+=("$(_option_value "$@")")
+				shift 2
+				;;
+			-n | --dry-run)
+				DRY_RUN=1
+				shift
+				;;
+			-N | --no-overwrite)
+				_set_overwrite_mode no-clobber "$1"
+				shift
+				;;
+			-O | --optim | --optimize)
+				OPTIM_MODE=force
+				shift
+				;;
+			+O | --no-optim | --no-optimize)
+				OPTIM_MODE=off
+				shift
+				;;
+			--auto-optim | --auto-optimize)
+				OPTIM_MODE=auto
+				shift
+				;;
+			-p | --palette)
+				PALETTE="$(_option_value "$@")"
+				shift 2
+				;;
+			-r | --fps)
+				FPS="$(_option_value "$@")"
+				shift 2
+				;;
+			-s | --start)
+				START="$(_option_value "$@")"
+				shift 2
+				;;
+			-H | -t | --height)
+				HEIGHT="$(_option_value "$@")"
+				shift 2
+				;;
+			-V | --verbose)
+				VERBOSE=1
+				shift
+				;;
+			-w | --width)
+				WIDTH="$(_option_value "$@")"
+				shift 2
+				;;
+			-y | --overwrite)
+				_set_overwrite_mode force "$1"
+				shift
+				;;
+			--)
+				shift
+				break
+				;;
+			-*) _fatal "$E_ARGS" "Unknown option: $1" ;;
+			*) break ;;
+		esac
+	done
+
+	[ $# -lt 1 ] && _fatal "$E_ARGS" 'Missing input filename.'
+	INPUT="$1"
+	OUTPUT="${2:-${INPUT%.*}.gif}"
+	[ $# -gt 2 ] && EXTRA_ARGS=("${@:3}")
+
+	[ -f "$INPUT" ] || _fatal "$E_MISSING_FILE" "Missing or not a file: $INPUT"
+	_confirm_output "$OUTPUT"
+	_require ffmpeg
+	_require_image_magick
+
+	if [ -z "$FILTERS" ]; then
+		FILTERS="fps=$FPS,scale=$WIDTH:$HEIGHT:flags=lanczos"
+		[ -n "$CROP" ] && FILTERS="crop=$CROP,$FILTERS"
+		[ -n "$TIME_SCALE" ] && FILTERS="setpts=$TIME_SCALE*PTS,$FILTERS"
+		for filter in "${APPEND_FILTERS[@]}"; do
+			FILTERS="$FILTERS,$filter"
+		done
+	fi
+
+	_create_gif
+}
+
+_option_value() {
+	[ $# -ge 2 ] || _fatal "$E_ARGS" "Option requires an argument: $1"
+	printf '%s' "$2"
+}
+
+_set_overwrite_mode() {
+	local new_mode=$1
+	local flag=$2
+
+	if [ "$OVERWRITE_MODE" != prompt ] && [ "$OVERWRITE_MODE" != "$new_mode" ]; then
+		_fatal "$E_ARGS" "Conflicting overwrite options: $flag"
+	fi
+
+	OVERWRITE_MODE="$new_mode"
+}
+
+_confirm_output() {
+	local output=$1
+
+	[ ! -e "$output" ] && return
+
+	case "$OVERWRITE_MODE" in
+		force) return 0 ;;
+		no-clobber) _fatal "$E_ARGS" "Output already exists: $output" ;;
+		interactive) ;;
+		prompt)
+			[ -t 0 ] || _fatal "$E_ARGS" "Output already exists (use --overwrite): $output"
+			;;
+	esac
+
+	read -r -p "File exists. Overwrite? [y/N] " answer
+	case "$answer" in
+		y | Y | yes | YES) ;;
+		*)
+			echo 'Cancelled.'
+			exit 0
+			;;
+	esac
+}
+
+_create_gif() {
+	local palette
+	local temp_palette=0
+	local preargs=()
+
+	if [ "$VERBOSE" -eq 1 ]; then
+		preargs=(-loglevel info)
+	else
+		preargs=(-hide_banner -nostats -loglevel fatal)
+	fi
+	[ -n "$START" ] && preargs+=(-ss "$START")
+	[ -n "$DURATION" ] && preargs+=(-t "$DURATION")
+
+	palette="$PALETTE"
+	if [ -z "$palette" ]; then
+		palette="$(mktemp "${TMPDIR:-/tmp}/vid2gif-palette.XXXXXX")"
+		rm -f "$palette"
+		palette="${palette}.png"
+		temp_palette=1
+		PALETTE_TO_CLEAN="$palette"
+	fi
+	trap '_cleanup_palette' EXIT
+
+	echo "$INPUT => $OUTPUT"
+	[ "$VERBOSE" -eq 1 ] && echo "ffmpeg filters: $FILTERS"
+
+	if [ "$temp_palette" -eq 1 ] || [ ! -f "$palette" ]; then
+		_run ffmpeg "${preargs[@]}" -i "$INPUT" -vf "$FILTERS,palettegen" -y "${EXTRA_ARGS[@]}" "$palette"
+	fi
+
+	[ "$DRY_RUN" -eq 1 ] || [ -f "$palette" ] || _fatal "$E_MISSING_FILE" "Palette file not found: $palette"
+	_quantize_palette "$palette"
+	_run ffmpeg "${preargs[@]}" -i "$INPUT" -i "$palette" -lavfi "$FILTERS [x]; [x][1:v] paletteuse" -y "${EXTRA_ARGS[@]}" "$OUTPUT"
+
+	_optimize_output
+}
+
+_optimize_output() {
+	case "$OPTIM_MODE" in
+		off) return ;;
+		force) _require image_optim ;;
+		auto) command -v image_optim > /dev/null 2>&1 || return ;;
+	esac
+
+	if [ "$DRY_RUN" -eq 1 ]; then
+		_run image_optim "$OUTPUT"
+	else
+		image_optim "$OUTPUT" > /dev/null 2>&1 || true
+	fi
+}
+
+_cleanup_palette() {
+	if [ -n "${PALETTE_TO_CLEAN:-}" ]; then
+		rm -f "$PALETTE_TO_CLEAN"
+	fi
+	return 0
+}
+
+_quantize_palette() {
+	local palette=$1
+
+	if command -v magick > /dev/null 2>&1; then
+		_run magick mogrify +dither -colors "$COLORS" "$palette"
+	else
+		_run mogrify +dither -colors "$COLORS" "$palette"
+	fi
+}
+
+_require_image_magick() {
+	if command -v magick > /dev/null 2>&1 || command -v mogrify > /dev/null 2>&1; then
+		return
+	fi
+
+	_fatal "$E_MISSING_APP" 'Required: ImageMagick (magick or mogrify)'
+}
+
+_require() {
+	local missing=0
+	local bin
+
+	for bin in "$@"; do
+		if ! command -v "$bin" > /dev/null 2>&1; then
+			missing=1
+			echo "Required: $bin" >&2
+		fi
+	done
+
+	[ "$missing" -eq 0 ] || _fatal "$E_MISSING_APP" 'One or more executables or apps are missing.'
+}
+
+_run() {
+	if [ "$VERBOSE" -eq 1 ] || [ "$DRY_RUN" -eq 1 ]; then
+		printf '+ '
+		printf '%q ' "$@"
+		printf '\n'
+	fi
+	[ "$DRY_RUN" -eq 1 ] || "$@"
+}
+
+_fatal() {
+	local exit_code=$1
+	shift
+	echo "FATAL: $*" >&2
+	exit "$exit_code"
+}
+
+vid2gif_main "$@"
