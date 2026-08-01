@@ -1,0 +1,340 @@
+#!/usr/bin/env bash
+# mkprj
+# Create dated project directories from optional templates.
+
+VERSION='3.0.0'
+
+mkprj_main() {
+	trap _exit INT TERM
+
+	E_ARGS=16
+	E_EXISTS=17
+	E_NOT_DIR=18
+	E_CANNOT_MKDIR=19
+	E_INVALID_DATE=20
+
+	SCRIPT_INV="$(basename -- "$0")"
+	SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")"
+	SCRIPT_NAME="$(basename -- "$SCRIPT_PATH")"
+	SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
+	INSTALL_DIR="$SCRIPT_DIR/../libexec/mkprj"
+	MO="$(_find_mo)"
+
+	DRY_RUN=0
+	TEMPLATE_NAME=''
+
+	: "${PROJECTS_DIR:=$(pwd)}"
+	: "${TEMPLATES_DIR:=${XDG_CONFIG_HOME:-$HOME/.config}/mkprj/templates}"
+
+	while [ $# -gt 0 ]; do
+		case $1 in
+			-h | --help) _help && return ;;
+			-n | --dry-run) DRY_RUN=1 ;;
+			-t | --template)
+				shift
+				[ $# -gt 0 ] || _fatal "$E_ARGS" 'Missing template name.'
+				TEMPLATE_NAME="$1"
+				;;
+			--var)
+				shift
+				[ $# -gt 0 ] || _fatal "$E_ARGS" 'Missing template variable.'
+				_set_template_var "$1"
+				;;
+			-v | --version) _version && return ;;
+			--)
+				shift
+				break
+				;;
+			-*) _fatal "$E_ARGS" "Invalid option: $1" ;;
+			*) break ;;
+		esac
+		shift
+	done
+
+	[ $# -eq 1 ] || _fatal "$E_ARGS" 'Specify exactly one project name.'
+
+	_process "$1"
+}
+
+_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_INV [-hnv] [-t <template>] [--var <key=value>] <project>
+
+Create a dated project directory.
+
+When <project> is not prefixed by a date (YYYY-MM-DD or YYYYMMDD), mkprj
+prefixes it with today’s date. A path in <project> selects its parent directory.
+
+OPTIONS:
+
+	-h              Show this help screen.
+	-n              Dry run; print the directory that would be created.
+	-t <template>   Use a Mustache template directory by name or path.
+	--var <key=value>
+	                Add a template variable. This option may be repeated.
+	-v              Show script name and version number.
+
+ENVIRONMENT VARIABLES:
+
+	PROJECTS_DIR
+		Directory containing project directories. Default: current directory.
+		Current value: $PROJECTS_DIR
+
+	MKPRJ_TEMPLATE_DIR
+		Directory containing installed templates. Defaults to the bundled templates.
+
+	TEMPLATES_DIR
+		Compatibility alias for the XDG template directory. Current value: $TEMPLATES_DIR
+
+USAGE
+}
+
+_process() {
+	local project="$1"
+	local project_date
+	local project_dir
+	local project_name
+	local template_dir=''
+
+	if [[ "$project" == */* ]]; then
+		PROJECTS_DIR="$(dirname -- "$project")"
+		project="$(basename -- "$project")"
+	fi
+
+	if [[ "$project" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})\ (.+)$ ]]; then
+		project_date="${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+		project_name="${BASH_REMATCH[4]}"
+	elif [[ "$project" =~ ^([0-9]{8})\ (.+)$ ]]; then
+		project_date="${BASH_REMATCH[1]}"
+		project_name="${BASH_REMATCH[2]}"
+	else
+		project_date="$(date +%Y%m%d)"
+		project_name="$project"
+	fi
+
+	_validate_date "$project_date"
+	project_dir="$PROJECTS_DIR/$project_date $project_name"
+
+	if [ "$DRY_RUN" -ne 0 ]; then
+		_echo "$project_dir"
+		return
+	fi
+
+	_prepare_projects_dir
+
+	if [ -e "$project_dir" ]; then
+		_echo "$project_dir"
+		_fatal "$E_EXISTS" 'Project directory or file already exists.'
+	fi
+
+	template_dir="$(_resolve_template "${TEMPLATE_NAME:-default}")"
+	[ -n "$template_dir" ] || _fatal "$E_NOT_DIR" "Template directory does not exist: ${TEMPLATE_NAME:-default}"
+
+	_project_template_vars "$project_dir" "$project_name" "$project_date"
+	_render_template "$template_dir" "$project_dir"
+
+	_run_setup "$project_dir" "$project_name" "$project_date"
+	_echo "$project_dir"
+}
+
+_resolve_template() {
+	local template_name="$1"
+	local lookup_dir="$(pwd)"
+	local candidate
+
+	if [[ "$template_name" != */* ]]; then
+		for candidate in \
+			"${MKPRJ_TEMPLATE_DIR:-$(_template_root)}/$template_name" \
+			"$TEMPLATES_DIR/$template_name"; do
+			[ -d "$candidate" ] && _echo "$candidate" && return
+		done
+
+		while :; do
+			for candidate in \
+				"$lookup_dir/.mkprj/templates/$template_name" \
+				"$lookup_dir/.config/mkprj/templates/$template_name"; do
+				[ -d "$candidate" ] && _echo "$candidate" && return
+			done
+			[ "$lookup_dir" = / ] && break
+			lookup_dir="$(dirname -- "$lookup_dir")"
+		done
+	fi
+
+	[ -d "$template_name" ] && _echo "$template_name"
+}
+
+_find_mo() {
+	local candidate
+
+	for candidate in "$SCRIPT_DIR/lib/mo" "$INSTALL_DIR/lib/mo"; do
+		[ -x "$candidate" ] && _echo "$candidate" && return
+	done
+}
+
+_template_root() {
+	if [ -d "$SCRIPT_DIR/templates" ]; then
+		_echo "$SCRIPT_DIR/templates"
+	else
+		_echo "$INSTALL_DIR/templates"
+	fi
+}
+
+_project_template_vars() {
+	project_dir="$1"
+	project_name="$2"
+	project_date="$3"
+
+	export project_dir project_name project_date
+	export projects_dir="$PROJECTS_DIR"
+	export name="$project_name"
+	export date="$(_format_date "$project_date")"
+	export year="${project_date:0:4}"
+	export slug="$(_slugify "$project_name")"
+}
+
+_set_template_var() {
+	local assignment="$1"
+	local key="${assignment%%=*}"
+	local value="${assignment#*=}"
+
+	[[ "$assignment" == *=* ]] || _fatal "$E_ARGS" "Template variable must use key=value: $assignment"
+	[[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || _fatal "$E_ARGS" "Invalid template variable name: $key"
+	case "$key" in
+		project_dir | project_name | project_date | projects_dir | name | date | year | slug)
+			_fatal "$E_ARGS" "Template variable is reserved: $key"
+			;;
+	esac
+	printf -v "$key" '%s' "$value"
+	export "$key"
+}
+
+_slugify() {
+	printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed -E 's/^-+|-+$//g'
+}
+
+_render_template() {
+	local template_dir="$1"
+	local project_dir="$2"
+	local source
+	local relative
+	local destination
+
+	[ -x "$MO" ] || _fatal "$E_NOT_DIR" "Mustache renderer not found: $MO"
+	mkdir -p "$project_dir" || _fatal "$E_CANNOT_MKDIR" "Failed to create project directory: $project_dir"
+
+	while IFS= read -r -d '' source; do
+		relative="${source#"$template_dir"/}"
+		[ "$relative" = '.mkprj.json' ] && continue
+		destination="$project_dir/$(_render_path "$relative")"
+		_safe_template_path "$destination" "$project_dir"
+		mkdir -p "$(dirname -- "$destination")" || _fatal "$E_CANNOT_MKDIR" "Failed to create project directory: $project_dir"
+
+		if [[ "$source" == *.mustache ]]; then
+			(
+				# shellcheck source=lib/mo
+				source "$MO"
+				mo "$source"
+			) > "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to render template: $source"
+		else
+			cp "$source" "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to copy template file: $source"
+		fi
+	done < <(find "$template_dir" -type f -print0)
+}
+
+_render_path() {
+	local path="${1%.mustache}"
+	local key
+	local value
+
+	for key in project_dir project_name project_date projects_dir name date year slug; do
+		value="${!key}"
+		path="${path//"[$key]"/$value}"
+	done
+	while IFS= read -r key; do
+		value="${!key}"
+		path="${path//"[$key]"/$value}"
+	done < <(compgen -v)
+	_echo "$path"
+}
+
+_safe_template_path() {
+	local destination="$1"
+	local project_dir="$2"
+
+	[[ "$destination" == "$project_dir"/* ]] || _fatal "$E_ARGS" "Template output escapes project directory: $destination"
+	[[ "$destination" != *'/../'* && "$destination" != */.. ]] || _fatal "$E_ARGS" "Template output escapes project directory: $destination"
+}
+
+_prepare_projects_dir() {
+	if [ -d "$PROJECTS_DIR" ]; then
+		return
+	fi
+
+	[ ! -e "$PROJECTS_DIR" ] || _fatal "$E_NOT_DIR" "Projects directory is not a directory: $PROJECTS_DIR"
+	mkdir -p "$PROJECTS_DIR" || _fatal "$E_CANNOT_MKDIR" "Failed to create projects directory: $PROJECTS_DIR"
+}
+
+_run_setup() {
+	local project_dir="$1"
+	local project_name="$2"
+	local project_date="$3"
+	local setup="$project_dir/.mkprj/setup"
+
+	[ -x "$setup" ] || return
+
+	(
+		export PROJECT_DIR="$project_dir"
+		export PROJECT_NAME="$project_name"
+		export PROJECT_DATE="$(_format_date "$project_date")"
+		export PROJECTS_DIR TEMPLATES_DIR
+		cd "$project_dir" || exit "$?"
+		"$setup"
+	)
+}
+
+_validate_date() {
+	local formatted
+
+	formatted="$(_format_date "$1")" || _fatal "$E_INVALID_DATE" "Invalid project date: $1"
+	[ "${formatted//-/}" = "$1" ] || _fatal "$E_INVALID_DATE" "Invalid project date: $1"
+}
+
+_format_date() {
+	local input="$1"
+
+	date -j -f '%Y%m%d' "$input" '+%Y-%m-%d' 2> /dev/null || date -d "$input" '+%Y-%m-%d' 2> /dev/null
+}
+
+_version() {
+	_echo "$SCRIPT_NAME $VERSION"
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_exit() {
+	local status=$?
+	exit "${1:-$status}"
+}
+
+_fatal() {
+	local status="$1"
+	shift
+	_error "$@"
+	_exit "$status"
+}
+
+_invalid_opt() {
+	_error "Invalid option: -$opt"
+	_help
+	_exit "$E_ARGS"
+}
+
+mkprj_main "$@"

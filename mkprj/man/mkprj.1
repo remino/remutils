@@ -1,0 +1,65 @@
+.TH MKPRJ 1 "August 2026" "mkprj 3.0.0"
+.SH NAME
+mkprj \- create dated project directories from optional templates
+.SH SYNOPSIS
+.B mkprj
+[\fB-hnv\fR] [\fB-t \fItemplate\fR] [\fB--var \fIkey=value\fR] \fIproject\fR
+.SH DESCRIPTION
+.B mkprj
+creates a project directory named \fBYYYYMMDD project\fR. If \fIproject\fR begins
+with a date in \fBYYYY-MM-DD\fR or \fBYYYYMMDD\fR format, that date is used;
+otherwise, today's date is used. A path in \fIproject\fR selects the parent
+directory in which the project is created.
+.PP
+The selected Mustache template is rendered to the new project directory. When
+no template is selected, the bundled \fBdefault\fR template is used. An
+executable \fB.mkprj/setup\fR in a generated template runs
+from the project directory after creation.
+.SH OPTIONS
+.TP
+.B -h
+Show help.
+.TP
+.B -n
+Dry run; print the directory that would be created.
+.TP
+.BI -t " template"
+Use a named template from \fBTEMPLATES_DIR\fR, or a template directory path.
+.TP
+.BI --var " key=value"
+Add a string template variable. This option may be repeated.
+.TP
+.B -v
+Show the command version.
+.SH ENVIRONMENT
+.TP
+.B PROJECTS_DIR
+Parent directory for projects. Defaults to the current directory.
+.TP
+.B TEMPLATES_DIR
+Compatibility parent directory for named templates. Defaults to
+\fB$XDG_CONFIG_HOME/mkprj/templates\fR or \fB~/.config/mkprj/templates\fR.
+.TP
+.B MKPRJ_TEMPLATE_DIR
+Parent directory for installed templates. Defaults to the bundled templates.
+.SH TEMPLATES
+Template names resolve from the bundled templates (or \fBMKPRJ_TEMPLATE_DIR\fR),
+then \fB.mkprj/templates\fR and \fB.config/mkprj/templates\fR in the current
+directory or a parent, then the XDG config directory, then a directory path.
+Files ending in \fB.mustache\fR are rendered and written without the suffix.
+Paths may contain bracket variables such as \fB[slug]\fR and \fB[client]\fR.
+Mustache content may use the same variable names in \fB{{slug}}\fR form.
+Templates receive \fBproject_dir\fR, \fBproject_name\fR,
+\fBproject_date\fR, \fBprojects_dir\fR, \fBname\fR, \fBdate\fR,
+\fByear\fR, and \fBslug\fR. Values passed through \fB--var\fR are also available.
+.SH SETUP ENVIRONMENT
+The template setup script receives \fBPROJECT_DIR\fR, \fBPROJECT_NAME\fR,
+\fBPROJECT_DATE\fR, \fBPROJECTS_DIR\fR, and \fBTEMPLATES_DIR\fR.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>.
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>.
+.SH COPYRIGHT
+Copyright © 2024-2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
