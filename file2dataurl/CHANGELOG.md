@@ -2,10 +2,15 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v1.0.2](#v102)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Add a manual page.
 
 ## v1.0.2
 
