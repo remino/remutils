@@ -2,12 +2,12 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.1.1](#v111)
 - [v1.1.0](#v110)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.1.1
 
 - Add a manual page.
 
