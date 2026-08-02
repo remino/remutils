@@ -1,0 +1,39 @@
+.TH LIVERENAME 1 "2026-08-02" "liverename 1.0.1"
+.SH NAME
+liverename \- rename a file with a timestamp when it is created
+.SH SYNOPSIS
+.B liverename
+[\fB-v\fR] \fIfilename\fR
+.SH DESCRIPTION
+.B liverename
+watches \fIfilename\fR with
+.BR watchexec (1).
+Whenever that file is created, it is renamed by inserting a local timestamp in
+\fIYYYYMMDDHHMMSS\fR format before its extension.
+
+The command watches the directory containing \fIfilename\fR. It continues
+running until interrupted.
+.SH OPTIONS
+.TP
+.B \-v
+Show the command name and version.
+.SH DEPENDENCIES
+.TP
+.B watchexec
+Watches the containing directory for file creation.
+.SH EXAMPLES
+.TP
+Watch for a screenshot and timestamp it when it appears:
+.nf
+.B liverename ~/Desktop/screenshot.png
+.fi
+.SH CAVEATS
+Filenames beginning with a hyphen are not supported.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
