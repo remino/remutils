@@ -2,7 +2,7 @@
 # addwatermark
 # Compatibility wrapper for imgmod watermark.
 
-VERSION='2.1.0'
+VERSION='2.1.1'
 
 addwatermark_main() {
 	local script_dir
