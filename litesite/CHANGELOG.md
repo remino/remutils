@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [v2.3.1](#v231)
 - [v2.2.0](#v220)
 - [v2.1.0](#v210)
 - [v2.0.0](#v200)
@@ -9,6 +10,11 @@
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## v2.3.1
+
+- Prepare `litesite` for publication to crates.io and document installation with
+  Cargo.
 
 ## v2.2.0
 

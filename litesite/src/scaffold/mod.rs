@@ -1,6 +1,7 @@
 use crate::fsutil::{copy_file, write_file};
 use anyhow::{bail, Context, Result};
 use chrono::Datelike;
+use include_dir::{include_dir, Dir};
 use mustache::MapBuilder;
 use regex::Regex;
 use serde_json::Value;
@@ -14,6 +15,12 @@ use walkdir::WalkDir;
 const DEFAULT_TEMPLATE: &str = "default";
 const TEMPLATE_SUFFIX: &str = ".mustache";
 const TEMPLATE_VARIABLES_FILE: &str = ".litesite.json";
+static BUILT_IN_TEMPLATES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates");
+
+enum Template {
+    Directory(PathBuf),
+    Embedded(&'static Dir<'static>),
+}
 
 pub fn init_site(
     slug: &str,
@@ -46,26 +53,22 @@ pub fn init_site(
     ]);
     variables.extend(load_template_variables(&template)?);
     variables.extend(extra_variables.clone());
-    let context = variables.iter().fold(MapBuilder::new(), |builder, (key, value)| {
-        builder.insert_str(key, value)
-    });
+    let context = variables
+        .iter()
+        .fold(MapBuilder::new(), |builder, (key, value)| {
+            builder.insert_str(key, value)
+        });
     let context = context.build();
 
     fs::create_dir_all(&dest)?;
-    for entry in WalkDir::new(&template).into_iter().filter_map(Result::ok) {
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let relative = entry.path().strip_prefix(&template)?;
+    for (relative, source) in template_files(&template)? {
         if relative == Path::new(TEMPLATE_VARIABLES_FILE) {
             continue;
         }
-        let output_relative = render_path(relative, &variables);
+        let output_relative = render_path(&relative, &variables);
         ensure_safe_relative_path(&output_relative)?;
         let output = dest.join(output_relative);
-        let source = fs::read_to_string(entry.path())?;
-        let content = if entry.path().to_string_lossy().ends_with(TEMPLATE_SUFFIX) {
+        let content = if relative.to_string_lossy().ends_with(TEMPLATE_SUFFIX) {
             render(&source, &context)?
         } else {
             source
@@ -88,22 +91,36 @@ pub fn init_site(
     Ok(())
 }
 
-fn load_template_variables(template: &Path) -> Result<BTreeMap<String, String>> {
-    let path = template.join(TEMPLATE_VARIABLES_FILE);
-    if !path.is_file() {
-        return Ok(BTreeMap::new());
-    }
-
-    let content = fs::read_to_string(&path)
-        .with_context(|| format!("litesite: cannot read {}", path.display()))?;
-    let config = serde_json::from_str(&content)
-        .with_context(|| format!("litesite: invalid {}", path.display()))?;
-    let Value::Object(mut config) = config
-    else {
-        bail!("litesite: {} must contain a JSON object", path.display());
+fn load_template_variables(template: &Template) -> Result<BTreeMap<String, String>> {
+    let (content, label) = match template {
+        Template::Directory(template) => {
+            let path = template.join(TEMPLATE_VARIABLES_FILE);
+            if !path.is_file() {
+                return Ok(BTreeMap::new());
+            }
+            (
+                fs::read_to_string(&path)
+                    .with_context(|| format!("litesite: cannot read {}", path.display()))?,
+                path.display().to_string(),
+            )
+        }
+        Template::Embedded(template) => match template.get_file(TEMPLATE_VARIABLES_FILE) {
+            Some(file) => (
+                file.contents_utf8()
+                    .context("litesite: built-in template variables are not UTF-8")?
+                    .to_string(),
+                format!("built-in/{TEMPLATE_VARIABLES_FILE}"),
+            ),
+            None => return Ok(BTreeMap::new()),
+        },
+    };
+    let config =
+        serde_json::from_str(&content).with_context(|| format!("litesite: invalid {label}"))?;
+    let Value::Object(mut config) = config else {
+        bail!("litesite: {label} must contain a JSON object");
     };
     let Some(Value::Object(values)) = config.remove("vars") else {
-        bail!("litesite: {} must contain a vars object", path.display());
+        bail!("litesite: {label} must contain a vars object");
     };
 
     values
@@ -134,7 +151,7 @@ fn validate_template_variable_key(key: &str) -> Result<()> {
     Ok(())
 }
 
-fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<PathBuf> {
+fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Template> {
     let template_name = template_arg.unwrap_or(DEFAULT_TEMPLATE);
     let is_name = Path::new(template_name).components().count() == 1;
 
@@ -146,8 +163,11 @@ fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Pa
         for template_root in template_roots.into_iter().flatten() {
             let built_in = template_root.join(template_name);
             if built_in.is_dir() {
-                return Ok(built_in);
+                return Ok(Template::Directory(built_in));
             }
+        }
+        if let Some(built_in) = BUILT_IN_TEMPLATES.get_dir(template_name) {
+            return Ok(Template::Embedded(built_in));
         }
 
         let mut dir = lookup_root;
@@ -157,7 +177,7 @@ fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Pa
                 dir.join(".config/litesite/templates").join(template_name),
             ] {
                 if candidate.is_dir() {
-                    return Ok(candidate);
+                    return Ok(Template::Directory(candidate));
                 }
             }
 
@@ -176,17 +196,44 @@ fn resolve_template(template_arg: Option<&str>, lookup_root: &Path) -> Result<Pa
         if let Some(config_home) = config_home {
             let candidate = config_home.join("litesite/templates").join(template_name);
             if candidate.is_dir() {
-                return Ok(candidate);
+                return Ok(Template::Directory(candidate));
             }
         }
     }
 
     let custom = lookup_root.join(template_name);
     if custom.is_dir() {
-        return Ok(custom);
+        return Ok(Template::Directory(custom));
     }
 
     bail!("litesite: template not found: {template_name}")
+}
+
+fn template_files(template: &Template) -> Result<Vec<(PathBuf, String)>> {
+    match template {
+        Template::Directory(template) => WalkDir::new(template)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_file())
+            .map(|entry| {
+                Ok((
+                    entry.path().strip_prefix(template)?.to_path_buf(),
+                    fs::read_to_string(entry.path())?,
+                ))
+            })
+            .collect(),
+        Template::Embedded(template) => template
+            .files()
+            .map(|file| {
+                Ok((
+                    file.path().strip_prefix(template.path())?.to_path_buf(),
+                    file.contents_utf8()
+                        .context("litesite: built-in template file is not UTF-8")?
+                        .to_string(),
+                ))
+            })
+            .collect(),
+    }
 }
 
 fn render_path(path: &Path, variables: &BTreeMap<String, String>) -> PathBuf {
@@ -206,7 +253,8 @@ fn render_path(path: &Path, variables: &BTreeMap<String, String>) -> PathBuf {
 }
 
 fn render(template: &str, context: &mustache::Data) -> Result<String> {
-    let template = mustache::compile_str(template).context("litesite: invalid Mustache template")?;
+    let template =
+        mustache::compile_str(template).context("litesite: invalid Mustache template")?;
     let mut output = Vec::new();
     template
         .render_data(&mut output, context)
@@ -217,11 +265,17 @@ fn render(template: &str, context: &mustache::Data) -> Result<String> {
 fn ensure_safe_relative_path(path: &Path) -> Result<()> {
     if path.as_os_str().is_empty()
         || path.is_absolute()
-        || path
-            .components()
-            .any(|component| matches!(component, Component::ParentDir | Component::RootDir | Component::Prefix(_)))
+        || path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
     {
-        bail!("litesite: template output escapes destination: {}", path.display());
+        bail!(
+            "litesite: template output escapes destination: {}",
+            path.display()
+        );
     }
     Ok(())
 }

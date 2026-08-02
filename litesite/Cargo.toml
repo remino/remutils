@@ -1,8 +1,23 @@
 [package]
 name = "litesite"
-version = "2.3.0"
+version = "2.3.1"
+description = "Create and work with tiny static sites"
 edition = "2021"
 license = "ISC"
+readme = "README.md"
+repository = "https://github.com/remino/remutils"
+keywords = ["static-site", "website", "cli", "live-reload", "compression"]
+categories = ["command-line-utilities", "web-programming"]
+include = [
+  "src/**",
+  "templates/**",
+  "man/**",
+  "CHANGELOG.md",
+  "Cargo.lock",
+  "Cargo.toml",
+  "LICENSE.txt",
+  "README.md",
+]
 
 [dependencies]
 anyhow = "1"
@@ -14,6 +29,7 @@ dotenvy = "0.15"
 env_logger = "0.11"
 flate2 = "1"
 futures = "0.3"
+include_dir = "0.7"
 log = "0.4"
 mime_guess = "2"
 minify-html = "0.18"

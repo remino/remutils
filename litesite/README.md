@@ -9,6 +9,7 @@ publish to `dist/`.
 
 - [Installation](#installation)
     - [Homebrew](#homebrew)
+    - [Cargo](#cargo)
     - [Git clone](#git-clone)
 - [Usage](#usage)
 - ["What about this feature?"](#what-about-this-feature)
@@ -23,6 +24,13 @@ publish to `dist/`.
 
 ```sh
 brew install remino/remino/litesite
+litesite
+```
+
+### Cargo
+
+```sh
+cargo install litesite
 litesite
 ```
 
