@@ -225,6 +225,43 @@ EOF
 	rm -rf "$WORKDIR"
 }
 
+@test "version-formula derives the Homebrew class from the tool directory" {
+	WORKDIR="$(mktemp -d)"
+	SCRIPT_DIR="$WORKDIR/test-tool"
+	BIN_DIR="$WORKDIR/bin"
+	FORMULA_DIR="$WORKDIR/formulae"
+	mkdir -p "$SCRIPT_DIR" "$BIN_DIR" "$FORMULA_DIR" "$WORKDIR/lib"
+
+	cat > "$SCRIPT_DIR/test-tool" << 'EOF'
+#!/usr/bin/env bash
+VERSION="1.2.3"
+EOF
+	chmod +x "$SCRIPT_DIR/test-tool"
+
+	cat > "$SCRIPT_DIR/homebrew.rb.mustache" << 'EOF'
+class {{formula_class}} < Formula
+  version "{{version}}"
+end
+EOF
+
+	cp ./bin/version ./bin/version-formula ./bin/version-tarball "$BIN_DIR/"
+	cp ./lib/mo "$WORKDIR/lib/mo"
+
+	git -C "$WORKDIR" init -q
+	git -C "$WORKDIR" config user.email "test@example.com"
+	git -C "$WORKDIR" config user.name "Test User"
+	git -C "$WORKDIR" add test-tool
+	git -C "$WORKDIR" commit -q -m "initial"
+	git -C "$WORKDIR" tag "test-tool@1.2.3"
+
+	PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-formula" "$SCRIPT_DIR" "$FORMULA_DIR"
+
+	[ "$status" -eq 0 ]
+	[ "$(sed -n '1p' "$FORMULA_DIR/test-tool.rb")" = "class TestTool < Formula" ]
+
+	rm -rf "$WORKDIR"
+}
+
 @test "version-commit stages package.json when present" {
 	WORKDIR="$(mktemp -d)"
 	SCRIPT_DIR="$WORKDIR/demo"
