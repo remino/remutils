@@ -209,6 +209,22 @@ imgmod scale4x -o output.png input.png
 When `output` is omitted, the output path is generated with a `-4x` suffix and
 the input extension.
 
+### watermark
+
+```sh
+imgmod watermark -w <watermark> [-o <output>] <input>
+```
+
+Apply an image watermark. The watermark is sized relative to the longest input
+dimension and placed at the lower left by default:
+
+```sh
+imgmod watermark -w logo.png -o photo-watermarked.jpg photo.jpg
+```
+
+`addwatermark` remains available as a compatibility wrapper for its former
+`<watermark> <input> <output>` argument order.
+
 ### New Plugins
 
 Create a plugin in your XDG data directory:

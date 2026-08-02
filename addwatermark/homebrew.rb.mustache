@@ -1,0 +1,21 @@
+# vim: set ft=ruby :
+class Addwatermark < Formula
+  desc "Compatibility wrapper for imgmod watermark"
+  version "{{version}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
+  sha256 "{{sha256}}"
+  license "ISC"
+  homepage "https://github.com/remino/remutils"
+
+  deprecate! date: "2026-08-01", because: "has been merged into imgmod", replacement_formula: "imgmod"
+
+  depends_on "imgmod"
+
+  def install
+    bin.install "addwatermark"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/addwatermark --version")
+  end
+end

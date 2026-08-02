@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# imgmod watermark
+# Apply a watermark to an image using ImageMagick.
+
+VERSION='2.1.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+watermark_start() {
+	local opacity=0.5
+	local gravity=SouthWest
+	local resize=
+	local size=12
+	local watermark=
+	local output=
+	local input=
+	local dimensions
+	local width
+	local height
+	local longest
+	local opt
+	local -a magick_args
+
+	OPTIND=1
+	while getopts a:g:ho:r:s:w: opt; do
+		case $opt in
+			a) opacity="$OPTARG" ;;
+			g) gravity="$OPTARG" ;;
+			h)
+				watermark_help
+				return
+				;;
+			o) output="$OPTARG" ;;
+			r) resize="$OPTARG" ;;
+			s) size="${OPTARG%%%}" ;;
+			w) watermark="$OPTARG" ;;
+			*) watermark_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	if [ -z "$watermark" ] || [ $# -ne 1 ]; then
+		watermark_help
+		return "$E_ARGS"
+	fi
+	input=$1
+
+	[ -f "$watermark" ] || _fatal "$E_NO_FILE" "No such file: $watermark"
+	[ -f "$input" ] || _fatal "$E_NO_FILE" "No such file: $input"
+
+	if [ -z "$output" ]; then
+		output="$(watermark_output_path "$input")"
+	fi
+
+	imgmod_prepare_output "$output"
+	_require magick
+
+	dimensions="$(magick identify -format '%w %h' "$input")"
+	read -r width height <<< "$dimensions"
+	if [ "$width" -gt "$height" ]; then
+		longest=$width
+	else
+		longest=$height
+	fi
+
+	magick_args=(
+		"$input"
+		\( "$watermark" -alpha set -channel alpha -evaluate multiply "$opacity" -resize "$((longest * size / 100))" \)
+		-gravity "$gravity" -compose atop -composite
+	)
+	[ -n "$resize" ] && magick_args+=(-resize "$resize")
+	magick_args+=("$output")
+
+	magick "${magick_args[@]}"
+	imgmod_output "$output"
+}
+
+watermark_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [-a <value>] [-g <gravity>] [-r <size>] [-s <size>] -w <watermark> [-o <output>] <input>
+
+Apply a watermark to an image using ImageMagick.
+
+OPTIONS:
+
+	-a <value>  Watermark opacity. Default: 0.5.
+	-g <gravity> Watermark gravity. Default: SouthWest.
+	-h           Show this help screen.
+	-o <output>  Output image file.
+	-r <size>    Resize the finished image using ImageMagick geometry.
+	-s <size>    Watermark size as a percentage. Default: 12%.
+	-v           Show plugin name and version number.
+	-w <file>    Watermark image file.
+
+USAGE
+}
+
+watermark_output_path() {
+	local input=$1
+	local input_dir
+	local input_name
+	local input_stem
+
+	input_dir="$(dirname "$input")"
+	input_name="$(basename "$input")"
+	input_stem="${input_name%.*}"
+	[ "$input_stem" = "$input_name" ] && input_stem="$input_name"
+
+	if [ "$input_dir" = . ]; then
+		_echo "$input_stem-watermarked.png"
+	else
+		_echo "$input_dir/$input_stem-watermarked.png"
+	fi
+}
+
+watermark_invalid_opt() {
+	_error "Invalid option: -$opt"
+	_echo
+	watermark_help
+	exit "$E_ARGS"
+}
+
+imgmod_plugin_run "$@"

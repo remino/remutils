@@ -1,0 +1,60 @@
+.TH IMGMOD-WATERMARK 1 "August 1, 2026" "imgmod 2.1.0"
+.SH NAME
+imgmod-watermark \- Apply a watermark to an image
+.SH SYNOPSIS
+.B imgmod watermark
+[\fB-a\fR \fIVALUE\fR] [\fB-g\fR \fIGRAVITY\fR] [\fB-r\fR \fISIZE\fR]
+[\fB-s\fR \fISIZE\fR] \fB-w\fR \fIWATERMARK\fR [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
+.SH DESCRIPTION
+.B imgmod watermark
+uses ImageMagick to overlay \fIWATERMARK\fR on \fIINPUT\fR.
+When \fIOUTPUT\fR is omitted, it writes \fISTEM\fB-watermarked.png\fR next to
+the input.
+.SH OPTIONS
+.TP
+.B \-a \fIVALUE\fR
+Set watermark opacity. The default is \fB0.5\fR.
+.TP
+.B \-g \fIGRAVITY\fR
+Set watermark gravity. The default is \fBSouthWest\fR.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write the result to \fIOUTPUT\fR.
+.TP
+.B \-r \fISIZE\fR
+Resize the finished image using ImageMagick geometry.
+.TP
+.B \-s \fISIZE\fR
+Set watermark size as a percentage of the longest input dimension. The default
+is \fB12%\fR.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.TP
+.B \-w \fIWATERMARK\fR
+Watermark image file.
+.SH OUTPUT
+The command prints the output path and reports it through \fBimgmod_output\fR,
+so \fBimgmod -O\fR can optimize it.
+.SH DEPENDENCIES
+.TP
+.B magick
+ImageMagick command used to transform the image.
+.SH EXAMPLE
+.nf
+.B imgmod watermark -w logo.png -o photo-watermarked.jpg photo.jpg
+.fi
+.SH SEE ALSO
+.BR addwatermark (1),
+.BR imgmod (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
