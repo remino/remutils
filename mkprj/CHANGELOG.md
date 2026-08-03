@@ -2,12 +2,12 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v3.0.1](#v301)
 - [v3.0.0](#v300)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v3.0.1
 
 - Fix Homebrew installations locating bundled project templates.
 
