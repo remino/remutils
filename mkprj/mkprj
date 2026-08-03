@@ -17,7 +17,7 @@ mkprj_main() {
 	SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")"
 	SCRIPT_NAME="$(basename -- "$SCRIPT_PATH")"
 	SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
-	INSTALL_DIR="$SCRIPT_DIR/../libexec/mkprj"
+	INSTALL_DIR="$SCRIPT_DIR/../libexec"
 	MO="$(_find_mo)"
 
 	DRY_RUN=0

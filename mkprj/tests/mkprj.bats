@@ -16,17 +16,34 @@ teardown() {
 }
 
 @test "shows version" {
+	local version="$("$TOOL" -v)"
+
 	run "$TOOL" -v
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "mkprj 3.0.0" ]
+	[ "$output" = "$version" ]
 }
 
 @test "shows help" {
+	local version="$("$TOOL" -v)"
+
 	run "$TOOL" -h
 
 	[ "$status" -eq 0 ]
-	[[ "$output" == mkprj\ 3.0.0* ]]
+	[[ "$output" == "$version"* ]]
+}
+
+@test "finds bundled templates in a Homebrew-style libexec directory" {
+	local install_dir="$TMP_DIR/install"
+
+	mkdir -p "$install_dir/bin" "$install_dir/libexec"
+	cp "$TOOL" "$install_dir/bin/mkprj"
+	cp -R "$BATS_TEST_DIRNAME/../lib" "$BATS_TEST_DIRNAME/../templates" "$install_dir/libexec"
+
+	run env PROJECTS_DIR="$TMP_DIR/projects" "$install_dir/bin/mkprj" test
+
+	[ "$status" -eq 0 ]
+	[ -f "$TMP_DIR/projects/$(date +%Y%m%d) test/$(date +%Y%m%d) test.md" ]
 }
 
 @test "creates a project with today's date" {
