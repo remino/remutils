@@ -2,10 +2,16 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v3.0.1](#v301)
 - [v3.0.0](#v300)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Resolve the executable path before locating bundled templates, so Homebrew's
+  `bin/mkprj` symlink works correctly.
 
 ## v3.0.1
 

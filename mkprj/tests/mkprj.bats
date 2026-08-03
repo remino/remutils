@@ -33,12 +33,14 @@ teardown() {
 	[[ "$output" == "$version"* ]]
 }
 
-@test "finds bundled templates in a Homebrew-style libexec directory" {
+@test "finds bundled templates through a Homebrew-style symlink" {
 	local install_dir="$TMP_DIR/install"
+	local cellar_dir="$install_dir/Cellar/mkprj"
 
-	mkdir -p "$install_dir/bin" "$install_dir/libexec"
-	cp "$TOOL" "$install_dir/bin/mkprj"
-	cp -R "$BATS_TEST_DIRNAME/../lib" "$BATS_TEST_DIRNAME/../templates" "$install_dir/libexec"
+	mkdir -p "$install_dir/bin" "$cellar_dir/bin" "$cellar_dir/libexec"
+	cp "$TOOL" "$cellar_dir/bin/mkprj"
+	cp -R "$BATS_TEST_DIRNAME/../lib" "$BATS_TEST_DIRNAME/../templates" "$cellar_dir/libexec"
+	ln -s '../Cellar/mkprj/bin/mkprj' "$install_dir/bin/mkprj"
 
 	run env PROJECTS_DIR="$TMP_DIR/projects" "$install_dir/bin/mkprj" test
 

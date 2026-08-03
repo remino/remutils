@@ -14,7 +14,7 @@ mkprj_main() {
 	E_INVALID_DATE=20
 
 	SCRIPT_INV="$(basename -- "$0")"
-	SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")"
+	SCRIPT_PATH="$(realpath "$0")"
 	SCRIPT_NAME="$(basename -- "$SCRIPT_PATH")"
 	SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
 	INSTALL_DIR="$SCRIPT_DIR/../libexec"
