@@ -32,11 +32,6 @@ body {
 	padding: 0;
 }
 
-article {
-	margin-inline: auto;
-	max-inline-size: 72ch;
-}
-
 body > header > h1::before {
 	content: '>';
 	font-weight: normal;
