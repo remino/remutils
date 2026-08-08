@@ -15,6 +15,7 @@ export default defineConfig({
 		}),
 		compressor({
 			fileExtensions: ['.css', '.js', '.html', '.xml', '.cjs', '.mjs', '.svg'],
+			zstd: false,
 		}),
 	],
 	build: {
