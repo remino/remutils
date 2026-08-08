@@ -1,2 +1,2 @@
 site/.astro/
-site/dist/
+site/deploy/public/

@@ -12,8 +12,9 @@ npm run deploy:dryrun
 npm run deploy
 ```
 
-Set `RSDEPLOY_DEST` in a local `.env` to deploy the generated `dist/` directory.
-From the repository root, `just serve` starts the Astro development server.
+Set `RSDEPLOY_DEST` in a local `.env` to deploy the generated `deploy/public/`
+directory. From the repository root, `just serve` starts the Astro development
+server.
 
 The site shares the `remino.net` navigation assets at `/nav/` and its font
 assets at `/fonts/`, as does remarqueeble. During local development, Astro
