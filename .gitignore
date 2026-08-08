@@ -3,4 +3,6 @@
 /.lefthook-local/
 /litesite/target/
 /docs/
+/site/deploy/
 node_modules/
+.astro
