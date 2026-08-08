@@ -8,6 +8,13 @@ interface Props {
 
 const { title = 'remutils' } = Astro.props
 const documentTitle = title === 'remutils' ? title : `${title} // remutils`
+const breadcrumbs =
+	title === 'remutils'
+		? [{ label: 'remutils', href: '/remutils/' }]
+		: [
+				{ label: 'remutils', href: '/remutils/' },
+				{ label: title },
+			]
 const navItems = [
 	{ label: 'Tools', href: '/remutils/' },
 	{ label: 'GitHub', href: 'https://github.com/remino/remutils', external: true },
@@ -35,7 +42,13 @@ const navItems = [
 		</header>
 		<main><slot /></main>
 		<div class="rmn-nav__content">
-			<ul class="rmn-breadcrumbs"><li><a href="/remutils/">remutils</a></li></ul>
+			<ul class="rmn-breadcrumbs">
+				{
+					breadcrumbs.map(item => (
+						<li>{item.href ? <a href={item.href}>{item.label}</a> : item.label}</li>
+					))
+				}
+			</ul>
 		</div>
 		<remino-ribbon-nav class="rmn-nav__ribbon" key=". r" content=".rmn-nav__content" />
 		<noscript><footer><small>© 2026 <a href="https://remino.net/">Rémino Rem</a></small></footer></noscript>
