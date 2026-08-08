@@ -37,7 +37,9 @@ docs-serve port="4173":
 	just serve {{port}}
 
 lint name="":
-	if [ -n "{{name}}" ]; then \
+	if [ "{{name}}" = "site" ]; then \
+		npm run lint --prefix site; \
+	elif [ -n "{{name}}" ]; then \
 		just lint-all "{{name}}"; \
 	else \
 		just lint-all .; \
