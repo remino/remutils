@@ -1,0 +1,26 @@
+{
+	"name": "@remino/remutils-site",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "astro build",
+		"deploy": "../rsdeploy/rsdeploy -w",
+		"deploy:dryrun": "../rsdeploy/rsdeploy",
+		"dev": "astro dev",
+		"preview": "astro preview",
+		"format": "prettier --write .",
+		"lint": "prettier --check ."
+	},
+	"devDependencies": {
+		"@astrojs/check": "^0.9.4",
+		"@types/node": "^22.10.2",
+		"astro": "^7.0.0",
+		"prettier": "^3.4.2",
+		"prettier-plugin-astro": "^0.14.1",
+		"typescript": "^5.7.2"
+	},
+	"dependencies": {
+		"@remino/directive": "^5.3.4",
+		"marked": "^15.0.6"
+	}
+}

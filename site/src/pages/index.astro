@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getTools } from '../lib/tools'
+
+const tools = await getTools()
+---
+
+<BaseLayout>
+	<h1>remutils documentation</h1>
+	<p>A collection of small, independently released command-line tools.</p>
+	<ul class="tool-list">
+		{tools.map(tool => (
+			<li>
+				<a href={`/remutils/${tool.name}/`}>
+					<strong>{tool.name}</strong>
+					{tool.description && <span>{tool.description}</span>}
+				</a>
+			</li>
+		))}
+	</ul>
+</BaseLayout>

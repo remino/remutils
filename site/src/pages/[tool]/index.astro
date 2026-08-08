@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getTools } from '../../lib/tools'
+
+export async function getStaticPaths() {
+	const tools = await getTools()
+
+	return tools.map(tool => ({
+		params: { tool: tool.name },
+		props: { tool },
+	}))
+}
+
+const { tool } = Astro.props
+---
+
+<BaseLayout title={tool.name}>
+	<article set:html={tool.html} />
+</BaseLayout>

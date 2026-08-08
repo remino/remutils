@@ -1,1 +1,2 @@
-litesite/target/
+site/.astro/
+site/dist/

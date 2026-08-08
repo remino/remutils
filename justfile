@@ -31,7 +31,7 @@ hooks:
 	lefthook install
 
 serve port="4173":
-	./bin/docs-serve {{port}}
+	npm run dev --prefix site -- --port {{port}}
 
 docs-serve port="4173":
 	just serve {{port}}
