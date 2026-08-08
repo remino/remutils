@@ -21,7 +21,7 @@ const [readme, tools] = await Promise.all([
 								<strong>{tool.name}</strong>
 							</a>
 						</dt>
-						{tool.description && <dd>{tool.description}</dd>}
+						{tool.description && <dd set:html={tool.descriptionHtml} />}
 					</div>
 				))
 			}

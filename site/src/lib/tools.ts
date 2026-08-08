@@ -33,6 +33,7 @@ function renderMarkdown(markdown: string) {
 
 export interface Tool {
 	description: string
+	descriptionHtml: string
 	html: string
 	name: string
 }
@@ -61,8 +62,10 @@ export async function getTools(): Promise<Tool[]> {
 					}
 
 					const markdown = await readFile(readmePath, 'utf8')
+					const description = descriptionFrom(markdown) ?? ''
 					return {
-						description: descriptionFrom(markdown) ?? '',
+						description,
+						descriptionHtml: marked.parseInline(description),
 						html: await renderMarkdown(markdown),
 						name: entry.name,
 					}
