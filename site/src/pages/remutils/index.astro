@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { getTools } from '../../lib/tools'
+import { getRepositoryReadme, getTools } from '../../lib/tools'
 
-const tools = await getTools()
+const [readme, tools] = await Promise.all([getRepositoryReadme(), getTools()])
 ---
 
 <BaseLayout>
@@ -18,4 +18,6 @@ const tools = await getTools()
 			</div>
 		))}
 	</dl>
+	<hr />
+	<article set:html={readme} />
 </BaseLayout>

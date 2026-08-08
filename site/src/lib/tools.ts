@@ -20,6 +20,10 @@ renderer.code = ({ lang, text }) => {
 	})}</div>`
 }
 
+function renderMarkdown(markdown: string) {
+	return marked.parse(markdown, { renderer })
+}
+
 export interface Tool {
 	description: string
 	html: string
@@ -52,7 +56,7 @@ export async function getTools(): Promise<Tool[]> {
 					const markdown = await readFile(readmePath, 'utf8')
 					return {
 						description: descriptionFrom(markdown) ?? '',
-						html: await marked.parse(markdown, { renderer }),
+						html: await renderMarkdown(markdown),
 						name: entry.name,
 					}
 				} catch {
@@ -64,4 +68,16 @@ export async function getTools(): Promise<Tool[]> {
 	return tools
 		.filter((tool): tool is Tool => Boolean(tool))
 		.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function getRepositoryReadme() {
+	const markdown = await readFile(join(repositoryRoot, 'README.md'), 'utf8')
+	return renderMarkdown(markdown.replace(/^# .+\n+/, ''))
+}
+
+export async function getRepositoryLicence() {
+	const licence = await readFile(join(repositoryRoot, 'LICENSE.txt'), 'utf8')
+	return renderMarkdown(
+		`# Licence\n\n${licence.replace(/^ISC License\n+/, '')}`
+	)
 }
