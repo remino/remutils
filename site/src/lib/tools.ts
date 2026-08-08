@@ -24,6 +24,16 @@ function renderMarkdown(markdown: string) {
 	return marked.parse(markdown, { renderer })
 }
 
+function renderTableOfContents(markdown: string) {
+	return renderMarkdown(markdown).replace(
+		/<ul>[\s\S]*<\/ul>/,
+		tableOfContents =>
+			tableOfContents
+				.replaceAll('<li><p>', '<li>')
+				.replaceAll('</a></p>', '</a>')
+	)
+}
+
 export interface Tool {
 	description: string
 	html: string
@@ -70,9 +80,19 @@ export async function getTools(): Promise<Tool[]> {
 		.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function getRepositoryReadme() {
+export async function getRepositoryReadmeSections() {
 	const markdown = await readFile(join(repositoryRoot, 'README.md'), 'utf8')
-	return renderMarkdown(markdown.replace(/^# .+\n+/, ''))
+	const tocEnd = '<!-- mtoc-end -->'
+	const markdownWithTools = markdown.replace(
+		tocEnd,
+		`- [Tools](#tools)\n\n${tocEnd}`
+	)
+	const [beforeTools, afterTools = ''] = markdownWithTools.split(tocEnd, 2)
+
+	return {
+		beforeTools: renderTableOfContents(`${beforeTools}${tocEnd}`),
+		afterTools: renderMarkdown(afterTools),
+	}
 }
 
 export async function getRepositoryLicence() {

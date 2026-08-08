@@ -1,23 +1,24 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { getRepositoryReadme, getTools } from '../../lib/tools'
+import { getRepositoryReadmeSections, getTools } from '../../lib/tools'
 
-const [readme, tools] = await Promise.all([getRepositoryReadme(), getTools()])
+const [readme, tools] = await Promise.all([getRepositoryReadmeSections(), getTools()])
 ---
 
 <BaseLayout>
-	<h1>remutils documentation</h1>
-	<p>A collection of small, independently released command-line tools.</p>
-	<dl class="tool-list">
-		{tools.map(tool => (
-			<div>
-				<dt>
-					<a href={`/remutils/${tool.name}/`}><strong>{tool.name}</strong></a>
-				</dt>
-				{tool.description && <dd>{tool.description}</dd>}
-			</div>
-		))}
-	</dl>
-	<hr />
-	<article set:html={readme} />
+	<article set:html={readme.beforeTools} />
+	<section id="tools">
+		<h2>Tools</h2>
+		<dl class="tool-list">
+			{tools.map(tool => (
+				<div>
+					<dt>
+						<a href={`/remutils/${tool.name}/`}><strong>{tool.name}</strong></a>
+					</dt>
+					{tool.description && <dd>{tool.description}</dd>}
+				</div>
+			))}
+		</dl>
+	</section>
+	<article set:html={readme.afterTools} />
 </BaseLayout>
