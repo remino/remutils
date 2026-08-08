@@ -1,7 +1,7 @@
 @import '@remino/directive';
 
-main {
-	margin-block-end: var(--rmn-ribbon-push, 0px);
+body {
+	margin-block-end: calc(var(--rmn-ribbon-push, 0px) + var(--dress-m-b) * 2);
 }
 
 .code-block {
