@@ -22,6 +22,7 @@
 	"dependencies": {
 		"@remino/astro-middleware": "^0.1.0",
 		"@remino/directive": "^5.3.4",
-		"marked": "^15.0.6"
+		"marked": "^15.0.6",
+		"shiki": "^4.3.0"
 	}
 }

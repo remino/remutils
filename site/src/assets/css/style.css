@@ -4,6 +4,14 @@ main {
 	margin-block-end: var(--rmn-ribbon-push, 0px);
 }
 
+.code-block {
+	margin-block: var(--dress-m-bs) var(--dress-m-be);
+
+	> pre {
+		margin-block: 0;
+	}
+}
+
 .sr-only {
 	block-size: 1px;
 	border: 0;

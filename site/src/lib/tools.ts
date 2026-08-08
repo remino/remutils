@@ -1,8 +1,24 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { marked } from 'marked'
+import { bundledLanguages, createHighlighter } from 'shiki'
 
 const repositoryRoot = join(process.cwd(), '..')
+const highlighter = await createHighlighter({
+	langs: Object.keys(bundledLanguages),
+	themes: ['github-dark'],
+})
+const renderer = new marked.Renderer()
+
+renderer.code = ({ lang, text }) => {
+	const language = lang?.split(/\s+/, 1)[0] || 'text'
+	const supportedLanguage = highlighter.getLoadedLanguages().includes(language)
+
+	return `<div class="code-block">${highlighter.codeToHtml(text, {
+		lang: supportedLanguage ? language : 'text',
+		theme: 'github-dark',
+	})}</div>`
+}
 
 export interface Tool {
 	description: string
@@ -36,7 +52,7 @@ export async function getTools(): Promise<Tool[]> {
 					const markdown = await readFile(readmePath, 'utf8')
 					return {
 						description: descriptionFrom(markdown) ?? '',
-						html: await marked.parse(markdown),
+						html: await marked.parse(markdown, { renderer }),
 						name: entry.name,
 					}
 				} catch {
