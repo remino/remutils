@@ -27,28 +27,18 @@ main {
 
 .tool-list {
 	display: grid;
-	gap: var(--dress-g);
+	gap: var(--dress-m-b) var(--dress-m-i);
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-	list-style: none;
 	padding: 0;
-}
-
-.tool-list a {
-	display: block;
-	height: 100%;
-	text-decoration: none;
-}
-
-.tool-list strong,
-.tool-list span {
-	display: block;
-}
-
-.tool-list span {
-	margin-block-start: var(--dress-m-bs);
 }
 
 article {
 	margin-inline: auto;
 	max-inline-size: 72ch;
+}
+
+body > header > h1::before {
+	content: '>';
+	font-weight: normal;
+	opacity: 0.5;
 }

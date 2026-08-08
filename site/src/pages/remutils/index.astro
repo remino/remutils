@@ -8,14 +8,14 @@ const tools = await getTools()
 <BaseLayout>
 	<h1>remutils documentation</h1>
 	<p>A collection of small, independently released command-line tools.</p>
-	<ul class="tool-list">
+	<dl class="tool-list">
 		{tools.map(tool => (
-			<li>
-				<a href={`/remutils/${tool.name}/`}>
-					<strong>{tool.name}</strong>
-					{tool.description && <span>{tool.description}</span>}
-				</a>
-			</li>
+			<div>
+				<dt>
+					<a href={`/remutils/${tool.name}/`}><strong>{tool.name}</strong></a>
+				</dt>
+				{tool.description && <dd>{tool.description}</dd>}
+			</div>
 		))}
-	</ul>
+	</dl>
 </BaseLayout>
