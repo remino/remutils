@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { getTools } from '../../lib/tools'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { getTools } from '../../../lib/tools'
 
 export async function getStaticPaths() {
 	const tools = await getTools()

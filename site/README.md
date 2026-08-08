@@ -16,4 +16,5 @@ Set `RSDEPLOY_DEST` in a local `.env` to deploy the generated `dist/` directory.
 From the repository root, `just serve` starts the Astro development server.
 
 The site shares the `remino.net` navigation assets at `/nav/` and its font
-assets at `/fonts/`, as does remarqueeble.
+assets at `/fonts/`, as does remarqueeble. During local development, Astro
+proxies both paths from the sibling `remino.net` build.
