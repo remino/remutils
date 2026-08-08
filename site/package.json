@@ -28,6 +28,10 @@
 		"@remino/astro-middleware": "^0.1.0",
 		"@remino/directive": "^5.3.4",
 		"marked": "^15.0.6",
+		"marked-gfm-heading-id": "^4.1.0",
+		"remark-parse": "^11.0.0",
+		"remark-stringify": "^11.0.0",
+		"remark-toc": "^9.0.0",
 		"shiki": "^4.3.0"
 	}
 }

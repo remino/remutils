@@ -1,7 +1,12 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { marked } from 'marked'
+import { gfmHeadingId } from 'marked-gfm-heading-id'
+import remarkParse from 'remark-parse'
+import remarkStringify from 'remark-stringify'
+import remarkToc from 'remark-toc'
 import { bundledLanguages, createHighlighter } from 'shiki'
+import { unified } from 'unified'
 
 const repositoryRoot = join(process.cwd(), '..')
 const highlighter = await createHighlighter({
@@ -20,18 +25,10 @@ renderer.code = ({ lang, text }) => {
 	})}</div>`
 }
 
-function renderMarkdown(markdown: string) {
-	return marked.parse(markdown, { renderer })
-}
+marked.use(gfmHeadingId(), { renderer })
 
-function renderTableOfContents(markdown: string) {
-	return renderMarkdown(markdown).replace(
-		/<ul>[\s\S]*<\/ul>/,
-		tableOfContents =>
-			tableOfContents
-				.replaceAll('<li><p>', '<li>')
-				.replaceAll('</a></p>', '</a>')
-	)
+function renderMarkdown(markdown: string) {
+	return marked.parse(markdown)
 }
 
 export interface Tool {
@@ -82,16 +79,24 @@ export async function getTools(): Promise<Tool[]> {
 
 export async function getRepositoryReadmeSections() {
 	const markdown = await readFile(join(repositoryRoot, 'README.md'), 'utf8')
-	const tocEnd = '<!-- mtoc-end -->'
-	const markdownWithTools = markdown.replace(
-		tocEnd,
-		`- [Tools](#tools)\n\n${tocEnd}`
+	const [beforeTools = '', afterTools = ''] = markdown.split(
+		/<!-- mtoc-start -->[\s\S]*?<!-- mtoc-end -->/,
+		2
 	)
-	const [beforeTools, afterTools = ''] = markdownWithTools.split(tocEnd, 2)
+	const homepageMarkdown = await unified()
+		.use(remarkParse)
+		.use(remarkToc)
+		.use(remarkStringify)
+		.process(
+			`${beforeTools}## Table of Contents\n\n## Tools\n\n<!-- remutils-tools -->\n\n${afterTools}`
+		)
+	const [beforeToolList = '', afterToolList = ''] = String(
+		homepageMarkdown
+	).split('<!-- remutils-tools -->', 2)
 
 	return {
-		beforeTools: renderTableOfContents(`${beforeTools}${tocEnd}`),
-		afterTools: renderMarkdown(afterTools),
+		afterTools: renderMarkdown(afterToolList),
+		beforeTools: renderMarkdown(beforeToolList.replace(/## Tools\n*$/, '')),
 	}
 }
 
