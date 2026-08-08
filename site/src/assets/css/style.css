@@ -1,6 +1,6 @@
 @import '@remino/directive';
 
-body {
+main {
 	margin-block-end: calc(var(--rmn-ribbon-push, 0px) + var(--dress-m-b) * 2);
 }
 
