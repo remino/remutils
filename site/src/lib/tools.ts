@@ -39,11 +39,23 @@ export interface Tool {
 }
 
 function descriptionFrom(markdown: string) {
-	return markdown
-		.split('\n')
-		.slice(1)
-		.find(line => line.trim() && !line.startsWith('<!--'))
-		?.trim()
+	const lines = markdown.split('\n').slice(1)
+	const firstLine = lines.findIndex(
+		line => line.trim() && !line.startsWith('<!--')
+	)
+
+	if (firstLine === -1) return ''
+
+	const paragraph = []
+
+	for (const line of lines.slice(firstLine)) {
+		if (!line.trim()) break
+		paragraph.push(line)
+	}
+
+	return paragraph
+		.join(' ')
+		.trim()
 		.replace(/^\*|\*$/g, '')
 }
 
