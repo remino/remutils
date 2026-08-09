@@ -1,7 +1,6 @@
 # litesite
 
-Create and work with tiny static sites that keep their source in `src/` and
-publish to `dist/`.
+Create and publish tiny static sites.
 
 2026 Rémino Rem <https://remino.net/>
 

@@ -1,7 +1,6 @@
 # liverename
 
-Watches a file with `watchexec` and renames it with a timestamp when it is
-created.
+Rename new files with a timestamp.
 
 2026 Rémino Rem <https://remino.net/>
 

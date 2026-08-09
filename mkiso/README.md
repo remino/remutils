@@ -1,6 +1,6 @@
 # mkiso
 
-Wrapper for `hdiutil` to make an ISO volume file out of a directory.
+Create ISO files from directories.
 
 2026 Rémino Rem <https://remino.net/>
 
