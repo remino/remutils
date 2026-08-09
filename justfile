@@ -36,6 +36,9 @@ serve port="4173":
 docs-serve port="4173":
 	just serve {{port}}
 
+docs-publish:
+	npm run docs:publish --prefix site
+
 lint name="":
 	if [ "{{name}}" = "site" ]; then \
 		npm run lint --prefix site; \
