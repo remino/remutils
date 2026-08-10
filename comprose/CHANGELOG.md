@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0
 
 - Simplify template context by removing the `has*` presence flags; custom
   templates should use their corresponding value directly as a Mustache section.

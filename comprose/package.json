@@ -1,66 +1,66 @@
 {
-	"name": "@remino/comprose",
-	"version": "0.2.0",
-	"description": "Create and import prose content entries.",
-	"type": "module",
-	"bin": {
-		"comprose": "comprose"
-	},
-	"man": "./man/comprose.1",
-	"publishConfig": {
-		"access": "public",
-		"registry": "https://registry.npmjs.org/"
-	},
-	"files": [
-		"comprose",
-		"bin/comprose.js",
-		"lib",
-		"man",
-		"templates"
-	],
-	"scripts": {
-		"docs:build": "node bin/build-docs.mjs",
-		"docs:commit": "export COMMIT=\"$(git rev-parse HEAD)\" && cd ../docs && git add .nojekyll comprose && git commit -m \"Add build for $COMMIT\"; true",
-		"docs:publish": "npm run docs:build && npm run docs:commit && npm run docs:push",
-		"docs:push": "cd ../docs && git push origin docs",
-		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"test": "node --test",
-		"typecheck": "tsc -p tsconfig.json",
-		"version:show": "../bin/version show ./comprose"
-	},
-	"keywords": [
-		"astro",
-		"blog",
-		"markdown",
-		"prose"
-	],
-	"author": {
-		"name": "Rémino Rem",
-		"url": "https://remino.net/"
-	},
-	"license": "ISC",
-	"homepage": "https://github.com/remino/remutils/tree/main/comprose",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/remino/remutils.git",
-		"directory": "comprose"
-	},
-	"bugs": {
-		"url": "https://github.com/remino/remutils/issues"
-	},
-	"engines": {
-		"node": ">=20"
-	},
-	"dependencies": {
-		"mustache": "^4.2.0",
-		"sharp": "0.34.5"
-	},
-	"devDependencies": {
-		"@remino/dress.css": "^5.4.2",
-		"@types/node": "^24.0.0",
-		"jsdoc": "^4.0.5",
-		"marked": "^16.2.0",
-		"typescript": "^5.9.0"
-	}
+  "name": "@remino/comprose",
+  "version": "0.3.0",
+  "description": "Create and import prose content entries.",
+  "type": "module",
+  "bin": {
+    "comprose": "comprose"
+  },
+  "man": "./man/comprose.1",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "comprose",
+    "bin/comprose.js",
+    "lib",
+    "man",
+    "templates"
+  ],
+  "scripts": {
+    "docs:build": "node bin/build-docs.mjs",
+    "docs:commit": "export COMMIT=\"$(git rev-parse HEAD)\" && cd ../docs && git add .nojekyll comprose && git commit -m \"Add build for $COMMIT\"; true",
+    "docs:publish": "npm run docs:build && npm run docs:commit && npm run docs:push",
+    "docs:push": "cd ../docs && git push origin docs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.json",
+    "version:show": "../bin/version show ./comprose"
+  },
+  "keywords": [
+    "astro",
+    "blog",
+    "markdown",
+    "prose"
+  ],
+  "author": {
+    "name": "Rémino Rem",
+    "url": "https://remino.net/"
+  },
+  "license": "ISC",
+  "homepage": "https://github.com/remino/remutils/tree/main/comprose",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remino/remutils.git",
+    "directory": "comprose"
+  },
+  "bugs": {
+    "url": "https://github.com/remino/remutils/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "mustache": "^4.2.0",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@remino/dress.css": "^5.4.2",
+    "@types/node": "^24.0.0",
+    "jsdoc": "^4.0.5",
+    "marked": "^16.2.0",
+    "typescript": "^5.9.0"
+  }
 }
