@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.2.0
 
 - Prefer project-local and user template directories over bundled templates.
 - Add a generated GitHub Pages docs flow with a README landing page and JSDoc
