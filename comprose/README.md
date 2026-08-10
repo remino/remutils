@@ -115,13 +115,13 @@ should be written.
 
 Template names are resolved in this order:
 
-1. Built-in templates bundled with `comprose`.
-2. `.comprose/templates/<name>` in the current directory or any parent
+1. `.comprose/templates/<name>` in the current directory or any parent
    directory.
-3. `.config/comprose/templates/<name>` in the current directory or any parent
+2. `.config/comprose/templates/<name>` in the current directory or any parent
    directory.
-4. `$XDG_CONFIG_HOME/comprose/templates/<name>`, or
+3. `$XDG_CONFIG_HOME/comprose/templates/<name>`, or
    `$HOME/.config/comprose/templates/<name>` when `XDG_CONFIG_HOME` is unset.
+4. Built-in templates bundled with `comprose`.
 5. A relative or absolute directory path passed to `--template`.
 
 For example:

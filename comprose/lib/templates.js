@@ -67,17 +67,13 @@ const pubnameFromPackageName = packageName => {
 	return parts.slice(1).join('-')
 }
 
-const findParentTemplateDir = async templateName => {
+const findParentTemplateDir = async (templateName, templatePath) => {
 	let dir = repoRoot
 
 	while (true) {
-		for (const candidate of [
-			join(dir, '.comprose', 'templates', templateName),
-			join(dir, '.config', 'comprose', 'templates', templateName),
-		]) {
-			if (await pathExists(candidate)) {
-				return candidate
-			}
+		const candidate = join(dir, ...templatePath, templateName)
+		if (await pathExists(candidate)) {
+			return candidate
 		}
 
 		const parent = dirname(dir)
@@ -173,27 +169,34 @@ const styleValueFromTemplate = styleRelativePath => {
 }
 
 /**
- * Resolve a template by built-in name, local dot-directory lookup, XDG config
- * lookup, or explicit relative/absolute path.
+ * Resolve a template by local dot-directory lookup, user config lookup,
+ * built-in name, or explicit relative/absolute path.
  *
  * @param {string | undefined} templateInput
  * @returns {Promise<TemplateRef>}
  */
 export const resolveTemplate = async templateInput => {
 	const templateName = templateInput ?? 'default'
-	const builtInDir = join(toolRoot, 'templates', templateName)
 
-	if (await pathExists(builtInDir)) {
+	const parentTemplateDir = await findParentTemplateDir(templateName, [
+		'.comprose',
+		'templates',
+	])
+	if (parentTemplateDir) {
 		return {
-			dir: builtInDir,
+			dir: parentTemplateDir,
 			name: templateName,
 		}
 	}
 
-	const parentTemplateDir = await findParentTemplateDir(templateName)
-	if (parentTemplateDir) {
+	const projectConfigTemplateDir = await findParentTemplateDir(templateName, [
+		'.config',
+		'comprose',
+		'templates',
+	])
+	if (projectConfigTemplateDir) {
 		return {
-			dir: parentTemplateDir,
+			dir: projectConfigTemplateDir,
 			name: templateName,
 		}
 	}
@@ -202,6 +205,14 @@ export const resolveTemplate = async templateInput => {
 	if (configTemplateDir) {
 		return {
 			dir: configTemplateDir,
+			name: templateName,
+		}
+	}
+
+	const builtInDir = join(toolRoot, 'templates', templateName)
+	if (await pathExists(builtInDir)) {
+		return {
+			dir: builtInDir,
 			name: templateName,
 		}
 	}

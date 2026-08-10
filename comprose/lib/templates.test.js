@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { cleanupProjects, createProject, importFresh } from './helpers.js'
@@ -7,10 +7,15 @@ import { cleanupProjects, createProject, importFresh } from './helpers.js'
 afterEach(cleanupProjects)
 
 describe('templates', () => {
-	it('resolves built-in and parent templates and builds a template plan', async () => {
+	it('prefers parent templates over built-in templates and builds a template plan', async () => {
 		const dir = await createProject('template-parent')
 		const nestedDir = join(dir, 'sites/example')
 		const templateDir = join(dir, '.comprose/templates/local')
+		const defaultTemplateDir = join(dir, '.comprose/templates/default')
+		const configDefaultTemplateDir = join(
+			dir,
+			'.config/comprose/templates/default'
+		)
 		await mkdir(join(nestedDir), { recursive: true })
 		await mkdir(join(templateDir, 'content/[collection]/[slug]'), {
 			recursive: true,
@@ -26,6 +31,8 @@ describe('templates', () => {
 			join(templateDir, 'assets/[collection]/[slug]/.comprose-assets'),
 			'assets\n'
 		)
+		await mkdir(defaultTemplateDir, { recursive: true })
+		await mkdir(configDefaultTemplateDir, { recursive: true })
 
 		const {
 			resolveTemplate,
@@ -36,7 +43,14 @@ describe('templates', () => {
 
 		const defaultTemplate = await resolveTemplate()
 		assert.equal(defaultTemplate.name, 'default')
-		assert.equal(basename(defaultTemplate.dir), 'default')
+		assert.equal(defaultTemplate.dir, await realpath(defaultTemplateDir))
+
+		await rm(defaultTemplateDir, { force: true, recursive: true })
+		const configDefaultTemplate = await resolveTemplate()
+		assert.equal(
+			configDefaultTemplate.dir,
+			await realpath(configDefaultTemplateDir)
+		)
 
 		const template = await resolveTemplate('local')
 		const config = {

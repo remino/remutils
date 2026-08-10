@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Prefer project-local and user template directories over bundled templates.
 - Add a generated GitHub Pages docs flow with a README landing page and JSDoc
   API output published through a dedicated `docs` worktree.
 - Add a local `dress.css`-powered JSDoc theme for the published API site.
