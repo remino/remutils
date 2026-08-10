@@ -25,7 +25,7 @@ format name="":
 
 format-all dir=".":
 	prettier --ignore-unknown --write "{{dir}}"
-	shfmt -w "{{dir}}"
+	shfmt --apply-ignore -w "{{dir}}"
 
 hooks:
 	lefthook install
@@ -50,7 +50,7 @@ lint name="":
 
 lint-all dir=".":
 	prettier --ignore-unknown --check "{{dir}}"
-	shfmt -d "{{dir}}"
+	shfmt --apply-ignore -d "{{dir}}"
 
 version name="":
 	if [ -n "{{name}}" ]; then \

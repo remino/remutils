@@ -18,6 +18,9 @@ switch_case_indent = true
 [*.bats]
 shell_variant = bats
 
+[**/node_modules/**]
+ignore = true
+
 [*.md]
 indent_size = 4
 indent_style = space
