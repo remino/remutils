@@ -153,7 +153,7 @@ describe('comprose new', () => {
 		})
 		await writeFile(
 			join(templateDir, 'content/[collection]/[slug]/entry.md.mustache'),
-			'---\ntitle: {{{title}}}\n{{#hasImage}}image: {{{image}}}\n{{/hasImage}}---\n\n{{{body}}}'
+			'---\ntitle: {{{title}}}\n{{#image}}image: {{{image}}}\n{{/image}}---\n\n{{{body}}}'
 		)
 		await writeFile(
 			join(templateDir, 'assets/[collection]/[slug]/.comprose-assets'),

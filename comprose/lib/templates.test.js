@@ -69,18 +69,24 @@ describe('templates', () => {
 		assert.match(paths.entryPath, /content\/journal\/entry\/entry\.md$/)
 		assert.match(paths.assetDir, /assets\/journal\/entry$/)
 
-		await writeTemplateFiles(
+		const context = templateContext({
+			body: 'Body',
+			config,
+			date: '2026-07-23',
+			frontmatterDate: '2026-07-23T00:00:00+09:00',
+			image: '  ',
+			metadata: { description: '  ', draft: 'true', subtitle: 'Subtitle' },
 			paths,
-			templateContext({
-				body: 'Body',
-				config,
-				date: '2026-07-23',
-				frontmatterDate: '2026-07-23T00:00:00+09:00',
-				paths,
-				slug: 'entry',
-				title: 'Entry',
-			})
-		)
+			slug: 'entry',
+			title: 'Entry',
+		})
+		assert.equal(context.description, undefined)
+		assert.equal(context.image, undefined)
+		assert.equal(context.draft, false)
+		assert.equal(context.subtitle, 'Subtitle')
+		assert.equal('hasSubtitle' in context, false)
+
+		await writeTemplateFiles(paths, context)
 
 		const content = await readFile(paths.entryPath, 'utf8')
 		assert.match(content, /^title: Entry$/m)

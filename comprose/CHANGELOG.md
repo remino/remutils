@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Simplify template context by removing the `has*` presence flags; custom
+  templates should use their corresponding value directly as a Mustache section.
+
 ## v0.2.0
 
 - Prefer project-local and user template directories over bundled templates.

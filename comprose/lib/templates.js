@@ -320,6 +320,8 @@ export const buildTemplatePlan = async (config, variables) => {
 	}
 }
 
+const optionalValue = value => (hasValue(value) ? String(value) : undefined)
+
 /**
  * Build the Mustache context exposed to template files.
  *
@@ -362,52 +364,29 @@ export const templateContext = ({
 		contentDir: paths.contentDir,
 		date,
 		dateString: dateString ?? date,
-		deck: metadata.deck,
-		description: metadata.description,
-		draft: metadata.draft,
+		deck: optionalValue(metadata.deck),
+		description: optionalValue(metadata.description),
+		draft: metadata.draft === true,
 		entryPath: paths.entryPath,
 		frontmatterDate,
-		hasDeck: false,
-		hasDescription: false,
-		hasDraft: false,
-		hasImage: false,
-		hasKicker: false,
-		hasOriginalDate: false,
-		hasShareImage: false,
-		hasStyle: false,
-		hasSubtitle: false,
-		hasSummary: false,
-		hasTags: false,
-		image,
-		kicker: metadata.kicker,
-		original_date: metadata.original_date,
+		image: optionalValue(image),
+		kicker: optionalValue(metadata.kicker),
+		original_date: optionalValue(metadata.original_date),
 		collection: config.collection,
 		project: config.project,
 		pubname: config.pubname,
 		publicPrefix: `/${config.collection}`,
-		share_image: metadata.share_image,
+		share_image: optionalValue(metadata.share_image),
 		slug,
-		style,
+		style: optionalValue(style),
 		stylePath: paths.stylePath,
 		stylePrefix: config.collection,
-		subtitle: metadata.subtitle,
-		summary: metadata.summary,
-		tags: Array.isArray(tags) ? tags.join(', ') : tags,
+		subtitle: optionalValue(metadata.subtitle),
+		summary: optionalValue(metadata.summary),
+		tags: optionalValue(Array.isArray(tags) ? tags.join(', ') : tags),
 		title,
 		type,
 	}
-	context.hasDeck = hasValue(context.deck)
-	context.hasDescription = hasValue(context.description)
-	context.hasDraft = context.draft === true
-	context.hasImage = hasValue(context.image)
-	context.hasKicker = hasValue(context.kicker)
-	context.hasOriginalDate = hasValue(context.original_date)
-	context.hasShareImage = hasValue(context.share_image)
-	context.hasStyle = hasValue(context.style)
-	context.hasSubtitle = hasValue(context.subtitle)
-	context.hasSummary = hasValue(context.summary)
-	context.hasTags = hasValue(context.tags)
-
 	return context
 }
 

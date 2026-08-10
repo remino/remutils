@@ -168,21 +168,10 @@
  * @property {string} date
  * @property {string} dateString
  * @property {string | undefined} description
- * @property {boolean | undefined} draft
+ * @property {boolean} draft
  * @property {string | undefined} deck
  * @property {string} entryPath
  * @property {string} frontmatterDate
- * @property {boolean} hasDeck
- * @property {boolean} hasDescription
- * @property {boolean} hasDraft
- * @property {boolean} hasImage
- * @property {boolean} hasKicker
- * @property {boolean} hasOriginalDate
- * @property {boolean} hasShareImage
- * @property {boolean} hasStyle
- * @property {boolean} hasSubtitle
- * @property {boolean} hasSummary
- * @property {boolean} hasTags
  * @property {string | undefined} image
  * @property {string | undefined} kicker
  * @property {string | undefined} original_date
@@ -197,7 +186,7 @@
  * @property {string} stylePrefix
  * @property {string | undefined} subtitle
  * @property {string | undefined} summary
- * @property {string} tags
+ * @property {string | undefined} tags
  * @property {string} title
  * @property {'article' | 'note'} type
  */
