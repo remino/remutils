@@ -1,5 +1,6 @@
 import { afterEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import {
 	captureConsole,
 	cleanupProjects,
@@ -24,11 +25,14 @@ describe('main', () => {
 	it('prints the version for the version command', async () => {
 		const dir = await createProject('main-version')
 		const { main } = await importFresh('./main.js', dir)
+		const packageJson = JSON.parse(
+			await readFile(new URL('../package.json', import.meta.url), 'utf8')
+		)
 
 		const { logs } = await captureConsole(async () => {
 			await main(['version'])
 		})
 
-		assert.deepEqual(logs, ['comprose 0.1.0'])
+		assert.deepEqual(logs, [`comprose ${packageJson.version}`])
 	})
 })
