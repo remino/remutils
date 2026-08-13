@@ -235,7 +235,8 @@ _render_template() {
 			(
 				# shellcheck source=lib/mo
 				source "$MO"
-				mo "$source"
+				cd "$template_dir"
+				mo < "$relative"
 			) > "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to render template: $source"
 		else
 			cp "$source" "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to copy template file: $source"

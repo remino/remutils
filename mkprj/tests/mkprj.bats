@@ -85,6 +85,17 @@ teardown() {
 	[ "$(< "$PROJECTS_DIR/20201231 Project Notes/Acme/project-notes.md")" = '# Project Notes for Acme' ]
 }
 
+@test "renders Mustache templates whose source path contains spaces" {
+	local template="$TMP_DIR/custom-template"
+	mkdir -p "$template"
+	printf '{{date}} {{name}}\n\nhey\n' > "$template/[project_date] [project_name].md.mustache"
+
+	run "$TOOL" -t "$template" '20201231 Project Notes'
+
+	[ "$status" -eq 0 ]
+	[ "$(< "$PROJECTS_DIR/20201231 Project Notes/20201231 Project Notes.md")" = $'2020-12-31 Project Notes\n\nhey' ]
+}
+
 @test "uses the default template and runs its setup script" {
 	local setup="$TEMPLATES_DIR/default/.mkprj/setup"
 	mkdir -p "$(dirname "$setup")"

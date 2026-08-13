@@ -2,11 +2,16 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v3.0.2](#v302)
 - [v3.0.1](#v301)
 - [v3.0.0](#v300)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Render Mustache template files whose paths contain spaces.
 
 ## v3.0.2
 
