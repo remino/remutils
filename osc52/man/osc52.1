@@ -1,0 +1,24 @@
+.TH OSC52 1 "August 2026" "osc52 0.1.0"
+.SH NAME
+osc52 \- copy and paste using OSC 52
+.SH SYNOPSIS
+.B osc52
+.I command
+.RI [ arguments ...]
+.SH DESCRIPTION
+.B osc52
+copies to and pastes from a terminal clipboard using OSC 52 escape sequences.
+.SH COMMANDS
+.TP
+.B copy [TEXT...]
+Copy arguments, or standard input when no arguments are provided.
+.TP
+.B paste
+Query the terminal clipboard and print its contents.
+.SH OPTIONS
+.TP
+.BR -h , " --help"
+Show usage information.
+.TP
+.BR -v , " --version"
+Show the version number.
