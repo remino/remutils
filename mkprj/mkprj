@@ -2,7 +2,7 @@
 # mkprj
 # Create dated project directories from optional templates.
 
-VERSION='3.0.2'
+VERSION='3.0.3'
 
 mkprj_main() {
 	trap _exit INT TERM
