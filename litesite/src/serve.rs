@@ -1,19 +1,19 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use axum::body::Body;
 use axum::extract::{Request, State};
-use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
-use axum::response::IntoResponse;
+use axum::http::{header, HeaderMap, HeaderValue, Method, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::{Router, serve};
+use axum::{serve, Router};
 use env_logger::fmt::Formatter;
-use futures::StreamExt;
 use futures::stream;
+use futures::StreamExt;
 use log::{Level, LevelFilter, Record};
 use mime_guess::mime;
 use notify::{Error, RecommendedWatcher, RecursiveMode};
 use notify_debouncer_full::{
-    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
+    new_debouncer, DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache,
 };
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -24,13 +24,15 @@ use std::io::IsTerminal;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Once};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::time::Instant;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::broadcast;
-use tokio::sync::mpsc::{Receiver, channel};
+use tokio::sync::mpsc::{channel, Receiver};
 use tokio_stream::wrappers::BroadcastStream;
+use tokio_util::io::ReaderStream;
 
 const SSE_PATH: &str = "/__litesite/livereload";
 const WORKER_PATH: &str = "/__litesite/livereload-worker.js";
@@ -86,9 +88,7 @@ pub async fn serve_site(root: &Path) -> Result<()> {
 
     let public = root.join("src/public");
     let public_display = format_root_display(root, &public);
-    let serve_root = public
-        .canonicalize()
-        .unwrap_or_else(|_| public.clone());
+    let serve_root = public.canonicalize().unwrap_or_else(|_| public.clone());
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("0.0.0.0:{port}");
 
@@ -113,7 +113,11 @@ pub async fn serve_site(root: &Path) -> Result<()> {
 
     log_startup!("Serving on http://127.0.0.1:{}", local_addr.port());
     log_startup!("Root: {public_display}");
-    log_startup!("Listening on http://{}:{}", local_addr.ip(), local_addr.port());
+    log_startup!(
+        "Listening on http://{}:{}",
+        local_addr.ip(),
+        local_addr.port()
+    );
     log_startup!("SSE endpoint {SSE_PATH}");
     log_startup!("Press Ctrl-C to stop.");
 
@@ -142,7 +146,11 @@ pub async fn serve_site(root: &Path) -> Result<()> {
 async fn sse_handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let hello_state = state.clone();
     let hello = stream::once(async move {
-        Ok::<_, Infallible>(Event::default().event("hello").data(hello_state.boot_id.clone()))
+        Ok::<_, Infallible>(
+            Event::default()
+                .event("hello")
+                .data(hello_state.boot_id.clone()),
+        )
     });
 
     let updates = BroadcastStream::new(state.bus.subscribe()).filter_map(|message| async move {
@@ -176,7 +184,7 @@ async fn static_assets(
     let method = req.method().clone();
     let uri_path = req.uri().path().to_string();
     let remote_ip = request_remote_ip(&req);
-    let response = serve_request(&state.root, &uri_path);
+    let response = serve_request(&state.root, &uri_path, req.headers()).await;
     log_access(
         &method,
         &uri_path,
@@ -188,7 +196,11 @@ async fn static_assets(
     (response.0, response.1, response.2)
 }
 
-fn serve_request(root: &Path, uri_path: &str) -> (StatusCode, HeaderMap, Body, Option<String>) {
+async fn serve_request(
+    root: &Path,
+    uri_path: &str,
+    request_headers: &HeaderMap,
+) -> (StatusCode, HeaderMap, Body, Option<String>) {
     if uri_path.starts_with("//") {
         let redirect = format!("/{}", uri_path.trim_start_matches('/'));
         let mut headers = no_store_headers();
@@ -230,40 +242,35 @@ fn serve_request(root: &Path, uri_path: &str) -> (StatusCode, HeaderMap, Body, O
     }
 
     let mime = mime_guess::from_path(&path).first_or_text_plain();
-    let headers = text_headers(content_type_for(&mime));
+    let mut headers = text_headers(content_type_for(&path, &mime));
+    headers.append(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
 
-    let file = match fs::read(&path) {
-        Ok(file) => file,
-        Err(err) => {
-            if err.kind() == IoErrorKind::NotFound && is_accessing_dir {
-                let html = inject_client(&index_listing_html(uri_path, root, &path));
+    if mime == "text/html" {
+        let file = match fs::read(&path) {
+            Ok(file) => file,
+            Err(err) => {
+                if err.kind() == IoErrorKind::NotFound && is_accessing_dir {
+                    let html = inject_client(&index_listing_html(uri_path, root, &path));
+                    return (
+                        StatusCode::OK,
+                        text_headers("text/html; charset=utf-8"),
+                        Body::from(html),
+                        access_target,
+                    );
+                }
+
+                let status = match err.kind() {
+                    IoErrorKind::NotFound => StatusCode::NOT_FOUND,
+                    _ => StatusCode::INTERNAL_SERVER_ERROR,
+                };
                 return (
-                    StatusCode::OK,
-                    text_headers("text/html; charset=utf-8"),
-                    Body::from(html),
+                    status,
+                    headers,
+                    Body::from(inject_client(&error_html(&err.to_string()))),
                     access_target,
                 );
             }
-
-            let status = match err.kind() {
-                IoErrorKind::NotFound => StatusCode::NOT_FOUND,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            };
-
-            return (
-                status,
-                headers,
-                if mime == "text/html" {
-                    Body::from(inject_client(&error_html(&err.to_string())))
-                } else {
-                    Body::from(err.to_string())
-                },
-                access_target,
-            );
-        }
-    };
-
-    if mime == "text/html" {
+        };
         let text = match String::from_utf8(file) {
             Ok(text) => text,
             Err(err) => {
@@ -284,7 +291,120 @@ fn serve_request(root: &Path, uri_path: &str) -> (StatusCode, HeaderMap, Body, O
         );
     }
 
-    (StatusCode::OK, headers, Body::from(file), access_target)
+    let mut file = match tokio::fs::File::open(&path).await {
+        Ok(file) => file,
+        Err(err) => {
+            let status = match err.kind() {
+                IoErrorKind::NotFound => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+            return (status, headers, Body::from(err.to_string()), access_target);
+        }
+    };
+    let file_len = match file.metadata().await {
+        Ok(metadata) => metadata.len() as usize,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                headers,
+                Body::from(err.to_string()),
+                access_target,
+            );
+        }
+    };
+
+    if let Some(range_header) = request_headers.get(header::RANGE) {
+        let Some(range) = ByteRange::parse(range_header, file_len) else {
+            let mut headers = headers;
+            headers.insert(
+                header::CONTENT_RANGE,
+                HeaderValue::from_str(&format!("bytes */{file_len}")).unwrap(),
+            );
+            return (
+                StatusCode::RANGE_NOT_SATISFIABLE,
+                headers,
+                Body::empty(),
+                access_target,
+            );
+        };
+
+        let mut headers = headers;
+        headers.insert(
+            header::CONTENT_RANGE,
+            HeaderValue::from_str(&format!("bytes {}-{}/{}", range.start, range.end, file_len))
+                .unwrap(),
+        );
+        headers.insert(
+            header::CONTENT_LENGTH,
+            HeaderValue::from_str(&range.len().to_string()).unwrap(),
+        );
+        if let Err(err) = file.seek(SeekFrom::Start(range.start as u64)).await {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                headers,
+                Body::from(err.to_string()),
+                access_target,
+            );
+        }
+        return (
+            StatusCode::PARTIAL_CONTENT,
+            headers,
+            Body::from_stream(ReaderStream::new(file.take(range.len() as u64))),
+            access_target,
+        );
+    }
+
+    headers.insert(
+        header::CONTENT_LENGTH,
+        HeaderValue::from_str(&file_len.to_string()).unwrap(),
+    );
+    (
+        StatusCode::OK,
+        headers,
+        Body::from_stream(ReaderStream::new(file)),
+        access_target,
+    )
+}
+
+struct ByteRange {
+    start: usize,
+    end: usize,
+}
+
+impl ByteRange {
+    fn parse(header: &HeaderValue, file_len: usize) -> Option<Self> {
+        let value = header.to_str().ok()?;
+        let range = value.strip_prefix("bytes=")?;
+        let (start, end) = range.split_once('-')?;
+        if start.contains(',') || end.contains(',') || file_len == 0 {
+            return None;
+        }
+
+        let (start, end) = if start.is_empty() {
+            let suffix = end.parse::<usize>().ok()?;
+            if suffix == 0 {
+                return None;
+            }
+            (file_len.saturating_sub(suffix), file_len - 1)
+        } else {
+            let start = start.parse::<usize>().ok()?;
+            let end = if end.is_empty() {
+                file_len - 1
+            } else {
+                end.parse::<usize>().ok()?
+            };
+            (start, end.min(file_len - 1))
+        };
+
+        if start > end || start >= file_len {
+            return None;
+        }
+        Some(Self { start, end })
+    }
+
+    fn len(&self) -> usize {
+        self.end - self.start + 1
+    }
 }
 
 fn sanitize_uri_path(uri_path: &str) -> Option<PathBuf> {
@@ -306,7 +426,15 @@ fn sanitize_uri_path(uri_path: &str) -> Option<PathBuf> {
     Some(candidate.to_path_buf())
 }
 
-fn content_type_for(mime: &mime::Mime) -> String {
+fn content_type_for(path: &Path, mime: &mime::Mime) -> String {
+    if path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("m4a"))
+    {
+        return "audio/mp4".to_string();
+    }
+
     if mime.type_() == mime::TEXT {
         format!("{}; charset=utf-8", mime.as_ref())
     } else {
@@ -449,7 +577,11 @@ fn format_access_message(
     target: Option<&str>,
 ) -> String {
     let elapsed_ms = elapsed.as_secs_f64() * 1000.0;
-    let mut message = format!("{} {method} {uri_path} ({remote_ip}) {:.2} ms", status.as_u16(), elapsed_ms);
+    let mut message = format!(
+        "{} {method} {uri_path} ({remote_ip}) {:.2} ms",
+        status.as_u16(),
+        elapsed_ms
+    );
     if let Some(target) = target {
         message.push_str(" (");
         message.push_str(target);
@@ -458,12 +590,10 @@ fn format_access_message(
     message
 }
 
-async fn create_recommended_watcher() -> Result<
-    (
-        Debouncer<RecommendedWatcher, RecommendedCache>,
-        Receiver<Result<Vec<DebouncedEvent>, Vec<Error>>>,
-    ),
-> {
+async fn create_recommended_watcher() -> Result<(
+    Debouncer<RecommendedWatcher, RecommendedCache>,
+    Receiver<Result<Vec<DebouncedEvent>, Vec<Error>>>,
+)> {
     let rt = Handle::current();
     let (tx, rx) = channel::<Result<Vec<DebouncedEvent>, Vec<Error>>>(16);
 
@@ -504,14 +634,20 @@ async fn watch_for_changes(
                     for path in &event.event.paths {
                         match classify(path) {
                             Some(ChangeKind::Css) => {
-                                log_activity!("Change detected: {}", display_change_path(&root, path));
+                                log_activity!(
+                                    "Change detected: {}",
+                                    display_change_path(&root, path)
+                                );
                                 if !saw_change {
                                     css_only = true;
                                 }
                                 saw_change = true;
                             }
                             Some(ChangeKind::Reload) => {
-                                log_activity!("Change detected: {}", display_change_path(&root, path));
+                                log_activity!(
+                                    "Change detected: {}",
+                                    display_change_path(&root, path)
+                                );
                                 saw_change = true;
                                 saw_reload_type = true;
                                 css_only = false;
@@ -704,11 +840,14 @@ fn classify_log_tone(level: LogLevel, target: &str) -> LogTone {
 #[cfg(test)]
 mod tests {
     use super::{
-        ChangeKind, CLIENT_SNIPPET, WORKER_JS, display_relative_path, format_access_message,
-        format_log_record, format_root_display, inject_client, sanitize_uri_path, classify,
-        LogLevel, LogTone, SSE_PATH, WORKER_PATH,
+        classify, display_relative_path, format_access_message, format_log_record,
+        format_root_display, inject_client, sanitize_uri_path, serve_request, ByteRange,
+        ChangeKind, LogLevel, LogTone, CLIENT_SNIPPET, SSE_PATH, WORKER_JS, WORKER_PATH,
     };
-    use axum::http::{Method, StatusCode};
+    use axum::{
+        body::to_bytes,
+        http::{header, HeaderMap, HeaderValue, Method, StatusCode},
+    };
     use std::path::Path;
     use std::time::Duration;
 
@@ -728,6 +867,52 @@ mod tests {
     fn parent_segments_are_rejected() {
         assert!(sanitize_uri_path("/../secret").is_none());
         assert!(sanitize_uri_path("/ok/path").is_some());
+    }
+
+    #[tokio::test]
+    async fn static_assets_support_byte_ranges() {
+        let root = std::env::temp_dir().join(format!(
+            "litesite-serve-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("video.bin"), b"0123456789").unwrap();
+
+        let mut headers = HeaderMap::new();
+        headers.insert(header::RANGE, HeaderValue::from_static("bytes=2-5"));
+
+        let response = serve_request(&root, "/video.bin", &headers).await;
+        assert_eq!(response.0, StatusCode::PARTIAL_CONTENT);
+        assert_eq!(response.1[header::CONTENT_RANGE], "bytes 2-5/10");
+        assert_eq!(to_bytes(response.2, usize::MAX).await.unwrap(), "2345");
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn byte_range_parses_open_ended_range() {
+        let range = ByteRange::parse(&HeaderValue::from_static("bytes=95-"), 100).unwrap();
+        assert_eq!(range.start, 95);
+        assert_eq!(range.end, 99);
+    }
+
+    #[test]
+    fn byte_range_parses_suffix_range() {
+        let range = ByteRange::parse(&HeaderValue::from_static("bytes=-5"), 100).unwrap();
+        assert_eq!(range.start, 95);
+        assert_eq!(range.end, 99);
+    }
+
+    #[test]
+    fn byte_range_rejects_invalid_ranges() {
+        assert!(ByteRange::parse(&HeaderValue::from_static("items=0-9"), 100).is_none());
+        assert!(ByteRange::parse(&HeaderValue::from_static("bytes=20-10"), 100).is_none());
+        assert!(ByteRange::parse(&HeaderValue::from_static("bytes=100-110"), 100).is_none());
+        assert!(ByteRange::parse(&HeaderValue::from_static("bytes=0-1,4-5"), 100).is_none());
     }
 
     #[test]
@@ -785,11 +970,26 @@ mod tests {
 
     #[test]
     fn classify_routes_css_vs_reload_vs_ignore() {
-        assert_eq!(classify(Path::new("static/css/app.css")), Some(ChangeKind::Css));
-        assert_eq!(classify(Path::new("templates/home.html")), Some(ChangeKind::Reload));
-        assert_eq!(classify(Path::new("static/app.js")), Some(ChangeKind::Reload));
-        assert_eq!(classify(Path::new("content/post.md")), Some(ChangeKind::Reload));
-        assert_eq!(classify(Path::new("site.config.toml")), Some(ChangeKind::Reload));
+        assert_eq!(
+            classify(Path::new("static/css/app.css")),
+            Some(ChangeKind::Css)
+        );
+        assert_eq!(
+            classify(Path::new("templates/home.html")),
+            Some(ChangeKind::Reload)
+        );
+        assert_eq!(
+            classify(Path::new("static/app.js")),
+            Some(ChangeKind::Reload)
+        );
+        assert_eq!(
+            classify(Path::new("content/post.md")),
+            Some(ChangeKind::Reload)
+        );
+        assert_eq!(
+            classify(Path::new("site.config.toml")),
+            Some(ChangeKind::Reload)
+        );
         assert_eq!(classify(Path::new("src/main.rs")), None);
         assert_eq!(classify(Path::new("Cargo.lock")), None);
         assert_eq!(classify(Path::new("templates/.home.html.swp")), None);
