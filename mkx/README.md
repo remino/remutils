@@ -42,6 +42,15 @@ cd remutils/mkx
 
 Run `man mkx` or `mkx -h` to see how to use it.
 
+Pipe a command into `mkx` to save it as an executable script. `mkx` adds its
+default shebang unless the input already starts with one.
+
+```sh
+echo 'echo hello' | mkx output-hello
+```
+
+Use `-f` to replace an existing file when piping standard input.
+
 ## Formerly _mksh_
 
 As the name _mksh_ is more commonly associated with the
