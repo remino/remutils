@@ -2,13 +2,13 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v3.3.0](#v330)
 - [v3.2.5](#v325)
 - [v3.2.4](#v324)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v3.3.0
 
 - Create an executable script from piped or redirected standard input.
 

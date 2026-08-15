@@ -2,7 +2,7 @@
 # mkx
 # Make new shell script executable file from template.
 
-VERSION='3.2.5'
+VERSION='3.3.0'
 
 mkx_main() {
 	trap _exit INT TERM
