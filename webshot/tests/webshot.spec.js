@@ -38,6 +38,12 @@ async function startFixtureServer() {
 			return;
 		}
 
+		if (request.url === '/transparent.html') {
+			response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+			response.end(await readFixture('transparent.html'));
+			return;
+		}
+
 		if (request.url === '/redirect') {
 			response.writeHead(302, {
 				location: '/page.html',
@@ -133,6 +139,21 @@ describe('webshot CLI', () => {
 			actual,
 			path.join(expectedDir, 'webshot-320x180.png'),
 		);
+	});
+
+	it('preserves a transparent page background in PNG output', async () => {
+		const actual = path.join(outputDir, 'transparent.png');
+		const transparentUrl = server.url.replace(
+			'/page.html',
+			'/transparent.html',
+		);
+
+		await runWebshot(['-W', '320', '-H', '180', transparentUrl, actual]);
+
+		const image = await imageRaw(actual);
+		expect(image.info.channels).toBe(4);
+		const transparentPixelAlpha = image.data[(100 * 320 + 100) * 4 + 3];
+		expect(transparentPixelAlpha).toBe(0);
 	});
 
 	it('writes a png file based on the url when no output file is provided', async () => {

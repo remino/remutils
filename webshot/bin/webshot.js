@@ -271,19 +271,24 @@ async function applyZoom(page, zoom) {
 }
 
 async function saveScreenshot(page, outputFile, format) {
+	const screenshotOptions = {
+		fullPage: false,
+		omitBackground: true,
+	};
+
 	if (format === 'avif') {
 		const screenshot = await page.screenshot({
+			...screenshotOptions,
 			type: 'png',
-			fullPage: false,
 		});
 		await sharp(screenshot).avif().toFile(outputFile);
 		return;
 	}
 
 	await page.screenshot({
+		...screenshotOptions,
 		path: outputFile,
 		type: format,
-		fullPage: false,
 	});
 }
 

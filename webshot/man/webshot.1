@@ -11,6 +11,8 @@ opens a webpage with Puppeteer and saves a viewport screenshot as an image.
 The output image format is inferred from the extension of \fIIMAGE_FILE\fR unless overridden with \fB-f\fR.
 Supported formats are \fIpng\fR, \fIjpeg\fR, \fIavif\fR, and \fIwebp\fR. The \fIjpg\fR extension maps to \fIjpeg\fR.
 
+PNG, AVIF, and WebP preserve a transparent page background. JPEG does not support transparency.
+
 When no arguments are supplied,
 .B webshot
 prints the usage screen and exits successfully.

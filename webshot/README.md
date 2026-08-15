@@ -70,6 +70,8 @@ If the URL has no protocol, `http://` is assumed.
 
 The output image format is inferred from the file extension. Supported formats
 are PNG, JPEG, AVIF, and WebP. The `.jpg` extension maps to JPEG.
+PNG, AVIF, and WebP preserve a transparent page background; JPEG does not
+support transparency.
 
 `-d 96` maps to a device scale factor of `1`. For example, `-d 192` captures at
 2x pixel density while keeping the CSS viewport size unchanged.
