@@ -66,3 +66,6 @@ version-all:
 
 release name type github="":
 	bin/release "{{name}}" "{{type}}" {{github}}
+
+formula name formula_dir:
+	bin/version-formula "{{name}}" "{{formula_dir}}"
