@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.3.1](#v231)
 - [v2.2.0](#v220)
 - [v2.1.0](#v210)
@@ -10,6 +11,16 @@
 - [v1.0.0](#v100)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Render Markdown files included through SSI directives as HTML, with support
+  for attributes, tables, fenced code blocks, definition lists, embedded HTML,
+  and smart punctuation.
+- Add a root-level `priv/` directory to new sites for source files that are
+  included in pages but never copied into the build output.
+- Render SSI includes while serving the development site and watch the full site
+  root, so changes to `priv/` Markdown reload pages with updated content.
 
 ## v2.3.1
 

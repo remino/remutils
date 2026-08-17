@@ -59,6 +59,7 @@ create_site() {
 	[ -f "$SITE_ROOT/.gitignore" ]
 	[ -f "$SITE_ROOT/.env" ]
 	[ -f "$SITE_ROOT/src/public/index.html" ]
+	[ -f "$SITE_ROOT/priv/index.md" ]
 	printf 'avif' > "$SITE_ROOT/src/public/sample.avif"
 }
 
@@ -94,6 +95,7 @@ EOF
 
 make_include_fixture() {
 	mkdir -p "$TEST_ROOT/includes"
+	mkdir -p "$SITE_ROOT/priv"
 	local abs_snippet="$TEST_ROOT/includes/snippet.html"
 
 	cat > "$TEST_ROOT/includes/snippet.html" << 'EOF'
@@ -107,6 +109,26 @@ EOF
 <strong>Nested from outside the site root.</strong>
 EOF
 
+	cat > "$SITE_ROOT/priv/content.md" << 'EOF'
+# Markdown heading {.feature #markdown-heading}
+
+"Smart quotes" and -- dashes.
+
+| Name | Value |
+| --- | --- |
+| One | Two |
+
+Term
+
+: Definition
+
+```rust {.code #sample-code}
+let answer = 42;
+```
+
+<aside>Embedded HTML.</aside>
+EOF
+
 	cat > "$SITE_ROOT/src/public/index.html" << EOF
 <!doctype html>
 <html lang="en">
@@ -114,10 +136,11 @@ EOF
 		<meta charset="utf-8" />
 		<title>demo</title>
 	</head>
-	<body>
-		<main>
-			<!--#include file="$abs_snippet" -->
-		</main>
+		<body>
+			<main>
+				<!--#include file="$abs_snippet" -->
+				<!--#include file="../../priv/content.md" -->
+			</main>
 	</body>
 </html>
 EOF
@@ -163,12 +186,14 @@ EOF
 	[ -f "$SITE_ROOT/src/public/favicon.svg" ]
 	[ -f "$SITE_ROOT/src/public/share.svg" ]
 	[ -f "$SITE_ROOT/src/nginx/demo.conf" ]
+	[ -d "$SITE_ROOT/priv" ]
 	[ ! -e "$SITE_ROOT/.litesite.json" ]
 	[[ "$(cat "$SITE_ROOT/README.md")" == *"# demo"* ]]
 	[[ "$(cat "$SITE_ROOT/LICENSE.txt")" == *"Copyright (c) $expected_year Site Owner"* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"<title>demo</title>"* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *'content="A small-site boilerplate with a source-to-dist build, deploy, and preview workflow."'* ]]
 	[[ "$(cat "$SITE_ROOT/src/public/index.html")" == *"/style.css"* ]]
+	[[ "$(cat "$SITE_ROOT/priv/index.md")" == *"# litesite"* ]]
 }
 
 @test "new scaffolds in the current directory by default" {
@@ -312,6 +337,7 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[ -f "$SITE_ROOT/dist/public/index.html" ]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"<h1>litesite</h1>"* ]]
 	[ -f "$SITE_ROOT/dist/public/index.html.br" ]
 	[ -f "$SITE_ROOT/dist/public/index.html.gz" ]
 	[ -f "$SITE_ROOT/dist/public/index.html.zst" ]
@@ -381,7 +407,15 @@ EOF
 	[ "$status" -eq 0 ]
 	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"Shared snippet."* ]]
 	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *"Nested from outside the site root."* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'id="markdown-heading"'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'class="feature"'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'“Smart quotes” and – dashes.'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'<table>'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'<dl>'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'<pre id="sample-code" class="code"><code class="language-rust">'* ]]
+	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" == *'<aside>Embedded HTML.</aside>'* ]]
 	[[ "$(cat "$SITE_ROOT/dist/public/index.html")" != *"#include file="* ]]
+	[ ! -e "$SITE_ROOT/dist/priv/content.md" ]
 }
 
 @test "build can disable html includes" {

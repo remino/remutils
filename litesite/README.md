@@ -56,6 +56,7 @@ server restarts by comparing a boot id.
 The command expects a site root with:
 
 - `src/`
+- `priv/`
 - `.deploy-filter`
 - `justfile`
 - `.editorconfig`
@@ -78,6 +79,13 @@ HTML files can include other files with SSI-style directives:
 
 The path is resolved relative to the file being processed. Relative paths,
 absolute paths, and paths outside the site root are all accepted.
+
+Included `.md` and `.markdown` files are rendered to HTML. Markdown supports
+attributes (including classes and IDs), tables, fenced code blocks, definition
+lists, embedded HTML, and smart punctuation. New site scaffolds include a
+root-level `priv/` directory for these reusable source files; its contents are
+not copied to `dist/`. The development server expands includes and watches the
+whole site root, so edits to a Markdown file update the page on reload.
 
 ImageMagick is required only for AVIF derivative generation. `rsdeploy` is
 required only for `litesite deploy`.

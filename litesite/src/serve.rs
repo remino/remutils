@@ -1,3 +1,4 @@
+use crate::minify::expand_html_includes;
 use anyhow::{anyhow, Context, Result};
 use axum::body::Body;
 use axum::extract::{Request, State};
@@ -89,6 +90,7 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     let public = root.join("src/public");
     let public_display = format_root_display(root, &public);
     let serve_root = public.canonicalize().unwrap_or_else(|_| public.clone());
+    let watch_root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("0.0.0.0:{port}");
 
@@ -128,7 +130,7 @@ pub async fn serve_site(root: &Path) -> Result<()> {
     });
 
     let (debouncer, rx) = create_recommended_watcher().await?;
-    let watcher = tokio::spawn(watch_for_changes(serve_root, debouncer, rx, bus));
+    let watcher = tokio::spawn(watch_for_changes(watch_root, debouncer, rx, bus));
 
     let router = Router::new()
         .route(SSE_PATH, get(sse_handler))
@@ -271,7 +273,16 @@ async fn serve_request(
                 );
             }
         };
-        let text = match String::from_utf8(file) {
+        if let Err(err) = String::from_utf8(file) {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                headers,
+                Body::from(inject_client(&error_html(&err.to_string()))),
+                access_target,
+            );
+        }
+
+        let text = match expand_html_includes(&path, &mut Vec::new()) {
             Ok(text) => text,
             Err(err) => {
                 return (
@@ -891,6 +902,45 @@ mod tests {
         assert_eq!(to_bytes(response.2, usize::MAX).await.unwrap(), "2345");
 
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn html_requests_render_markdown_includes_from_priv() {
+        let site = std::env::temp_dir().join(format!(
+            "litesite-markdown-serve-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let public = site.join("src/public");
+        let priv_dir = site.join("priv");
+        std::fs::create_dir_all(&public).unwrap();
+        std::fs::create_dir_all(&priv_dir).unwrap();
+        std::fs::write(
+            public.join("index.html"),
+            "<html><body><!--#include file=\"../../priv/content.md\" --></body></html>",
+        )
+        .unwrap();
+        std::fs::write(priv_dir.join("content.md"), "# First version\n").unwrap();
+
+        let headers = HeaderMap::new();
+        let first = serve_request(&public, "/", &headers).await;
+        assert_eq!(first.0, StatusCode::OK);
+        let body =
+            String::from_utf8(to_bytes(first.2, usize::MAX).await.unwrap().to_vec()).unwrap();
+        assert!(body.contains("<h1>First version</h1>"));
+
+        std::fs::write(priv_dir.join("content.md"), "# Updated version\n").unwrap();
+        let second = serve_request(&public, "/", &headers).await;
+        assert_eq!(second.0, StatusCode::OK);
+        let body =
+            String::from_utf8(to_bytes(second.2, usize::MAX).await.unwrap().to_vec()).unwrap();
+        assert!(body.contains("<h1>Updated version</h1>"));
+        assert!(!body.contains("<h1>First version</h1>"));
+
+        std::fs::remove_dir_all(site).unwrap();
     }
 
     #[test]

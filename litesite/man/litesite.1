@@ -6,13 +6,14 @@ litesite \- create and work with tiny static sites
 [\fB-C\fR \fIDIR\fR] [\fICOMMAND\fR] [\fIARGS...\fR]
 .SH DESCRIPTION
 .B litesite
-works on a site root that contains \fBsrc/\fR, \fB.deploy-filter\fR,
+works on a site root that contains \fBsrc/\fR, optional private sources in
+\fBpriv/\fR, \fB.deploy-filter\fR,
 \fBjustfile\fR, and \fB.editorconfig\fR.
 
 It can build the site into \fBdist/\fR, serve the public directory, deploy the
 output with \fBrsdeploy\fR, regenerate compressed assets and AVIF JPG/WebP
-derivatives, expand SSI-style file includes in HTML files, or scaffold a new
-site.
+derivatives, expand SSI-style file includes in HTML files (rendering included
+Markdown as HTML), or scaffold a new site.
 
 When no command is supplied,
 .B litesite
@@ -22,7 +23,7 @@ runs the usage screen
 .TP
 .B build
 Build \fBdist/\fR from \fBsrc/\fR, expand SSI-style HTML file includes unless
-disabled, minify HTML/CSS/JS unless disabled, copy public assets, generate
+disabled (rendering included Markdown as HTML), minify HTML/CSS/JS unless disabled, copy public assets, generate
 sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives, and write
 compressed Brotli, gzip, and zstd variants.
 .TP
@@ -31,9 +32,10 @@ Remove \fBdist/\fR.
 .TP
 .B serve
 Run a local preview server against \fBsrc/public/\fR with Tornado-style log
-prefixes and SSE live reload. CSS changes hot-swap stylesheets in place, other
-watched file changes reload the page, and browser tabs reconnect across server
-restarts.
+prefixes and SSE live reload. SSI includes are rendered for HTML requests. CSS
+changes hot-swap stylesheets in place, other changes under the site root
+(including \fBpriv/\fR) reload the page, and browser tabs reconnect across
+server restarts.
 .TP
 .B deploy
 Build the site and deploy \fBdist/\fR. Pass \fB-n\fR to preview a dry-run
