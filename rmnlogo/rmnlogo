@@ -1,0 +1,121 @@
+#!/bin/sh
+# rmnlogo
+
+# Generated using mkx 2.3.0: https://github.com/remino/mkx
+
+VERSION='1.0.1'
+
+rmnlogo_main() {
+	trap _exit INT TERM
+
+	E_ARGS=16
+
+	SCRIPT_INV="$(basename "$0")"
+	SCRIPT_PATH="$(readlink -f "$0")"
+	SCRIPT_NAME="$(basename "$SCRIPT_PATH")"
+
+	while getopts hv OPT; do
+		case $OPT in
+			h) CMD=help ;;
+			v) CMD=version ;;
+			*) _invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ -z "$CMD" ] && CMD="process"
+
+	case "$CMD" in
+		help | process | version) "rmnlogo_$CMD" "$@" ;;
+		*) _invalid_cmd ;;
+	esac
+
+	_exit
+}
+
+rmnlogo_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_INV [<options>] <command> [<args>]
+
+Outputs the RÉMINO logo in ASCII art and ANSI colours.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-v        Show script name and version number.
+
+USAGE
+}
+
+rmnlogo_process() {
+	_logo
+}
+
+rmnlogo_version() {
+	_echo "$SCRIPT_NAME $VERSION"
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_exit() {
+	exit_code=$?
+	exit "$exit_code"
+}
+
+_fatal() {
+	exit_code="$1"
+	shift
+	_error "$@"
+	exit "$exit_code"
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $CMD"
+	_echo
+	rmnlogo_help
+	exit "$E_ARGS"
+}
+
+_invalid_opt() {
+	_error "Invalid option: $OPT"
+	_echo
+	rmnlogo_help
+	exit "$E_ARGS"
+}
+
+_logo() {
+	color_blue="22;142;230"
+	color_pink="230;0;187"
+	color_purple="153;0;204"
+	bg_blue="\033[48;2;${color_blue}m"
+	bg_pink="\033[48;2;${color_pink}m"
+	bg_purple="\033[48;2;${color_purple}m"
+	fg_blue="\033[38;2;${color_blue}m"
+	fg_pink="\033[38;2;${color_pink}m"
+	fg_purple="\033[38;2;${color_purple}m"
+	reset_bg="\033[49m"
+	reset_all="\033[39m${reset_bg}"
+
+	# shellcheck disable=SC2059
+	printf "
+   ${fg_pink}███▄▄${reset_all}
+   ${fg_pink}▀▀███▄${reset_all}
+   ${fg_pink}  ▄███${reset_all}               ▝▀▀▀
+   ${bg_purple}   ${bg_pink}${fg_purple}▆▄${reset_bg}${reset_all}    █▀▀▀▀▀▀▄  ▀▀▀▀▀▀▀  ██▄   ▄██  █  ██▄   █   ▄▀▀▀▀▀▄
+   ${fg_purple}▀▀${bg_blue}${bg_purple}${fg_blue}▄▆█${reset_bg}▄${reset_all}   █▄▄▄▄▄▄▀  ▀▀▀▀▀▀   █ ▀█▄█▀ █  █  █ ▀█▄ █  █       █
+   ${fg_blue}   ███${reset_all}   █    ▀█▄  ▄▄▄▄▄▄▄  █   ▀   █  █  █   ▀██   ▀▄▄▄▄▄▀
+
+
+"
+}
+
+rmnlogo_main "$@"
