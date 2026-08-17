@@ -20,7 +20,7 @@ class {{formula_class}} < Formula
 
   def install
     libexec.install "timinal.py"
-    (bin/"timinal").write_env_script libexec/"timinal.py"
+    (bin/"timinal").write_env_script libexec/"timinal.py", PATH: "#{Formula['python@3.14'].opt_bin}:$PATH"
     man1.install "man/timinal.1"
   end
 
