@@ -6,3 +6,5 @@
 /site/deploy/
 node_modules/
 .astro
+__pycache__/
+*.py[cod]
