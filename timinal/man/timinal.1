@@ -1,0 +1,113 @@
+.TH TIMINAL 1 "August 2026" "timinal 0.1.0" "User Commands"
+.SH NAME
+timinal \- render a configurable FIGlet clock
+.SH SYNOPSIS
+.B timinal
+.RI [ OPTION ] ...
+.SH DESCRIPTION
+.B timinal
+renders the current time using FIGlet's default font, or the font requested by
+.BR --font .
+Without
+.BR --live ,
+it writes one unpadded frame and exits. With
+.BR --live ,
+it refreshes a vertically centered clock until interrupted.
+.SH OPTIONS
+.TP
+.BR -L , " --live"
+Refresh the clock interactively.
+.TP
+.BR -d , " --font-dir " DIRECTORY
+FIGlet font directory, passed directly to
+.BR figlet (1)
+with its
+.B -d
+option.
+.TP
+.BR -f , " --font " FONT
+Optional FIGlet font name or FLF file path, passed directly to
+.BR figlet (1)
+with its
+.B -f
+option.
+.TP
+.BI -F " FORMAT"
+.br
+.BI --format " FORMAT"
+Use a Python
+.BR strftime (3)
+format. The literal two-character escape
+.B \er
+starts a new FIGlet block and is not printed. The default is
+.BR %Y-%m-%d\er%H:%M:%S .
+.TP
+.B --uppercase
+Display formatted text in uppercase.
+.TP
+.BR -l , " -c" , " -r"
+or
+.BR --left , " --center" , " --right"
+Align text within the centered content frame. The default is
+.BR --left .
+.TP
+.B --fixed
+Measure printable ASCII glyphs once and render their full canvases in common,
+centered fixed-width cells.
+.TP
+.BR -a , " --lolcat"
+Color rendered frames through
+.BR lolcat (1).
+.TP
+.BI -s " SEED"
+.br
+.BI --seed " SEED"
+Set the lolcat seed. This applies only with
+.BR --lolcat .
+.SH ENVIRONMENT
+.TP
+.B TIMINAL_LOLCAT_ARGS
+Additional shell-style arguments for lolcat when
+.B --lolcat
+is used.
+.SH KEYS
+In live mode, press
+.B Q
+or
+.B Escape
+to exit. Control-C also exits cleanly.
+.SH EXIT STATUS
+.TP
+.B 0
+Success, including a user-requested live-clock exit.
+.TP
+.B 2
+Invalid command-line option.
+.TP
+.B 3
+FIGlet or the requested font is unavailable.
+.TP
+.B 4
+.B --lolcat
+was requested but lolcat is unavailable.
+.TP
+.B 5
+lolcat failed.
+.TP
+.B 6
+.B TIMINAL_LOLCAT_ARGS
+is invalid.
+.SH EXAMPLES
+.EX
+timinal
+timinal --font standard
+timinal --font-dir /path/to/figlet-fonts -f termino-tabular
+timinal --font /path/to/termino-tabular.flf -F '%H:%M\er%d %b %Y'
+timinal --live --font standard --format '%I:%M %p' --uppercase
+TIMINAL_LOLCAT_ARGS='--freq 0.5' timinal --font standard --fixed --lolcat
+.EE
+.SH SEE ALSO
+.BR figlet (1),
+.BR lolcat (1),
+.BR strftime (3)
+.

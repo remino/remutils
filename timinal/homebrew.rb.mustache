@@ -1,0 +1,30 @@
+# vim: set ft=ruby :
+class {{formula_class}} < Formula
+  desc "Render a configurable FIGlet clock"
+  version "{{version}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
+  sha256 "{{sha256}}"
+  license "ISC"
+  homepage "https://github.com/remino/remutils/tree/main/timinal"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
+
+  depends_on "figlet"
+  depends_on "python@3.14"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  def install
+    libexec.install "timinal.py"
+    (bin/"timinal").write_env_script libexec/"timinal.py"
+    man1.install "man/timinal.1"
+  end
+
+  test do
+    system bin/"timinal", "--format", "%H:%M"
+  end
+end
