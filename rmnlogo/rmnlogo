@@ -110,9 +110,9 @@ _logo() {
    ${fg_pink}███▄▄${reset_all}
    ${fg_pink}▀▀███▄${reset_all}
    ${fg_pink}  ▄███${reset_all}               ▝▀▀▀
-   ${bg_purple}   ${bg_pink}${fg_purple}▆▄${reset_bg}${reset_all}    █▀▀▀▀▀▀▄  ▀▀▀▀▀▀▀  ██▄   ▄██  █  ██▄   █   ▄▀▀▀▀▀▄
-   ${fg_purple}▀▀${bg_blue}${bg_purple}${fg_blue}▄▆█${reset_bg}▄${reset_all}   █▄▄▄▄▄▄▀  ▀▀▀▀▀▀   █ ▀█▄█▀ █  █  █ ▀█▄ █  █       █
-   ${fg_blue}   ███${reset_all}   █    ▀█▄  ▄▄▄▄▄▄▄  █   ▀   █  █  █   ▀██   ▀▄▄▄▄▄▀
+   ${bg_purple}   ${bg_pink}${fg_purple}▆▄${reset_bg}${reset_all}    █▀▀▀▀▀▀▄  ▀▀▀▀▀▀▀  █▄     ▄█  █  █▀▄    █   ▄▀▀▀▀▀▄
+   ${fg_purple}▀▀${bg_blue}${bg_purple}${fg_blue}▄▆█${reset_bg}▄${reset_all}   █▄▄▄▄▄▄▀  ▀▀▀▀▀▀   █ ▀▄ ▄▀ █  █  █  ▀▄  █  █       █
+   ${fg_blue}   ███${reset_all}   █     ▀▄  ▄▄▄▄▄▄▄  █   ▀   █  █  █    ▀▄█   ▀▄▄▄▄▄▀
 
 
 "
