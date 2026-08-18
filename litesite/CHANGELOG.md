@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.5.0](#v250)
 - [v2.3.1](#v231)
 - [v2.2.0](#v220)
 - [v2.1.0](#v210)
@@ -12,7 +12,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.5.0
 
 - Render Markdown files included through SSI directives as HTML, with support
   for attributes, tables, fenced code blocks, definition lists, embedded HTML,
