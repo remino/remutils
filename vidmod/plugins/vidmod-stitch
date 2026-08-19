@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# vidmod stitch
+# Concatenate videos without re-encoding.
+
+VERSION='1.0.0'
+
+[ -n "${VIDMOD_LIB:-}" ] || VIDMOD_LIB="$(dirname "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)")/lib/vidmod.sh"
+
+# shellcheck source=../lib/vidmod.sh
+. "$VIDMOD_LIB"
+
+stitch_start() {
+	local output=
+	local ffmpeg_extra_opts=
+	local input
+	local inputs=()
+	local manifest
+	local status
+	local arg
+
+	# Parse options anywhere in the argument list. The chain plugin appends its
+	# generated input after the stage options and output flag.
+	while [ $# -gt 0 ]; do
+		arg=$1
+		case "$arg" in
+			-f)
+				[ $# -ge 2 ] || stitch_invalid_opt f
+				ffmpeg_extra_opts=$2
+				shift 2
+				;;
+			-f*)
+				ffmpeg_extra_opts=${arg#-f}
+				shift
+				;;
+			-h | --help)
+				stitch_help
+				return
+				;;
+			-o)
+				[ $# -ge 2 ] || stitch_invalid_opt o
+				output=$2
+				shift 2
+				;;
+			-o*)
+				output=${arg#-o}
+				shift
+				;;
+			--)
+				shift
+				while [ $# -gt 0 ]; do
+					inputs+=("$1")
+					shift
+				done
+				;;
+			-*) stitch_invalid_opt "${arg#-}" ;;
+			*)
+				inputs+=("$arg")
+				shift
+				;;
+		esac
+	done
+
+	[ "${#inputs[@]}" -ge 2 ] || {
+		stitch_help
+		return $E_ARGS
+	}
+
+	for input in "${inputs[@]}"; do
+		[ -f "$input" ] || _fatal "$E_NO_FILE" "File not found: $input"
+	done
+
+	[ -n "$output" ] || {
+		_error "An output file is required for stitch."
+		_echo
+		stitch_help
+		return $E_ARGS
+	}
+
+	vidmod_prepare_output "$output"
+	manifest="$(mktemp "${TMPDIR:-/tmp}/vidmod-stitch.XXXXXX")" || _fatal "$E_PROCESSING" "Could not create concat manifest"
+	trap 'status=$?; rm -f "$manifest"; exit "$status"' INT TERM EXIT
+
+	for input in "${inputs[@]}"; do
+		# Escape single quotes for the concat demuxer's file syntax.
+		printf "file '%s'\n" "${input//\'/\'\\\'\'}" >> "$manifest"
+		_echo "<= $input"
+	done
+	_echo "=> $output"
+
+	vidmod_ffmpeg_args "$ffmpeg_extra_opts" "$output"
+	ffmpeg -f concat -safe 0 -i "$manifest" \
+		"${VIDMOD_FFMPEG_ARGS[@]}" \
+		-c copy \
+		"$output"
+	status=$?
+
+	rm -f "$manifest"
+	trap _exit INT TERM
+	trap - EXIT
+	return "$status"
+}
+
+stitch_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] -o <output> <input> <input> [<input> ...]
+
+Concatenate videos without re-encoding.
+
+All inputs must have compatible stream layouts and encoding parameters (for
+example, the same video and audio codecs, dimensions, frame rates, and audio
+properties). Stitch does not normalize or re-encode incompatible inputs.
+
+When used in a chain, the chain-generated input is appended after stitch's
+explicit inputs.
+
+OPTIONS:
+
+	-f        Extra ffmpeg options.
+	-h        Show this help screen.
+	-o        Output video file (required).
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+stitch_invalid_opt() {
+	local invalid_opt=$1
+
+	_error "Invalid option: -$invalid_opt"
+	_echo
+	stitch_help
+	exit $E_ARGS
+}
+
+vidmod_plugin_run "$@"

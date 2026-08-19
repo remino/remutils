@@ -12,6 +12,23 @@ load helpers
 	[ "$(cat "$TOOL_LOG")" = "ffmpeg <-i> <$INPUT_FILE> <-hide_banner> <-loglevel> <panic> <-nostdin> <$OUTPUT_DIR/source.mp4>" ]
 }
 
+@test "stitches multiple inputs without re-encoding" {
+	local second_input="$OUTPUT_DIR/second.mp4"
+	local output_file="$OUTPUT_DIR/combined.mp4"
+	local log
+
+	touch "$second_input"
+	_make_fake_video_tools
+
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" stitch -o "$output_file" "$INPUT_FILE" "$second_input"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "<= $INPUT_FILE"$'\n'"<= $second_input"$'\n'"=> $output_file" ]
+	log=$(cat "$TOOL_LOG")
+	[[ "$log" == ffmpeg* ]]
+	[[ "$log" == *"<-f> <concat> <-safe> <0> <-i> <"*"vidmod-stitch."*"> <-hide_banner> <-loglevel> <panic> <-nostdin> <-c> <copy> <$output_file>" ]]
+}
+
 @test "uses explicit output file" {
 	local output_file="$OUTPUT_DIR/final.mp4"
 

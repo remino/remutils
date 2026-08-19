@@ -131,6 +131,7 @@ COMMANDS:
 	rotate180   Rotate video 180 degrees.
 	rotate270   Rotate video 270 degrees clockwise.
 	slowdown    Slow video and audio to 80% speed.
+	stitch      Concatenate videos without re-encoding.
 	twitter     Encode video for Twitter/X upload.
 
 OPTIONS:

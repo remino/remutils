@@ -1,0 +1,34 @@
+.TH VIDMOD-STITCH 1
+.SH NAME
+vidmod-stitch \- concatenate videos without re-encoding
+.SH SYNOPSIS
+.B vidmod stitch
+[B-fR IFFMPEG-OPTIONSR] B-oR IOUTPUTR IINPUTR IINPUTR [IINPUTR ...]
+.SH DESCRIPTION
+Concatenate two or more videos with ffmpeg's concat demuxer and stream copy.
+The inputs must have compatible stream layouts and encoding parameters,
+including video and audio codecs, dimensions, frame rates, time bases, and
+audio properties. The plugin does not normalize or re-encode incompatible
+inputs; ffmpeg may reject them or the result may have timestamp or playback
+problems.
+.PP
+When used by
+.BR vidmod-chain (1),
+the chain-generated input is appended after the explicit stitch inputs.
+.SH OPTIONS
+.TP
+.B \-f \fIFFMPEG-OPTIONS\fR
+Pass extra ffmpeg options.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write output to \fIOUTPUT\fR. Required.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH SEE ALSO
+.BR vidmod (1)

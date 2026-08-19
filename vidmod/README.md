@@ -15,11 +15,20 @@ vidmod mp4 input.mov
 vidmod fit1080 -o framed.mov input.mov
 vidmod rotate90 -o rotated.mov input.mov
 vidmod twitter -o twitter.mp4 input.mov
+vidmod stitch -o combined.mp4 clip-01.mp4 clip-02.mp4 clip-03.mp4
 vidmod chain mp4 -- twitter -- input.mov twitter.mp4
 ```
 
-Each normal command processes one input file. Use `chain` when you need multiple
-changes in sequence.
+Most commands process one input file. Use `stitch` to concatenate multiple
+videos without re-encoding, or `chain` when you need multiple changes in
+sequence.
+
+`stitch` uses ffmpeg's concat demuxer and requires every input to have
+compatible stream layouts and encoding parameters, including codecs, video
+dimensions, frame rates, time bases, and audio properties. It does not normalize
+or re-encode incompatible inputs, so ffmpeg may reject them or the result may
+have timestamp or playback problems. An explicit `-o <output>` is required. In a
+`chain`, the generated input is appended after any explicit `stitch` inputs.
 
 The `169` and `43` commands crop the frame to the requested aspect ratio. They
 do not stretch or squash the image.
@@ -35,7 +44,7 @@ The bundled legacy command plugins are:
 
 ```text
 169 43 60fps audio butter crop219 crossfade fit1080 hevc loop mono mp4 mute
-qt reverse rotate90 rotate180 rotate270 slowdown twitter
+qt reverse rotate90 rotate180 rotate270 slowdown stitch twitter
 ```
 
 Each legacy command accepts:

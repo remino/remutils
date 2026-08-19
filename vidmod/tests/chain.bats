@@ -19,6 +19,23 @@ load helpers
 	[[ "$(sed -n '2p' "$TOOL_LOG")" == *"<$output_file>" ]]
 }
 
+@test "chains stitch with explicit additional inputs" {
+	local second_input="$OUTPUT_DIR/second.mp4"
+	local output_file="$OUTPUT_DIR/chained.mp4"
+	local log
+
+	touch "$second_input"
+	_make_fake_video_tools
+
+	run env PATH="$FAKE_BIN:$PATH" VIDMOD_TOOL_LOG="$TOOL_LOG" "$BATS_TEST_DIRNAME/../vidmod" chain mp4 -- stitch "$second_input" -- "$INPUT_FILE" "$output_file"
+
+	[ "$status" -eq 0 ]
+	[ "$(wc -l < "$TOOL_LOG" | tr -d ' ')" = 2 ]
+	log=$(sed -n '2p' "$TOOL_LOG")
+	[[ "$log" == ffmpeg* ]]
+	[[ "$log" == *"<-f> <concat> <-safe> <0> <-i> <"*"vidmod-stitch."*">"*"<-c> <copy> <$output_file>" ]]
+}
+
 @test "chain passes stage options" {
 	local output_file="$OUTPUT_DIR/chained.mov"
 	local expected_filter="crop='if(gte(iw/ih,16/9),ih*16/9,iw)':'if(gte(iw/ih,16/9),ih,iw*9/16)',setsar=1"
