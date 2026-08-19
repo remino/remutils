@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v3.2.0](#v320)
 - [v3.1.0](#v310)
 - [v3.0.0](#v300)
 - [v2.4.1](#v241)
@@ -12,7 +12,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v3.2.0
 
 - Add a `stitch` plugin to concatenate compatible videos without re-encoding.
 
