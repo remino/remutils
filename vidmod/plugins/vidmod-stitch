@@ -17,6 +17,10 @@ stitch_start() {
 	local manifest
 	local status
 	local arg
+	local input_dir
+	local input_name
+	local display_input
+	local display_inputs=()
 
 	# Parse options anywhere in the argument list. The chain plugin appends its
 	# generated input after the stage options and output flag.
@@ -64,9 +68,17 @@ stitch_start() {
 		stitch_help
 		return $E_ARGS
 	}
+	display_inputs=("${inputs[@]}")
 
-	for input in "${inputs[@]}"; do
+	# The concat manifest is temporary and usually lives outside the current
+	# directory, so make paths absolute before writing them. Otherwise ffmpeg
+	# resolves relative inputs against the manifest's directory.
+	for ((arg = 0; arg < ${#inputs[@]}; arg++)); do
+		input=${inputs[arg]}
 		[ -f "$input" ] || _fatal "$E_NO_FILE" "File not found: $input"
+		input_dir="$(cd -- "$(dirname -- "$input")" && pwd -P)"
+		input_name="$(basename -- "$input")"
+		inputs[arg]="$input_dir/$input_name"
 	done
 
 	[ -n "$output" ] || {
@@ -80,10 +92,12 @@ stitch_start() {
 	manifest="$(mktemp "${TMPDIR:-/tmp}/vidmod-stitch.XXXXXX")" || _fatal "$E_PROCESSING" "Could not create concat manifest"
 	trap 'status=$?; rm -f "$manifest"; exit "$status"' INT TERM EXIT
 
-	for input in "${inputs[@]}"; do
+	for ((arg = 0; arg < ${#inputs[@]}; arg++)); do
+		input=${inputs[arg]}
+		display_input=${display_inputs[arg]}
 		# Escape single quotes for the concat demuxer's file syntax.
 		printf "file '%s'\n" "${input//\'/\'\\\'\'}" >> "$manifest"
-		_echo "<= $input"
+		_echo "<= $display_input"
 	done
 	_echo "=> $output"
 
