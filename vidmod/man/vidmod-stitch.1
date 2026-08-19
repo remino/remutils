@@ -3,7 +3,8 @@
 vidmod-stitch \- concatenate videos without re-encoding
 .SH SYNOPSIS
 .B vidmod stitch
-[B-fR IFFMPEG-OPTIONSR] B-oR IOUTPUTR IINPUTR IINPUTR [IINPUTR ...]
+[\fB-f\fR \fIFFMPEG-OPTIONS\fR] \fB-o\fR \fIOUTPUT\fR
+\fIINPUT\fR \fIINPUT\fR [\fIINPUT\fR ...]
 .SH DESCRIPTION
 Concatenate two or more videos with ffmpeg's concat demuxer and stream copy.
 The inputs must have compatible stream layouts and encoding parameters,
