@@ -2,10 +2,10 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.1.1](#v111)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.1.1
 
 - Migrate `rmnlogo` into remutils.
