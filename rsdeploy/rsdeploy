@@ -82,7 +82,7 @@ USAGE
 
 rsdeploy_process() {
 	_require rsync
-	_load_config
+	[ -z "$RSDEPLOY_CONFIG" ] && _load_config
 	_init
 
 	FILTER_ARG=""
