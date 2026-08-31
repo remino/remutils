@@ -13,8 +13,8 @@ run by default; pass \fB-w\fR to make changes.
 
 Configuration may be provided by environment variables or a \fI.env\fR file.
 Without \fB-c\fR, the command searches upward from the current directory for
-\fI.env\fR. A configured source path is relative to the directory of the last
-loaded configuration file.
+\fI.env\fR. Relative source and filter paths are resolved from the current
+working directory.
 .SH OPTIONS
 .TP
 .BI \-c " file"

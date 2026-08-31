@@ -2,11 +2,16 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v1.1.2](#v112)
 - [v1.1.1](#v111)
 - [v1.1.0](#v110)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Resolve config-defined source and filter paths from the working directory.
 
 ## v1.1.2
 

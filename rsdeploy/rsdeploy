@@ -13,7 +13,6 @@ rsdeploy_main() {
 	E_MISSING_APP=17
 	E_MISSING_ENV=18
 	E_MISSING_FILE=19
-	E_CD_FAILED=20
 
 	SCRIPT_INT="$(basename "$0")"
 	SCRIPT_PATH="$(readlink -f "$0")"
@@ -59,8 +58,8 @@ Deploy directory to remote server by using rsync.
 OPTIONS:
 
 	-c <file>   Specify config file location. Can be set multiple times.
-	            Source directory will be relative to the directory of the last
-	            found config file.
+	            Relative source and filter paths remain relative to the current
+	            working directory.
 
 	-d          Destination host and directory to deploy.
 	            Can be set with RSDEPLOY_DEST.
@@ -90,10 +89,6 @@ rsdeploy_process() {
 	if [ -n "$RSDEPLOY_FILTER" ]; then
 		[ ! -f "$RSDEPLOY_FILTER" ] && _fatal "$E_MISSING_APP" "Filter file not found: $RSDEPLOY_FILTER"
 		FILTER="merge $RSDEPLOY_FILTER"
-	fi
-
-	if [ -n "$RSDEPLOY_CONFIG" ] && [ -f "$RSDEPLOY_CONFIG" ]; then
-		cd "$(dirname "$RSDEPLOY_CONFIG")" || _fatal "$E_CD_FAILED" "Cannot change to config file directory."
 	fi
 
 	# shellcheck disable=SC2086
