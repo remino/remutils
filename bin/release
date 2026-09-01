@@ -79,7 +79,9 @@ _initial_release() {
 	cd "$repo_root" || _fatal $E_MISSING_FILE "Cannot change directory to git repo root: $repo_root"
 
 	git add "$SCRIPT_DIR"
-	git commit -m "Add $SCRIPT_NAME" -- "$SCRIPT_DIR"
+	if ! git diff --cached --quiet -- "$SCRIPT_DIR"; then
+		git commit -m "Add $SCRIPT_NAME" -- "$SCRIPT_DIR"
+	fi
 	git tag -a "$tag" -m "$SCRIPT_NAME v$version"
 }
 
