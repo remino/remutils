@@ -2,11 +2,11 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.0.1](#v101)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.0.1
 
 - Add a Homebrew formula template and document installation.
 - Align the manpage header with rrrr's initial release version.
