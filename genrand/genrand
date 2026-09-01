@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Generate cryptographically random strings.
+
+set -euo pipefail
+
+VERSION=0.1.0
+
+usage() {
+	cat << EOF
+genrand $VERSION
+
+USAGE: genrand [-hv] [width] [type]
+
+Generate a random string from /dev/urandom.
+
+ARGUMENTS:
+	width     String length. Default: 32.
+	type      Character set: alphanum, lower, mixed, or numbers.
+	          Default: alphanum.
+
+OPTIONS:
+	-h        Show this help screen.
+	-v        Show the version number.
+EOF
+}
+
+version() {
+	printf 'genrand %s\n' "$VERSION"
+}
+
+error() {
+	printf 'genrand: %s\n' "$*" >&2
+}
+
+main() {
+	local width=32 type=alphanum chars
+
+	while getopts ':hv' option; do
+		case "$option" in
+			h)
+				usage
+				return
+				;;
+			v)
+				version
+				return
+				;;
+			:)
+				error "option -$OPTARG requires an argument"
+				usage >&2
+				return 16
+				;;
+			?)
+				error "invalid option: -$OPTARG"
+				usage >&2
+				return 16
+				;;
+		esac
+	done
+	shift "$((OPTIND - 1))"
+
+	if (($# > 2)); then
+		error 'too many arguments'
+		usage >&2
+		return 16
+	fi
+
+	[[ $# -ge 1 ]] && width="$1"
+	[[ $# -ge 2 ]] && type="$2"
+
+	if ! [[ "$width" =~ ^[0-9]+$ ]] || ((width < 1)); then
+		error "width must be an integer of 1 or higher: $width"
+		return 17
+	fi
+
+	case "$(printf '%s' "$type" | tr '[:upper:]' '[:lower:]')" in
+		alphanum) chars='a-zA-Z0-9' ;;
+		lower) chars='a-z0-9' ;;
+		mixed) chars='a-zA-Z0-9!#$%&()*+,-./:;<=>?@[\\]^_`{|}~' ;;
+		numbers) chars='0-9' ;;
+		*)
+			error "invalid type: $type"
+			return 18
+			;;
+	esac
+
+	# `head` closes the pipe once it has enough bytes, which intentionally gives
+	# `tr` SIGPIPE. Disable pipefail for this expected pipeline condition.
+	set +o pipefail
+	LC_ALL=C tr -dc "$chars" < /dev/urandom | head -c "$width"
+	set -o pipefail
+	printf '\n'
+}
+
+main "$@"

@@ -1,0 +1,65 @@
+.TH GENRAND 1 "September 2026" "genrand 0.1.0"
+.SH NAME
+genrand \- generate cryptographically random strings
+.SH SYNOPSIS
+.B genrand
+[\fB-hv\fR] [\fIwidth\fR] [\fItype\fR]
+.SH DESCRIPTION
+.B genrand
+prints a random string generated from
+.I /dev/urandom
+followed by a newline.
+.SH ARGUMENTS
+.TP
+.I width
+The length of the string. Defaults to 32. Must be an integer of 1 or higher.
+.TP
+.I type
+The character set for the string. Defaults to
+.BR alphanum .
+Available values are:
+.RS
+.TP
+.B alphanum
+Uppercase letters, lowercase letters, and digits.
+.TP
+.B lower
+Lowercase letters and digits.
+.TP
+.B mixed
+Uppercase letters, lowercase letters, digits, and printable symbols.
+.TP
+.B numbers
+Digits only.
+.RE
+.SH OPTIONS
+.TP
+.B -h
+Show the help screen.
+.TP
+.B -v
+Show the version number.
+.SH EXAMPLES
+.TP
+Generate the default 32-character alphanumeric string:
+.nf
+.B genrand
+.fi
+.TP
+Generate a 16-character lowercase string:
+.nf
+.B genrand 16 lower
+.fi
+.TP
+Generate an 8-digit string:
+.nf
+.B genrand 8 numbers
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright © 2019-2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
