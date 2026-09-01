@@ -2,8 +2,11 @@
 
 `rrrr` is a snapshot-style backup runner that uses `rsync` over SSH to pull
 incremental backups from a remote host. Each run creates
-`<backup_root>/snapshots/YYYY-MM-DD`, updates a `latest` symlink, and enforces
-a daily/weekly/monthly retention policy.
+`<backup_root>/snapshots/YYYY-MM-DD`, updates a `latest` symlink, and enforces a
+daily/weekly/monthly retention policy.
+
+It requires Bash 4 or newer, `rsync`, and OpenSSH. On macOS, invoke `rrrr` with
+a Bash 4+ installation (for example, Homebrew's `bash`).
 
 The tool is configured per host so the same script can back up multiple servers.
 Run `rrrr <hostname>` and it will look for host-specific configuration at:
@@ -37,7 +40,8 @@ variables are required:
 Common optional variables:
 
 - `HOSTNAME_REMOTE` – label used for logging.
-- `REMOTE_SSH_HOST` – actual hostname/IP (defaults to the `<hostname>` argument).
+- `REMOTE_SSH_HOST` – actual hostname/IP (defaults to the `<hostname>`
+  argument).
 - `REMOTE_SSH_PORT` – SSH port (defaults to `22`).
 - `REMOTE_ROOT` – remote path to sync (defaults to `/`).
 - `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention counts.
@@ -89,8 +93,12 @@ The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log` and mirrors the
 output to stdout/stderr. Each run performs:
 
 1. Validation of required commands and SSH key.
-2. Snapshot directory creation and optional `--link-dest` reuse.
+2. A temporary snapshot directory creation and optional `--link-dest` reuse.
 3. `rsync -aHAX --numeric-ids --delete` with the configured filter rules.
-4. `latest` symlink update and retention pruning.
+4. Publishing the completed snapshot, `latest` symlink update, and retention
+   pruning.
+
+If rsync fails, rrrr removes the temporary snapshot and leaves `latest`
+unchanged, so the backup can be retried on the same day.
 
 See `man rrrr` for the full reference.

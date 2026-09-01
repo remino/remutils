@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 _canonical_path() {
-	python3 - <<'PY' "$1"
+	python3 - "$1" << 'PY'
 import os
 import sys
 print(os.path.realpath(sys.argv[1]))
@@ -15,14 +15,14 @@ setup() {
 
 	export RRRR_TEST_BACKUP_ROOT="$TEST_ROOT/backups"
 	export RRRR_TEST_RSYNC_LOG="$TEST_ROOT/rsync.log"
-	: >"$RRRR_TEST_RSYNC_LOG"
+	: > "$RRRR_TEST_RSYNC_LOG"
 
 	STUB_DIR="$TEST_ROOT/bin"
 	mkdir -p "$STUB_DIR"
 	export PATH="$STUB_DIR:$PATH"
+	unset RRRR_TEST_RSYNC_FAIL
 
 	_create_stub_rsync
-	_create_stub_find
 }
 
 teardown() {
@@ -30,30 +30,17 @@ teardown() {
 }
 
 _create_stub_rsync() {
-	cat <<'EOF' >"$STUB_DIR/rsync"
+	cat << 'EOF' > "$STUB_DIR/rsync"
 #!/usr/bin/env bash
 set -euo pipefail
 : "${RRRR_TEST_RSYNC_LOG:?}"
 printf "%s\n" "$@" >>"$RRRR_TEST_RSYNC_LOG"
+
+if [ "${RRRR_TEST_RSYNC_FAIL:-0}" = "1" ]; then
+	exit 12
+fi
 EOF
 	chmod +x "$STUB_DIR/rsync"
-}
-
-_create_stub_find() {
-	cat <<'EOF' >"$STUB_DIR/find"
-#!/usr/bin/env bash
-set -euo pipefail
-if [ "$#" -eq 0 ]; then
-	exit 1
-fi
-dir="$1"
-shift || true
-for entry in "$dir"/*; do
-	[ -d "$entry" ] || continue
-	basename "$entry"
-done
-EOF
-	chmod +x "$STUB_DIR/find"
 }
 
 _write_basic_config() {
@@ -62,9 +49,9 @@ _write_basic_config() {
 	mkdir -p "$dir"
 
 	local ssh_key="$TEST_ROOT/id_rrrr"
-	printf 'dummy' >"$ssh_key"
+	printf 'dummy' > "$ssh_key"
 
-	cat <<EOF >"$dir/config"
+	cat << EOF > "$dir/config"
 REMOTE_USER="backup"
 REMOTE_SSH_HOST="${host}.example"
 SSH_KEY="${ssh_key}"
@@ -74,7 +61,7 @@ KEEP_WEEKLY=0
 KEEP_MONTHLY=0
 EOF
 
-	cat <<'EOF' >"$dir/filters"
+	cat << 'EOF' > "$dir/filters"
 + /etc
 - *
 EOF
@@ -85,6 +72,13 @@ EOF
 
 	[ "$status" -eq 1 ]
 	[[ "$output" == *"Usage: rrrr"* ]]
+}
+
+@test "rejects an unsafe hostname" {
+	run "$BATS_TEST_DIRNAME/../rrrr" "../webhost"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"Hostname must be a single safe path component"* ]]
 }
 
 @test "runs backup using host config and applies filter file" {
@@ -123,14 +117,14 @@ EOF
 	mkdir -p "$dir"
 
 	local ssh_key="$TEST_ROOT/id_override"
-	printf 'dummy' >"$ssh_key"
+	printf 'dummy' > "$ssh_key"
 
 	local custom_filters="$TEST_ROOT/custom.filters"
-	cat <<'EOF' >"$custom_filters"
+	cat << 'EOF' > "$custom_filters"
 - /override/**
 EOF
 
-	cat <<EOF >"$dir/config"
+	cat << EOF > "$dir/config"
 REMOTE_USER="backup"
 REMOTE_SSH_HOST="${host}.example"
 SSH_KEY="${ssh_key}"
@@ -149,4 +143,66 @@ EOF
 	used_path="${filter_arg#--filter=merge }"
 	expected_path="$(_canonical_path "${custom_filters}")"
 	[ "$used_path" = "$expected_path" ]
+}
+
+@test "removes an incomplete snapshot after rsync fails" {
+	local host="failed"
+	_write_basic_config "$host"
+	export RRRR_TEST_RSYNC_FAIL=1
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 12 ]
+	[ ! -e "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+	[ ! -e "$RRRR_TEST_BACKUP_ROOT/$host/latest" ]
+
+	local -a incomplete=()
+	shopt -s nullglob
+	incomplete=("$RRRR_TEST_BACKUP_ROOT/$host/snapshots"/.*.incomplete.*)
+	[ "${#incomplete[@]}" -eq 0 ]
+
+	unset RRRR_TEST_RSYNC_FAIL
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ -d "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+}
+
+@test "uses latest snapshot as link-dest" {
+	local host="linked"
+	_write_basic_config "$host"
+
+	local host_root="$RRRR_TEST_BACKUP_ROOT/$host"
+	local previous="$host_root/snapshots/2000-01-01"
+	mkdir -p "$previous"
+	ln -s "$previous" "$host_root/latest"
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "--link-dest" "$RRRR_TEST_RSYNC_LOG"
+	grep -Fx -- "$previous" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "keeps daily, weekly, and monthly retention snapshots" {
+	local host="retention"
+	_write_basic_config "$host"
+
+	local host_root="$RRRR_TEST_BACKUP_ROOT/$host"
+	mkdir -p "$host_root/snapshots/1999-12-31"
+	mkdir -p "$host_root/snapshots/2000-01-01"
+	mkdir -p "$host_root/snapshots/2000-01-02"
+
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+KEEP_DAILY=1
+KEEP_WEEKLY=1
+KEEP_MONTHLY=2
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ ! -d "$host_root/snapshots/1999-12-31" ]
+	[ -d "$host_root/snapshots/2000-01-01" ]
+	[ -d "$host_root/snapshots/2000-01-02" ]
 }

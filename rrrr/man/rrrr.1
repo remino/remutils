@@ -73,8 +73,10 @@ Run \fBrsync -aHAX --numeric-ids --delete\fR with the configured filter file.
 Output is mirrored to
 \fBLOG_DIR\fR/\fBYYYY\-MM\-DD.log\fR.
 .IP "4." 4
-Update \fBlatest\fR to the new snapshot and prune old snapshots based on the
-retention policy:
+Publish the completed temporary snapshot, update \fBlatest\fR, and prune old
+snapshots based on the retention policy. If rsync fails, the temporary
+snapshot is removed and \fBlatest\fR is unchanged, so the backup can be
+retried on the same day:
 .PD 0
 .RS
 .IP \- 4
@@ -106,6 +108,9 @@ Primary location for per-user configuration (defaults to \fB~/.config\fR).
 \fB$XDG_CONFIG_DIRS\fR
 Colon-separated list of additional configuration roots (defaults to
 \fB/etc/xdg\fR).
+.SH REQUIREMENTS
+rrrr requires Bash 4 or newer, \fBrsync\fR, and OpenSSH. On macOS, run rrrr
+with a Bash 4+ installation.
 .SH EXIT STATUS
 Returns 0 on success. Exits non-zero if configuration is missing, the SSH
 connection or rsync invocation fails, or retention processing encounters an

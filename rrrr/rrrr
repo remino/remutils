@@ -15,6 +15,7 @@ HOST_FILTER_FILE=""
 
 DATE_TODAY=""
 SNAP_DIR=""
+SNAP_TMP_DIR=""
 SNAPS_DIR=""
 LATEST_LINK=""
 LOG_DIR=""
@@ -36,6 +37,10 @@ declare -a RSYNC_FILTER_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 rrrr_cleanup() {
+	if [ -n "${SNAP_TMP_DIR:-}" ] && [ -d "${SNAP_TMP_DIR}" ]; then
+		rm -rf -- "${SNAP_TMP_DIR}"
+	fi
+
 	if [ -n "${DEFAULT_FILTERS_FILE:-}" ] && [ -f "${DEFAULT_FILTERS_FILE}" ]; then
 		rm -f "${DEFAULT_FILTERS_FILE}"
 	fi
@@ -88,6 +93,7 @@ rrrr_main() {
 
 	host="$1"
 	HOST_ARG="${host}"
+	[[ "${host}" =~ ^[[:alnum:]][[:alnum:]._-]*$ ]] || die "Hostname must be a single safe path component: ${host}"
 
 	HOST_CONFIG_DIR="$(rrrr_find_host_config_dir "${host}")" || die "No host config directory found for ${host}"
 
@@ -96,8 +102,8 @@ rrrr_main() {
 	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
 	rrrr_set_derived_defaults
 	rrrr_validate_config
-	rrrr_prepare_runtime
 	rrrr_check_requirements
+	rrrr_prepare_runtime
 
 	rrrr_run_backup
 }
@@ -269,9 +275,13 @@ rrrr_prepare_runtime() {
 }
 
 rrrr_check_requirements() {
+	if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+		die "rrrr requires Bash 4 or newer"
+	fi
+
 	require_cmd rsync
 	require_cmd ssh
-	require_cmd find
+	require_cmd basename
 	require_cmd sort
 	require_cmd head
 	require_cmd tail
@@ -279,9 +289,14 @@ rrrr_check_requirements() {
 	require_cmd rm
 	require_cmd ln
 	require_cmd mkdir
+	require_cmd mv
 	require_cmd readlink
 	require_cmd awk
 	require_cmd mktemp
+
+	if ! rrrr_weekday "2000-01-02" > /dev/null; then
+		die "rrrr requires date with GNU (-d) or BSD (-j -f) date parsing support"
+	fi
 
 	[ -f "${SSH_KEY}" ] || die "SSH key not found: ${SSH_KEY}"
 
@@ -301,6 +316,7 @@ rrrr_run_backup() {
 	rrrr_build_ssh_command
 
 	rrrr_run_rsync
+	rrrr_publish_snapshot
 	rrrr_update_latest
 	rrrr_apply_retention
 
@@ -311,7 +327,13 @@ rrrr_prepare_snapshot_dir() {
 	if [ -e "${SNAP_DIR}" ]; then
 		die "Snapshot already exists for today: ${SNAP_DIR}"
 	fi
-	mkdir -p "${SNAP_DIR}"
+
+	SNAP_TMP_DIR="${SNAPS_DIR}/.${DATE_TODAY}.incomplete.$$"
+	if [ -e "${SNAP_TMP_DIR}" ]; then
+		die "Temporary snapshot directory already exists: ${SNAP_TMP_DIR}"
+	fi
+
+	mkdir -p "${SNAP_TMP_DIR}"
 }
 
 rrrr_build_link_dest_args() {
@@ -347,6 +369,17 @@ rrrr_resolve_link_target() {
 	fi
 }
 
+rrrr_weekday() {
+	local snapshot_date="$1"
+
+	if date -d "${snapshot_date}" +%u > /dev/null 2>&1; then
+		date -d "${snapshot_date}" +%u
+		return 0
+	fi
+
+	date -j -f "%F" "${snapshot_date}" +%u
+}
+
 rrrr_build_filter_args() {
 	RSYNC_FILTER_ARGS=()
 	if [ -n "${HOST_FILTER_FILE}" ]; then
@@ -369,10 +402,16 @@ rrrr_run_rsync() {
 		"${LINK_DEST_ARGS[@]}" \
 		-e "${SSH_CMD}" \
 		"${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}" \
-		"${SNAP_DIR}/" \
+		"${SNAP_TMP_DIR}/" \
 		| tee -a "${LOG_FILE}"
 
 	log "rsync finished."
+}
+
+rrrr_publish_snapshot() {
+	mv "${SNAP_TMP_DIR}" "${SNAP_DIR}"
+	SNAP_TMP_DIR=""
+	log "Published snapshot: ${SNAP_DIR}"
 }
 
 rrrr_update_latest() {
@@ -385,7 +424,15 @@ rrrr_apply_retention() {
 	log "Applying retention: daily=${KEEP_DAILY}, weekly=${KEEP_WEEKLY}, monthly=${KEEP_MONTHLY}"
 
 	local -a ALL_SNAPS=()
-	mapfile -t ALL_SNAPS < <(find "${SNAPS_DIR}" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort)
+	local snapshot_path
+	for snapshot_path in "${SNAPS_DIR}"/*; do
+		[ -d "${snapshot_path}" ] || continue
+		ALL_SNAPS+=("$(basename "${snapshot_path}")")
+	done
+
+	if [ "${#ALL_SNAPS[@]}" -gt 0 ]; then
+		mapfile -t ALL_SNAPS < <(printf "%s\n" "${ALL_SNAPS[@]}" | sort)
+	fi
 	if [ "${#ALL_SNAPS[@]}" -eq 0 ]; then
 		log "No snapshots found. Skipping retention."
 		return
@@ -404,7 +451,7 @@ rrrr_apply_retention() {
 			[ -n "${d}" ] && KEEP["$d"]=1
 		done < <(
 			for d in "${ALL_SNAPS[@]}"; do
-				if [ "$(date -d "${d}" +%u 2> /dev/null || echo "0")" = "7" ]; then
+				if [ "$(rrrr_weekday "${d}" 2> /dev/null || echo "0")" = "7" ]; then
 					printf "%s\n" "${d}"
 				fi
 			done | tail -n "${KEEP_WEEKLY}"
