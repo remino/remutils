@@ -1,0 +1,23 @@
+# {{slug}}
+
+Boilerplate and command wrapper for tiny sites that do not need a framework.
+
+## Layout
+
+- Source lives in `src/`
+- Private reusable source files live in `priv/`
+- Publishable output goes in `dist/`
+- Public files in `src/public/` are copied to `dist/public/`
+
+## Development
+
+```bash
+litesite
+litesite build
+litesite deploy
+```
+
+Edit site content and assets under src/.
+The public site files live in src/public/.
+Use `priv/` for files included into pages (such as Markdown); its contents are
+not published on their own.

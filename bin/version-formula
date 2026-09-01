@@ -29,6 +29,15 @@ version_formula_main() {
 
 	SCRIPT_NAME="$(basename "$SCRIPT_DIR")"
 	SCRIPT_FILE="$SCRIPT_DIR/$SCRIPT_NAME"
+	FORMULA_CLASS="$(
+		printf '%s\n' "$SCRIPT_NAME" | awk -F '[-_]' '
+			{
+				for (i = 1; i <= NF; i++) {
+					printf "%s%s", toupper(substr($i, 1, 1)), substr($i, 2)
+				}
+				print ""
+			}'
+	)"
 
 	[ ! -f "$SCRIPT_FILE" ] && _fatal $E_MISSING_FILE "Missing or not a file: $SCRIPT_FILE"
 
@@ -52,11 +61,12 @@ version_formula_main() {
 		source "$MO_LIB"
 
 		export name="$SCRIPT_NAME"
+		export formula_class="$FORMULA_CLASS"
 		export tag="$TAG"
 		export version="$VERSION"
-		export sha256="$(cut -w -f 1 <"$SUMFILE")"
+		export sha256="$(cut -w -f 1 < "$SUMFILE")"
 
-		mo "$TEMPLATE" >"$FORMULA_DIR/$SCRIPT_NAME.rb"
+		mo "$TEMPLATE" > "$FORMULA_DIR/$SCRIPT_NAME.rb"
 	)
 }
 
@@ -71,7 +81,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

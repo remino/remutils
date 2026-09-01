@@ -1,11 +1,14 @@
 # vim: set ft=ruby :
-class Waituntil < Formula
+class {{formula_class}} < Formula
   desc "Wait until a specified time and optionally execute a command."
   version "{{version}}"
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
 

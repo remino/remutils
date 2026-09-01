@@ -1,3 +1,5 @@
+default: tests-all
+
 clean:
 	rm -f *.tar.gz *.tar.gz.sha256
 
@@ -12,7 +14,43 @@ tests name="":
 	fi
 
 tests-all:
-	bats -r .
+	bats -r -j 4 --no-parallelize-within-files .
+
+format name="":
+	if [ -n "{{name}}" ]; then \
+		just format-all "{{name}}"; \
+	else \
+		just format-all .; \
+	fi
+
+format-all dir=".":
+	prettier --ignore-unknown --write "{{dir}}"
+	shfmt --apply-ignore -w "{{dir}}"
+
+hooks:
+	lefthook install
+
+serve port="4173":
+	npm run dev --prefix site -- --port {{port}}
+
+docs-serve port="4173":
+	just serve {{port}}
+
+docs-publish:
+	npm run docs:publish --prefix site
+
+lint name="":
+	if [ "{{name}}" = "site" ]; then \
+		npm run lint --prefix site; \
+	elif [ -n "{{name}}" ]; then \
+		just lint-all "{{name}}"; \
+	else \
+		just lint-all .; \
+	fi
+
+lint-all dir=".":
+	prettier --ignore-unknown --check "{{dir}}"
+	shfmt --apply-ignore -d "{{dir}}"
 
 version name="":
 	if [ -n "{{name}}" ]; then \
@@ -25,3 +63,9 @@ version-all:
 	just list | while read -r name; do \
 		printf "%s %s\n" "$name" "$( bin/version show "$name/$name" )"; \
 	done
+
+release name type github="":
+	bin/release "{{name}}" "{{type}}" {{github}}
+
+formula name formula_dir:
+	bin/version-formula "{{name}}" "{{formula_dir}}"

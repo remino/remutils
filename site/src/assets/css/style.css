@@ -1,0 +1,39 @@
+@import '@remino/directive';
+
+main {
+	margin-block-end: calc(var(--rmn-ribbon-push, 0px) + var(--dress-m-b) * 2);
+}
+
+.code-block {
+	margin-block: var(--dress-m-bs) var(--dress-m-be);
+
+	> pre {
+		margin-block: 0;
+	}
+}
+
+.sr-only {
+	block-size: 1px;
+	border: 0;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	inline-size: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	white-space: nowrap;
+}
+
+.tool-list {
+	display: grid;
+	gap: var(--dress-m-b) var(--dress-m-i);
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	padding: 0;
+}
+
+body > header > h1::before {
+	content: '>';
+	font-weight: normal;
+	opacity: 0.5;
+}

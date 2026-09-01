@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+*.png
+*.jpg
+*.jpeg
+*.avif
+*.webp
+!tests/expected/*.png
+tests/.tmp/
+npm-debug.log*

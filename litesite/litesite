@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-${TMPDIR:-/tmp}/litesite-cargo-target}"
+export CARGO_TARGET_DIR
+
+exec cargo run --quiet --manifest-path "$SCRIPT_DIR/Cargo.toml" -- "$@"

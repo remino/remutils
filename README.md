@@ -2,13 +2,15 @@
 
 Collection of utility scripts.
 
-Rémino Rem <https://remino.net/>, 2026
+2026 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 
 - [Installation & Usage](#installation--usage)
 - [Development](#development)
-    - [Scripts](#scripts)
+    - [Git Hooks](#git-hooks)
+    - [Tasks](#tasks)
+    - [Release Scripts](#release-scripts)
 - [Licence](#licence)
 
 <!-- mtoc-end -->
@@ -33,10 +35,39 @@ along with documentation and a test suite. For example:
     - `README.md`
     - `tests/`: Bats test suite directory.
 
-### Scripts
+### Git Hooks
 
-Use the following scripts in `bin` to help deploy updates, listed below in the
-order of execution:
+Install Git hooks with:
+
+```sh
+just hooks
+```
+
+The pre-commit hook formats staged shell files with `shfmt` and staged Markdown,
+JSON, YAML, HTML, CSS, and JavaScript files with `prettier`.
+
+### Tasks
+
+Use `just` for common development tasks:
+
+- `just list`
+    - List tools managed by this repo.
+- `just tests [name]`
+    - Run all tests, or one tool's test suite when `name` is provided.
+- `just format [name]`
+    - Format the whole repo, or one tool when `name` is provided.
+- `just lint [name]`
+    - Check formatting for the whole repo, or one tool when `name` is provided.
+- `just version [name]`
+    - Show versions for all tools, or one tool when `name` is provided.
+- `just release <name> <initial|major|minor|patch> [--github]`
+    - Create a release commit and tag, optionally publishing to GitHub.
+- `just clean`
+    - Remove generated release tarballs and checksum files.
+
+### Release Scripts
+
+The `just` recipes call scripts in `bin` for lower-level release operations:
 
 - `script-tests`
     - To run the test suite of a script.
@@ -44,6 +75,10 @@ order of execution:
     - To update the version of a script.
 - `version-commit`
     - To commit versioned changes of a script to its containing git repo.
+- `release`
+    - To create the initial commit/tag for a script or delegate later versioned
+      releases to `version-commit`. Pass `--github` to also publish the GitHub
+      release.
 - `version-tarball`
     - To generate a tarball of a versioned release of a script.
 - `version-release`

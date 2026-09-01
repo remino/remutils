@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=1.0.1
+VERSION=1.0.2
 
 _usage() {
 	echo "USAGE: $(basename "$0") [-v] <input_dir> <output.iso>"
@@ -40,7 +40,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

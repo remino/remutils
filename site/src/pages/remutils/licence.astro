@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getRepositoryLicence } from '../../lib/tools'
+
+const licence = await getRepositoryLicence()
+---
+
+<BaseLayout title="Licence">
+	<article set:html={licence} />
+</BaseLayout>

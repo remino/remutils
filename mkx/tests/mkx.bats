@@ -33,9 +33,31 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -gt 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -gt 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
+}
+
+@test "generates script from standard input" {
+	OUTPUT_FILE="$(mktemp)"
+	rm -f "$OUTPUT_FILE"
+	run bash -c 'printf "echo hello\\n" | "$1" "$2"' _ "$BATS_TEST_DIRNAME/../mkx" "$OUTPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
+	[ "$(tail -n 1 "$OUTPUT_FILE")" = "echo hello" ]
+	[ -x "$OUTPUT_FILE" ]
+}
+
+@test "preserves a shebang from standard input" {
+	OUTPUT_FILE="$(mktemp)"
+	rm -f "$OUTPUT_FILE"
+	run bash -c 'printf "#!/bin/sh\\necho hello\\n" | "$1" "$2"' _ "$BATS_TEST_DIRNAME/../mkx" "$OUTPUT_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
+	[ -x "$OUTPUT_FILE" ]
 }
 
 @test "generates script from custom template" {
@@ -45,7 +67,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -gt 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -gt 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -62,7 +84,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -80,7 +102,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -101,7 +123,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$NEW_SCRIPT")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$NEW_SCRIPT")" -gt 2 ]
+	[ "$(wc -l < "$NEW_SCRIPT")" -gt 2 ]
 	[ -x "$NEW_SCRIPT" ]
 	[ -f "$NEW_SCRIPT" ]
 }
@@ -122,7 +144,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -134,7 +156,7 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
@@ -147,38 +169,35 @@ teardown() {
 
 	[ "$status" -eq 0 ]
 	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
 
-@test "overwrites existing file when user confirms override" {
+@test "overwrites existing file from standard input when -f is set" {
 	OUTPUT_FILE="$(mktemp)"
 	rm -f "$OUTPUT_FILE"
 	run "$BATS_TEST_DIRNAME/../mkx" -b "$OUTPUT_FILE"
-	run bash -c 'printf "y\n" | "'$BATS_TEST_DIRNAME'/../mkx" -b -s "$0"' "$OUTPUT_FILE"
+	run bash -c 'printf "echo hello\n" | "$1" -f "$2"' _ "$BATS_TEST_DIRNAME/../mkx" "$OUTPUT_FILE"
 
 	[ "$status" -eq 0 ]
-	[[ "$output" == *"File exists. Overwrite?"* ]]
-	[[ "$output" == *"Overwriting..."* ]]
-	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
+	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/usr/bin/env bash" ]
+	[ "$(wc -l < "$OUTPUT_FILE")" -eq 2 ]
 	[ -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
 
-@test "cancels overwrite when user declines" {
+@test "does not make a non-executable file executable when overwrite is cancelled" {
 	OUTPUT_FILE="$(mktemp)"
-	rm -f "$OUTPUT_FILE"
-	run "$BATS_TEST_DIRNAME/../mkx" -b -s "$OUTPUT_FILE"
-	run bash -c 'printf "n\n" | "'$BATS_TEST_DIRNAME'/../mkx" -b "$0"' "$OUTPUT_FILE"
+	printf 'original content\n' > "$OUTPUT_FILE"
+	chmod a-x "$OUTPUT_FILE"
+	run "$BATS_TEST_DIRNAME/../mkx" "$OUTPUT_FILE"
 
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"File exists. Overwrite?"* ]]
 	[[ "$output" == *"Cancelled."* ]]
-	[ "$(head -n 1 "$OUTPUT_FILE")" = "#!/bin/sh" ]
-	[ "$(wc -l <"$OUTPUT_FILE")" -eq 2 ]
-	[ -x "$OUTPUT_FILE" ]
+	[ "$(cat "$OUTPUT_FILE")" = "original content" ]
+	[ ! -x "$OUTPUT_FILE" ]
 	[ -f "$OUTPUT_FILE" ]
 }
 

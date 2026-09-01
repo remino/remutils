@@ -1,11 +1,14 @@
 # vim: set ft=ruby :
-class Liverename < Formula
+class {{formula_class}} < Formula
   desc "Watches a file with watchexec and renames it with a timestamp when it is created."
   version "{{version}}"
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "watchexec"
 
@@ -16,6 +19,7 @@ class Liverename < Formula
 
   def install
     bin.install "{{name}}"
+    man1.install "man/{{name}}.1"
   end
 
   test do

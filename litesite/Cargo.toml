@@ -1,0 +1,46 @@
+[package]
+name = "litesite"
+version = "2.5.0"
+description = "Create and work with tiny static sites"
+edition = "2021"
+license = "ISC"
+readme = "README.md"
+repository = "https://github.com/remino/remutils"
+keywords = ["static-site", "website", "cli", "live-reload", "compression"]
+categories = ["command-line-utilities", "web-programming"]
+include = [
+  "src/**",
+  "templates/**",
+  "man/**",
+  "CHANGELOG.md",
+  "Cargo.lock",
+  "Cargo.toml",
+  "LICENSE.txt",
+  "README.md",
+]
+
+[dependencies]
+anyhow = "1"
+axum = "0.8"
+brotli = "8"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+colog = "1.4"
+comrak = { version = "0.54", default-features = false, features = ["attributes"] }
+dotenvy = "0.15"
+env_logger = "0.11"
+flate2 = "1"
+futures = "0.3"
+include_dir = "0.7"
+log = "0.4"
+mime_guess = "2"
+minify-html = "0.18"
+mustache = "0.9"
+notify = "8"
+notify-debouncer-full = "0.7"
+regex = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+tokio-util = { version = "0.7", features = ["io"] }
+walkdir = "2"
+zstd = "0.13"

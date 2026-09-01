@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# addwatermark
+# Compatibility wrapper for imgmod watermark.
+
+VERSION='2.1.1'
+
+addwatermark_main() {
+	local script_dir
+	local imgmod
+	local -a options
+	local watermark
+	local input
+	local output
+
+	script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+	imgmod="${IMGMOD_BIN:-$script_dir/../imgmod/imgmod}"
+	[ -x "$imgmod" ] || imgmod=imgmod
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			-a | -g | -r | -s)
+				if [ $# -lt 2 ]; then
+					addwatermark_help
+					return 16
+				fi
+				options+=("$1" "$2")
+				shift 2
+				;;
+			-h | --help)
+				addwatermark_help
+				return
+				;;
+			-v | --version)
+				echo "addwatermark $VERSION"
+				return
+				;;
+			-*)
+				echo "Invalid option: $1" >&2
+				addwatermark_help >&2
+				return 16
+				;;
+			*) break ;;
+		esac
+	done
+
+	if [ $# -ne 3 ]; then
+		addwatermark_help
+		return 16
+	fi
+	watermark=$1
+	input=$2
+	output=$3
+
+	exec "$imgmod" watermark "${options[@]}" -w "$watermark" -o "$output" "$input"
+}
+
+addwatermark_help() {
+	cat << USAGE
+addwatermark $VERSION
+
+USAGE: addwatermark [<options>] <watermark> <input> <output>
+
+Compatibility wrapper for imgmod watermark. Prefer:
+
+	imgmod watermark -w <watermark> -o <output> <input>
+
+OPTIONS:
+
+	-a <value>  Watermark opacity. Default: 0.5.
+	-g <gravity> Watermark gravity. Default: SouthWest.
+	-h, --help  Show this help screen.
+	-r <size>   Resize the finished image using ImageMagick geometry.
+	-s <size>   Watermark size as a percentage. Default: 12%.
+	-v, --version
+	            Show script name and version number.
+
+USAGE
+}
+
+addwatermark_main "$@"

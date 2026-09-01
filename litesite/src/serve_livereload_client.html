@@ -1,0 +1,92 @@
+<script data-litesite-livereload>
+	;(function () {
+		var booted = null
+		var lostLogged = false
+
+		function bustCss() {
+			document
+				.querySelectorAll('link[rel="stylesheet"]')
+				.forEach(function (link) {
+					var base = (link.href || '').split('?')[0]
+					if (base) {
+						link.href = base + '?v=' + Date.now()
+					}
+				})
+		}
+
+		function onEvent(kind, data) {
+			if (kind === 'hello') {
+				lostLogged = false
+				if (booted === null) {
+					booted = data
+				} else if (data !== booted) {
+					location.reload()
+				}
+				return
+			}
+
+			if (kind === 'change') {
+				var payload = {}
+				try {
+					payload = JSON.parse(data)
+				} catch (_) {}
+				if (payload.type === 'css') {
+					bustCss()
+				} else {
+					location.reload()
+				}
+				return
+			}
+
+			if (kind === 'error' && !lostLogged) {
+				lostLogged = true
+				console.debug('[litesite livereload] connection lost; reconnecting...')
+			}
+		}
+
+		if ('SharedWorker' in window) {
+			try {
+				var worker = new SharedWorker(
+					'/__litesite/livereload-worker.js',
+					'litesite-livereload'
+				)
+				worker.port.start()
+				worker.port.onmessage = function (event) {
+					onEvent(event.data.kind, event.data.data)
+				}
+				window.addEventListener('beforeunload', function () {
+					try {
+						worker.port.postMessage('bye')
+					} catch (_) {}
+				})
+				return
+			} catch (_) {}
+		}
+
+		if (!('EventSource' in window)) {
+			return
+		}
+
+		var es = null
+		function connect() {
+			es = new EventSource('/__litesite/livereload')
+			es.addEventListener('hello', function (event) {
+				onEvent('hello', event.data)
+			})
+			es.addEventListener('change', function (event) {
+				onEvent('change', event.data)
+			})
+			es.onerror = function () {
+				onEvent('error')
+			}
+		}
+
+		window.addEventListener('beforeunload', function () {
+			if (es) {
+				es.close()
+			}
+		})
+
+		connect()
+	})()
+</script>

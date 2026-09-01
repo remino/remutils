@@ -1,12 +1,14 @@
 # vim: set ft=ruby :
-class Rsdeploy < Formula
+class {{formula_class}} < Formula
   desc "Deploy directory to remote server by using rsync."
   version "{{version}}"
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
-  revision 1
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
 
@@ -17,6 +19,7 @@ class Rsdeploy < Formula
 
   def install
     bin.install "{{name}}"
+    man1.install "man/{{name}}.1"
   end
 
   test do

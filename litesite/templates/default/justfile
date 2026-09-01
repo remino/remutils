@@ -1,0 +1,33 @@
+set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+
+default: serve
+
+build:
+    litesite build
+
+clean:
+    litesite clean
+
+serve:
+    litesite serve
+
+deploy:
+    litesite deploy
+
+compress:
+    litesite compress
+
+media:
+    litesite media
+
+new slug="":
+    litesite new '{{slug}}'
+
+init slug="":
+    litesite init '{{slug}}'
+
+jpg *files:
+    litesite jpg {{files}}
+
+webp *files:
+    litesite webp {{files}}

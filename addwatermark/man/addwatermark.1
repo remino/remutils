@@ -1,0 +1,63 @@
+.TH ADDWATERMARK 1 "2026-08-02" "addwatermark 2.1.1"
+.SH NAME
+addwatermark \- compatibility wrapper for imgmod watermark
+.SH SYNOPSIS
+.B addwatermark
+[\fIoptions\fR] \fIwatermark\fR \fIinput\fR \fIoutput\fR
+.SH DESCRIPTION
+.B addwatermark
+applies an image watermark to an input image. It preserves the legacy argument
+order while delegating processing to
+.BR imgmod (1)
+and its
+.B watermark
+plugin.
+
+For new scripts, use
+.B imgmod watermark
+directly.
+.SH OPTIONS
+.TP
+.BI \-a " opacity"
+Set watermark opacity. The default is \fI0.5\fR.
+.TP
+.BI \-g " gravity"
+Set watermark placement gravity. The default is \fISouthWest\fR.
+.TP
+.B \-h, --help
+Show usage help.
+.TP
+.BI \-r " geometry"
+Resize the finished image using ImageMagick geometry.
+.TP
+.BI \-s " percentage"
+Set watermark size as a percentage. The default is \fI12%\fR.
+.TP
+.B \-v, --version
+Show the command name and version.
+.SH DEPENDENCIES
+.TP
+.B imgmod
+Provides the watermark implementation and its image-processing dependencies.
+.SH EXAMPLES
+.TP
+Apply \fIlogo.png\fR to \fIphoto.jpg\fR:
+.nf
+.B addwatermark logo.png photo.jpg photo-watermarked.jpg
+.fi
+.TP
+Use a centered, opaque watermark:
+.nf
+.B addwatermark -g Center -a 1 logo.png photo.jpg output.jpg
+.fi
+.SH SEE ALSO
+.BR imgmod (1),
+.BR imgmod-watermark (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

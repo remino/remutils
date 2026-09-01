@@ -2,7 +2,7 @@
 
 Make new executable shell script file from template.
 
-Rémino Rem <https://remino.net/>, 2022
+2022 Rémino Rem <https://remino.net/>
 
 <!-- mtoc-start -->
 
@@ -21,7 +21,7 @@ Rémino Rem <https://remino.net/>, 2022
 
 ```sh
 brew install remino/remino/mkx
-./mkx
+mkx
 ```
 
 ### Download
@@ -41,6 +41,15 @@ cd remutils/mkx
 ## Usage
 
 Run `man mkx` or `mkx -h` to see how to use it.
+
+Pipe a command into `mkx` to save it as an executable script. `mkx` adds its
+default shebang unless the input already starts with one.
+
+```sh
+echo 'echo hello' | mkx output-hello
+```
+
+Use `-f` to replace an existing file when piping standard input.
 
 ## Formerly _mksh_
 

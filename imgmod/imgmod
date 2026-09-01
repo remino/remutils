@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+# imgmod
+# Image modification helpers.
+
+VERSION='2.2.0'
+
+imgmod_resolve_script_path() {
+	local source=$1
+	local dir
+
+	while [ -L "$source" ]; do
+		dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+		source="$(readlink "$source")"
+		[[ "$source" != /* ]] && source="$dir/$source"
+	done
+
+	dir="$(cd -P -- "$(dirname -- "$source")" && pwd)"
+	printf '%s/%s\n' "$dir" "$(basename -- "$source")"
+}
+
+SCRIPT_NAME="$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_PATH="$(imgmod_resolve_script_path "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+
+# shellcheck source=lib/imgmod.sh
+. "$SCRIPT_DIR/lib/imgmod.sh"
+
+imgmod_main() {
+	trap _exit INT TERM
+
+	local newplugin=
+	local optimize=0
+	local overwrite_mode=prompt
+
+	[ $# -lt 1 ] && _help && return
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			-h | --help)
+				_help
+				return
+				;;
+			-v | --version)
+				_version
+				return
+				;;
+			-o | -O | --optim | --optimize)
+				optimize=1
+				shift
+				;;
+			-y | --overwrite)
+				imgmod_set_overwrite_mode overwrite_mode force "$1"
+				shift
+				;;
+			-i | --interactive)
+				imgmod_set_overwrite_mode overwrite_mode interactive "$1"
+				shift
+				;;
+			-N | --no-overwrite)
+				imgmod_set_overwrite_mode overwrite_mode no-clobber "$1"
+				shift
+				;;
+			-n)
+				shift
+				[ $# -lt 1 ] && _invalid_opt n
+				newplugin="$1"
+				shift
+				break
+				;;
+			-*) _invalid_opt "${1#-}" ;;
+			*) break ;;
+		esac
+	done
+
+	if [ -n "$newplugin" ]; then
+		[ $# -gt 0 ] && _help && return $E_ARGS
+		_run_plugin "$optimize" "$overwrite_mode" newplugin "$newplugin"
+		return
+	fi
+
+	[ $# -lt 1 ] && _help && return
+
+	case "$1" in
+		version)
+			_version
+			return
+			;;
+		help)
+			shift
+			if [ $# -eq 0 ]; then
+				_help
+				return
+			fi
+			_run_plugin 0 "$overwrite_mode" "$1" -h
+			;;
+		*)
+			_run_plugin "$optimize" "$overwrite_mode" "$@"
+			;;
+	esac
+}
+
+_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_NAME <command> [<options>] [<args>]
+
+Image modification helpers.
+
+COMMANDS:
+
+	chain       Run multiple imgmod plugins in sequence.
+	collage     Stitch multiple images together.
+	completion  Shell completion data.
+	newplugin   Create a new imgmod plugin.
+	optim       Optimize an image directly with image_optim.
+	png8        Convert an image to PNG8.
+	scale4x     Scale an image 4x without smoothing.
+	socshare    Crop and resize an image to 1200x630 for social sharing.
+	vidframe    Extract one frame from a video as an image.
+	watermark   Apply a watermark to an image.
+
+OPTIONS:
+
+	-h          Show this help screen.
+	-i          Prompt before overwriting an existing output file.
+	-n          Create a new plugin. Names create XDG plugins; paths create files
+	            exactly there.
+	-N          Refuse to overwrite an existing output file.
+	-O, --optim, --optimize
+	            Optimize plugin image outputs with image_optim.
+	-o          Deprecated alias for -O.
+	-v          Show script name and version number.
+	-y          Overwrite an existing output file without prompting.
+	--overwrite Same as -y.
+	--interactive
+	            Same as -i.
+	--no-overwrite
+	            Same as -N.
+
+Plugins are executable files found in XDG data directories under imgmod/plugins,
+or in the bundled plugins directory next to this script.
+
+USAGE
+}
+
+imgmod_set_overwrite_mode() {
+	local var_name=$1
+	local new_mode=$2
+	local flag=$3
+	local current_mode="${!var_name}"
+
+	if [ "$current_mode" != prompt ] && [ "$current_mode" != "$new_mode" ]; then
+		_fatal "$E_ARGS" "Conflicting overwrite options: $flag"
+	fi
+
+	printf -v "$var_name" '%s' "$new_mode"
+}
+
+_run_plugin() {
+	local optimize=$1
+	local overwrite_mode=$2
+	local command_name=$3
+	local plugin
+	local outputs_file=
+	local status
+
+	shift 3
+
+	export IMGMOD_PLUGIN_DIR="$SCRIPT_DIR/plugins"
+
+	plugin="$(imgmod_find_plugin "$command_name")"
+
+	if [ -z "$plugin" ]; then
+		unset IMGMOD_PLUGIN_DIR
+		_invalid_cmd "$command_name"
+	fi
+
+	export IMGMOD_LIB="$SCRIPT_DIR/lib/imgmod.sh"
+	export IMGMOD_APP_NAME="$SCRIPT_NAME"
+	export IMGMOD_PLUGIN_NAME="$command_name"
+	export IMGMOD_OVERWRITE_MODE="$overwrite_mode"
+	unset IMGMOD_OVERWRITE_APPROVED_OUTPUT
+
+	if [ "$optimize" -ne 0 ]; then
+		_require image_optim
+		outputs_file="$(mktemp)"
+		_imgmod_outputs_begin "$outputs_file"
+	fi
+
+	"$plugin" "$@"
+	status=$?
+
+	if [ -n "$outputs_file" ]; then
+		_imgmod_outputs_end
+
+		if [ "$status" -eq 0 ]; then
+			_imgmod_optimize_outputs "$outputs_file"
+			status=$?
+		fi
+
+		rm -f "$outputs_file"
+	fi
+
+	unset IMGMOD_APP_NAME
+	unset IMGMOD_PLUGIN_NAME
+	unset IMGMOD_PLUGIN_DIR
+	unset IMGMOD_OVERWRITE_MODE
+	unset IMGMOD_OVERWRITE_APPROVED_OUTPUT
+
+	return "$status"
+}
+
+_invalid_opt() {
+	local invalid_opt=$1
+
+	_error "Invalid option: -$invalid_opt"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $1"
+	_echo
+	_error "Run $SCRIPT_NAME -h for help."
+	exit $E_ARGS
+}
+
+_version() {
+	_echo "$SCRIPT_NAME $VERSION"
+}
+
+imgmod_main "$@"

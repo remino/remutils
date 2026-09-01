@@ -1,0 +1,43 @@
+.TH FILE2DATAURL 1 "2026-08-02" "file2dataurl 1.0.3"
+.SH NAME
+file2dataurl \- convert a file to a base64 data URL
+.SH SYNOPSIS
+.B file2dataurl
+[\fIoptions\fR] \fIfile\fR
+.SH DESCRIPTION
+.B file2dataurl
+detects the MIME type of \fIfile\fR and writes its Base64-encoded data URL to
+standard output.
+.SH OPTIONS
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-v
+Show the command name and version.
+.SH DEPENDENCIES
+.TP
+.B file
+Detects the input file MIME type.
+.TP
+.B base64
+Encodes input data.
+.SH EXAMPLES
+.TP
+Create a data URL for an image:
+.nf
+.B file2dataurl logo.png
+.fi
+.TP
+Save a data URL to a file:
+.nf
+.B file2dataurl font.woff2 > font.txt
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

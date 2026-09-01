@@ -1,0 +1,11 @@
+{
+	"source": {
+		"include": ["bin", "lib"],
+		"exclude": ["bin/comprose.test.js", "lib/helpers.js", "lib/types.js"],
+		"includePattern": ".+\\.js$",
+		"excludePattern": "(^|/|\\\\).+\\.test\\.js$"
+	},
+	"opts": {
+		"recurse": true
+	}
+}

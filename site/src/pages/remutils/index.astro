@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getRepositoryReadmeSections, getTools } from '../../lib/tools'
+
+const [readme, tools] = await Promise.all([
+	getRepositoryReadmeSections(),
+	getTools(),
+])
+---
+
+<BaseLayout>
+	<article set:html={readme.beforeTools} />
+	<section id="tools">
+		<h2>Tools</h2>
+		<dl class="tool-list">
+			{
+				tools.map(tool => (
+					<div>
+						<dt>
+							<a href={`/remutils/${tool.name}/`}>
+								<strong>{tool.name}</strong>
+							</a>
+						</dt>
+						{tool.description && <dd set:html={tool.descriptionHtml} />}
+					</div>
+				))
+			}
+		</dl>
+	</section>
+	<article set:html={readme.afterTools} />
+</BaseLayout>

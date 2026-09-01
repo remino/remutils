@@ -1,0 +1,1 @@
+vidmod completion fish | source

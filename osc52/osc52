@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# Copy and paste through the terminal clipboard using OSC 52.
+
+set -euo pipefail
+
+VERSION=0.1.0
+SCRIPT_NAME="$(basename "$0")"
+
+usage() {
+	cat << EOF
+osc52 $VERSION
+
+USAGE: osc52 copy [TEXT...]
+       osc52 paste
+
+Copy and paste through a terminal clipboard using OSC 52.
+EOF
+}
+
+copy_usage() {
+	cat << 'EOF'
+Usage: osc52copy [TEXT...]
+
+Copies TEXT, or standard input when TEXT is omitted, to the terminal clipboard
+using OSC 52.
+EOF
+}
+
+paste_usage() {
+	cat << 'EOF'
+Usage: osc52paste
+
+Prints the terminal clipboard contents obtained with an OSC 52 query.
+EOF
+}
+
+base64_encode() {
+	base64 | tr -d '\r\n'
+}
+
+base64_decode() {
+	if base64 --decode < /dev/null > /dev/null 2>&1; then
+		base64 --decode
+	else
+		base64 -D
+	fi
+}
+
+copy() {
+	case "${1:-}" in
+		-h | --help)
+			copy_usage
+			return
+			;;
+		-v | --version)
+			printf 'osc52copy %s\n' "$VERSION"
+			return
+			;;
+	esac
+
+	local data terminal
+	if (($#)); then
+		data="$*"
+	else
+		data="$(cat)"
+	fi
+
+	terminal="${OSC52_TTY:-/dev/tty}"
+	printf '\033]52;c;%s\007' "$(printf '%s' "$data" | base64_encode)" > "$terminal"
+}
+
+paste() {
+	case "${1:-}" in
+		'') ;;
+		-h | --help)
+			paste_usage
+			return
+			;;
+		-v | --version)
+			printf 'osc52paste %s\n' "$VERSION"
+			return
+			;;
+		*)
+			printf 'osc52paste: unexpected argument: %s\n' "$1" >&2
+			return 16
+			;;
+	esac
+
+	local terminal tty_state response='' character encoded
+	terminal="${OSC52_TTY:-/dev/tty}"
+	tty_state="$(stty -g < "$terminal")"
+
+	restore_terminal() {
+		stty "$tty_state" < "$terminal"
+	}
+
+	trap restore_terminal RETURN
+	stty -echo -icanon min 1 time 10 < "$terminal"
+	printf '\033]52;c;?\033\\' > "$terminal"
+
+	while IFS= read -r -n 1 character < "$terminal"; do
+		response+="$character"
+		[[ "$character" == $'\a' || "$response" == *$'\e\\' ]] && break
+	done
+
+	encoded="${response#*;c;}"
+	encoded="${encoded%$'\a'}"
+	encoded="${encoded%$'\e\\'}"
+	printf '%s' "$encoded" | base64_decode
+}
+
+case "$SCRIPT_NAME" in
+	osc52copy)
+		copy "$@"
+		;;
+	osc52paste)
+		paste "$@"
+		;;
+	*)
+		case "${1:-}" in
+			copy)
+				shift
+				copy "$@"
+				;;
+			paste)
+				shift
+				paste "$@"
+				;;
+			-h | --help | '') usage ;;
+			-v | --version) printf 'osc52 %s\n' "$VERSION" ;;
+			*)
+				printf 'osc52: unknown command: %s\n' "$1" >&2
+				exit 16
+				;;
+		esac
+		;;
+esac

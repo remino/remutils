@@ -7,6 +7,11 @@ mkx \- Make new exectuable shell script file from template
 .SH DESCRIPTION
 .B mkx
 creates a new executable shell script file from a template.
+When standard input has content, it writes that content to the new script
+instead. If the input does not start with a shebang line, mkx adds the
+configured interpreter as one.
+Use \fB-f\fR to replace an existing file when standard input is piped or
+redirected.
 .SH OPTIONS
 .TP
 .B \-b

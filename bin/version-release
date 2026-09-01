@@ -55,8 +55,8 @@ _changelog() {
   $0 ~ "^##[[:space:]]+" ver "$" {f=1; next}
   /^##[[:space:]]/ {f=0}
   f
-' "$changelog" |
-		prettier --prose-wrap never --stdin-filepath CHANGELOG.md
+' "$changelog" \
+		| prettier --prose-wrap never --stdin-filepath CHANGELOG.md
 }
 
 _fatal() {
@@ -70,7 +70,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

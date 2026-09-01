@@ -26,7 +26,7 @@ teardown() {
 
 @test "file2dataurl converts a text file to data URL" {
 	TMP_DIR=$(mktemp -d)
-	echo "Hello, World!" >"$TMP_DIR/hello.txt"
+	echo "Hello, World!" > "$TMP_DIR/hello.txt"
 
 	run "$BATS_TEST_DIRNAME/../file2dataurl" "$TMP_DIR/hello.txt"
 	[ "$status" -eq 0 ]
@@ -36,7 +36,7 @@ teardown() {
 
 @test "file2dataurl converts a binary file to data URL" {
 	TMP_DIR=$(mktemp -d)
-	printf '\x00\xFF\xAA\x55' >"$TMP_DIR/binary.bin"
+	printf '\x00\xFF\xAA\x55' > "$TMP_DIR/binary.bin"
 	run "$BATS_TEST_DIRNAME/../file2dataurl" "$TMP_DIR/binary.bin"
 	[ "$status" -eq 0 ]
 	expected_output="data:application/octet-stream;base64,AP+qVQ=="

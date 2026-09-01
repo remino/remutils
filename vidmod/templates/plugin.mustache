@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# vidmod {{plugin_name}}
+
+VERSION='{{plugin_version}}'
+
+if [ -z "${VIDMOD_LIB:-}" ]; then
+	echo "Run this plugin through vidmod or set VIDMOD_LIB." >&2
+	exit 16
+fi
+
+# shellcheck source=/dev/null
+. "$VIDMOD_LIB"
+
+{{plugin_prefix}}_start() {
+	while getopts h opt; do
+		case $opt in
+			h)
+				{{plugin_prefix}}_help
+				return
+				;;
+			*) {{plugin_prefix}}_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	{{plugin_prefix}}_help
+}
+
+{{plugin_prefix}}_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] [<args>]
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+{{plugin_prefix}}_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	{{plugin_prefix}}_help
+	exit $E_ARGS
+}
+
+vidmod_plugin_run "$@"

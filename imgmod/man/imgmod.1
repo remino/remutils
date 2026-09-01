@@ -1,0 +1,158 @@
+.TH IMGMOD 1 "July 7, 2026" "imgmod 2.2.0"
+.SH NAME
+imgmod \- Image modification helpers
+.SH SYNOPSIS
+.B imgmod
+[\fB-h\fR|\fB--help\fR]
+.br
+.B imgmod
+[\fB-v\fR|\fB--version\fR]
+.br
+.B imgmod
+[\fB-O\fR|\fB--optim\fR|\fB--optimize\fR] \fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
+.br
+.B imgmod
+[\fB-y\fR|\fB--overwrite\fR] [\fB-i\fR|\fB--interactive\fR] [\fB-N\fR|\fB--no-overwrite\fR]
+\fICOMMAND\fR [\fIOPTIONS\fR] [\fIARGS\fR]
+.br
+.B imgmod
+\fB-n\fR \fINAME-OR-PATH\fR
+.SH DESCRIPTION
+.B imgmod
+is a plugin-based wrapper for image modification commands.
+
+Commands are executable plugin files named \fBimgmod-\fICOMMAND\fR. Users run
+plugins through the wrapper as \fBimgmod \fICOMMAND\fR.
+
+Bundled plugins are installed next to the wrapper. Local plugins are searched
+from XDG data directories before bundled plugins, so local plugins can override
+bundled commands.
+.SH COMMANDS
+.TP
+.B collage
+Stitch multiple images together vertically or horizontally.
+.TP
+.B completion
+Print shell completion data and generated completion scripts.
+.TP
+.B newplugin
+Create a new imgmod plugin from a template.
+.TP
+.B optim
+Optimize an image directly with image_optim.
+.TP
+.B png8
+Convert an image to PNG8.
+.TP
+.B scale4x
+Scale an image 4x without smoothing.
+.TP
+.B socshare
+Crop and resize an image to 1200x630 for social sharing.
+.TP
+.B vidframe
+Extract one frame from a video as an image.
+.TP
+.B watermark
+Apply a watermark to an image.
+.TP
+.B help \fICOMMAND\fR
+Show help for a command.
+.TP
+.B version
+Show script name and version number.
+.SH OPTIONS
+.TP
+.B \-h, --help
+Show usage help.
+.TP
+.B \-n \fINAME-OR-PATH\fR
+Create a new plugin. This is a shortcut for \fBimgmod newplugin\fR.
+.TP
+.B \-y, --overwrite
+Overwrite an existing output file without prompting.
+.TP
+.B \-i, --interactive
+Prompt before overwriting an existing output file.
+.TP
+.B \-N, --no-overwrite
+Refuse to overwrite an existing output file.
+.TP
+.B \-O, --optim, --optimize
+Optimize plugin image outputs with \fBimage_optim\fR.
+Only files reported by a plugin with \fBimgmod_output\fR are optimized.
+.TP
+.B \-o
+Deprecated alias for \fB-O\fR.
+.TP
+.B \-v, --version
+Show script name and version number.
+.SH PLUGIN LOOKUP
+Plugin lookup order is:
+.TP
+1.
+\fB$XDG_DATA_HOME/imgmod/plugins\fR, defaulting to
+\fB$HOME/.local/share/imgmod/plugins\fR.
+.TP
+2.
+Each \fB$XDG_DATA_DIRS\fR entry with \fB/imgmod/plugins\fR appended,
+defaulting to \fB/usr/local/share/imgmod/plugins\fR and
+\fB/usr/share/imgmod/plugins\fR.
+.TP
+3.
+Bundled plugins next to the \fBimgmod\fR wrapper.
+.SH PLUGIN API
+Plugins that use \fBlib/imgmod.sh\fR define hooks named from their command
+prefix, such as \fBwatermark_start\fR, and call
+\fBimgmod_plugin_run "$@"\fR.
+
+Plugins call \fBimgmod_output \fIFILE\fR to report image output files that can
+be optimized with \fBimgmod -O\fR.
+.SH FILES
+.TP
+.B ~/.local/share/imgmod/plugins/imgmod-*
+User plugin executables.
+.SH EXAMPLES
+.TP
+Create a social sharing image:
+.nf
+.B imgmod socshare image.png
+.fi
+.TP
+Create and optimize a social sharing image:
+.nf
+.B imgmod -O socshare image.png
+.fi
+.TP
+Optimize an image directly:
+.nf
+.B imgmod optim image.png
+.fi
+.TP
+Create a new local plugin:
+.nf
+.B imgmod newplugin watermark
+.fi
+.TP
+List completion command candidates:
+.nf
+.B imgmod completion commands
+.fi
+.SH SEE ALSO
+.BR imgmod-collage (1),
+.BR imgmod-completion (1),
+.BR imgmod-newplugin (1),
+.BR imgmod-optim (1),
+.BR imgmod-png8 (1),
+.BR imgmod-scale4x (1),
+.BR imgmod-socshare (1),
+.BR imgmod-vidframe (1)
+.BR imgmod-watermark (1)
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -49,7 +49,7 @@ version_tarball_main() {
 	if [ -f "$SUMFILE" ]; then
 		echo "File already exists: $SUMFILE" >&2
 	else
-		sha256sum "$TARBALL" >"$SUMFILE"
+		sha256sum "$TARBALL" > "$SUMFILE"
 	fi
 
 	echo "$TARBALL"
@@ -66,7 +66,7 @@ _require() {
 	missing_bin=0
 
 	for bin in "$@"; do
-		if ! which "$bin" >/dev/null 2>&1; then
+		if ! which "$bin" > /dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi

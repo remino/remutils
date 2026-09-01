@@ -1,0 +1,83 @@
+.TH MKWEBALBUM 1 "2026-08-02" "mkwebalbum 1.4.0"
+.SH NAME
+mkwebalbum \- generate an HTML photo album from a directory
+.SH SYNOPSIS
+.B mkwebalbum
+[\fIoptions\fR] [\fIinputdir\fR] [\fIoutputfile\fR]
+.SH DESCRIPTION
+.B mkwebalbum
+generates a responsive HTML page that links to the entries in a directory.
+Image files receive thumbnail previews in an adjacent
+.I .preview
+directory.
+
+Only the top-level directory is processed. By default, only image files are
+included, and dot files and directories are ignored. When \fIinputdir\fR is
+omitted, the current directory is used.
+
+The output defaults to
+.I index.html
+in the current directory. Specify
+.B -
+as \fIoutputfile\fR to write the HTML to standard output.
+.SH OPTIONS
+.TP
+.B -a
+Include all top-level files and directories, rather than image files only.
+.TP
+.BI -e " regex"
+Exclude entries whose names match \fIregex\fR. The default is
+.B ^\(rs.
+which excludes dot files and directories.
+.TP
+.B -h
+Show usage help.
+.TP
+.B -r
+Regenerate image previews even when they already exist.
+.TP
+.BI -t " title"
+Set the HTML document title. The default is the name of \fIinputdir\fR.
+.TP
+.B -v
+Show the command name and version.
+.SH DEPENDENCIES
+.TP
+.B awk
+Formats file sizes in the generated HTML.
+.TP
+.B ImageMagick
+The
+.B convert
+command generates image previews.
+.SH FILES
+.TP
+.I .preview/
+Created within the input directory to contain image previews. The directory
+also contains an
+.I .htaccess
+file that disables Apache directory listing.
+.SH EXAMPLES
+.TP
+Generate an album for the current directory:
+.nf
+.B mkwebalbum
+.fi
+.TP
+Generate an album from a directory with a custom title:
+.nf
+.B mkwebalbum -t "Summer trip" photos album.html
+.fi
+.TP
+Write an album to standard output:
+.nf
+.B mkwebalbum photos -
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

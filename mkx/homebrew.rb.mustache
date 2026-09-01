@@ -1,11 +1,14 @@
 # vim: set ft=ruby :
-class Mkx < Formula
+class {{formula_class}} < Formula
   desc "Make new executable shell script file from template."
   version "{{version}}"
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
   homepage "https://github.com/remino/remutils"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
 
   depends_on "bash"
 

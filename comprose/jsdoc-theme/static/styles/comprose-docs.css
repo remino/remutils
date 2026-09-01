@@ -1,0 +1,18 @@
+main h1,
+.name {
+	overflow-wrap: anywhere;
+}
+
+.signature-attributes,
+.type-signature {
+	font-size: 0.875em;
+}
+
+.details ul,
+.details .dummy {
+	margin: 0;
+}
+
+pre.prettyprint {
+	overflow-x: auto;
+}

@@ -1,0 +1,114 @@
+.TH COMPROSE 1 "July 2026" "comprose 0.3.0"
+.SH NAME
+comprose \- Create and import prose content entries
+.SH SYNOPSIS
+.B comprose
+\fIhelp\fR
+.br
+.B comprose
+\fInew\fR [\fIOPTIONS\fR] [\fB-s\fR \fISLUG\fR] [\fB-t\fR \fITITLE\fR]
+.br
+.B comprose
+\fIimport\fR [\fIOPTIONS\fR] \fIPATH\fR
+.SH DESCRIPTION
+.B comprose
+creates Markdown entry scaffolds for prose-oriented static sites.
+It can also import a directory containing Markdown, optional CSS, and referenced images into a selected Mustache-backed template layout.
+.SH COMMANDS
+.TP
+.B help
+Show the usage screen.
+.TP
+.B new
+Create a new content entry scaffold.
+.TP
+.B import
+Import a directory into a new content entry.
+.SH OPTIONS
+.TP
+.B --template \fINAME-OR-PATH\fR
+Set the template layout. Built-in templates are \fBdefault\fR, \fBastro-content\fR, and \fBmiddleman-blog\fR. Defaults to \fBdefault\fR.
+.TP
+.B \-s \fISLUG\fR
+Set the entry slug.
+.TP
+.B \-t \fITITLE\fR
+Set the entry title.
+.TP
+.B \-d \fIISO-8601\fR
+Set the entry date. Date-only, date-time, and date-time with offset values are accepted.
+.TP
+.B \-k\fR, \fB--type\fR, \fB--kind\fR \fIKIND\fR
+Set the entry kind. Valid values are \fIarticle\fR and \fInote\fR.
+.TP
+.B \-g \fITAG\fR
+Add a tag to frontmatter. May be repeated.
+.TP
+.B \-i \fIPATH\fR
+Copy an image into the entry asset directory. May be repeated.
+.TP
+.B \-e
+Open created text files in \fBEDITOR\fR after scaffolding.
+.TP
+.B \-o
+Open the public folder in Finder after scaffolding.
+.TP
+.B \-f
+For \fBimport\fR, replace an existing generated entry.
+.TP
+.B \-c\fR, \fB--collection\fR \fINAME\fR
+Set the content collection name. Defaults to the current directory name.
+.TP
+.B --pubname \fINAME\fR
+Set the generated frontmatter \fBpubname\fR.
+.SH TEMPLATES
+.TP
+.B default
+Writes \fBsrc/content/<collection>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<collection>/<slug>/\fR.
+.TP
+.B astro-content
+Writes \fBsrc/content/<collection>/<date>-<slug>/index.md\fR, a matching stylesheet, and assets under \fBpublic/<collection>/<slug>/\fR.
+.TP
+.B middleman-blog
+Writes \fBsource/<collection>/<slug>.html.md\fR and assets under \fBsource/<collection>/<slug>/\fR. It does not create a stylesheet by default.
+.PP
+Template directories define output paths directly. Directory and file names can contain path variables such as \fB[collection]\fR, \fB[date]\fR, and \fB[slug]\fR. Files ending in \fB.mustache\fR are rendered and written without the suffix. A \fB.comprose-assets\fR marker file marks the directory where copied images are written.
+.PP
+Template names are resolved as \fB.comprose/templates/<name>\fR in the current directory or a parent directory first, then as \fB.config/comprose/templates/<name>\fR in the current directory or a parent directory, then as \fB$XDG_CONFIG_HOME/comprose/templates/<name>\fR or \fB$HOME/.config/comprose/templates/<name>\fR, then as built-in templates bundled with \fBcomprose\fR, then as a relative or absolute path passed to \fB--template\fR.
+.SH EXAMPLES
+.TP
+Create a new article:
+.nf
+.B comprose new --template default -c journal --pubname example-journal -s my-new-entry
+.fi
+.TP
+Create a Middleman-style entry:
+.nf
+.B comprose new --template middleman-blog -c posts -s my-new-entry
+.fi
+.TP
+Import a prepared source directory:
+.nf
+.B comprose import --template middleman-blog -c posts /tmp/source-entry
+.fi
+.SH DEPENDENCIES
+.TP
+.B Node.js
+Used to run the command-line tool.
+.TP
+.B Mustache
+Used to render entry and stylesheet templates.
+.TP
+.B sharp
+Used to convert JPEG, WebP, and related image inputs to AVIF.
+.TP
+.B ImageMagick
+Used for HEIC, PNG, and GIF import processing.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

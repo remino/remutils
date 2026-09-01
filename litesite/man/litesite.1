@@ -1,0 +1,131 @@
+.TH LITESITE 1 "May 2026" "litesite 2.5.0"
+.SH NAME
+litesite \- create and work with tiny static sites
+.SH SYNOPSIS
+.B litesite
+[\fB-C\fR \fIDIR\fR] [\fICOMMAND\fR] [\fIARGS...\fR]
+.SH DESCRIPTION
+.B litesite
+works on a site root that contains \fBsrc/\fR, optional private sources in
+\fBpriv/\fR, \fB.deploy-filter\fR,
+\fBjustfile\fR, and \fB.editorconfig\fR.
+
+It can build the site into \fBdist/\fR, serve the public directory, deploy the
+output with \fBrsdeploy\fR, regenerate compressed assets and AVIF JPG/WebP
+derivatives, expand SSI-style file includes in HTML files (rendering included
+Markdown as HTML), or scaffold a new site.
+
+When no command is supplied,
+.B litesite
+runs the usage screen
+.
+.SH COMMANDS
+.TP
+.B build
+Build \fBdist/\fR from \fBsrc/\fR, expand SSI-style HTML file includes unless
+disabled (rendering included Markdown as HTML), minify HTML/CSS/JS unless disabled, copy public assets, generate
+sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives, and write
+compressed Brotli, gzip, and zstd variants.
+.TP
+.B clean
+Remove \fBdist/\fR.
+.TP
+.B serve
+Run a local preview server against \fBsrc/public/\fR with Tornado-style log
+prefixes and SSE live reload. SSI includes are rendered for HTML requests. CSS
+changes hot-swap stylesheets in place, other changes under the site root
+(including \fBpriv/\fR) reload the page, and browser tabs reconnect across
+server restarts.
+.TP
+.B deploy
+Build the site and deploy \fBdist/\fR. Pass \fB-n\fR to preview a dry-run
+deployment. \fBrsdeploy\fR is required for this command.
+.TP
+.B compress
+Regenerate Brotli, gzip, and zstd files for \fBdist/\fR.
+.TP
+.B media
+Regenerate sibling \fB*.avif.jpg\fR and \fB*.avif.webp\fR derivatives in
+\fBdist/\fR.
+.TP
+.B new [\fIOPTIONS\fR] \fISLUG\fR [\fIDEST\fR]
+Create a new site scaffold.
+.TP
+.B init [\fIOPTIONS\fR] \fISLUG\fR [\fIDEST\fR]
+Alias for \fBnew\fR.
+.TP
+.B jpg \fIFILES...\fR
+Convert AVIF files to JPG beside the source path.
+.TP
+.B webp \fIFILES...\fR
+Convert AVIF files to WebP beside the source path.
+.SH OPTIONS
+.TP
+.B -C \fIDIR\fR
+Run against another site root.
+.TP
+.B -h
+Show help.
+.TP
+.B -v
+Show version.
+.TP
+.B -t \fINAME-OR-PATH\fR, --template \fINAME-OR-PATH\fR
+Select the Mustache template used by \fBnew\fR or \fBinit\fR. Template names
+resolve as built-ins first, then from \fB.litesite/templates/\fR and
+\fB.config/litesite/templates/\fR in the current directory or a parent, then
+from \fB$XDG_CONFIG_HOME/litesite/templates/\fR or
+\fB$HOME/.config/litesite/templates/\fR, then as an explicit path.
+.TP
+.B --var \fIKEY=VALUE\fR
+Add a string variable to the selected template. This option may be repeated.
+Later options override earlier values.
+.TP
+.B --vars \fIFILE.json\fR
+Load string variables from a JSON object. Later options override earlier
+values.
+.SH ENVIRONMENT
+.TP
+.B LITESITE_BUILD_BROTLI
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip Brotli output.
+.TP
+.B LITESITE_BUILD_GZIP
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip gzip output.
+.TP
+.B LITESITE_BUILD_ZSTD
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip zstd output.
+.TP
+.B LITESITE_BUILD_INCLUDES
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip HTML file includes.
+.TP
+.B LITESITE_BUILD_MINIFY
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip HTML/CSS/JS
+minification.
+.TP
+.B LITESITE_BUILD_AVIF_JPEG
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip JPG derivative generation.
+.TP
+.B LITESITE_BUILD_AVIF_WEBP
+Set to \fB0\fR, \fBfalse\fR, \fBno\fR, or \fBoff\fR to skip WebP derivative generation.
+.SH NOTES
+When \fBnew\fR or \fBinit\fR is called without \fIDEST\fR, the new site is
+created as \fB./\fISLUG\fR\fR.
+.PP
+Template files ending in \fB.mustache\fR are rendered and written without the
+suffix. Paths may contain \fB[slug]\fR, matching comprose's path placeholder
+format, and may use any variable passed with \fB--var\fR or \fB--vars\fR.
+Templates receive those variables for Mustache rendering as well as default
+\fBslug\fR, \fByear\fR, and \fBauthor\fR values. Only \fBslug\fR is
+reserved. \fByear\fR defaults to the current year; \fBauthor\fR defaults to a
+local Git repository author, then \fBwhoami\fR, then \fBYour Name\fR. Either
+may be overridden by template or command-line variables.
+.PP
+A template may contain a root \fB.litesite.json\fR file with default string
+variables in its \fBvars\fR object. These values load before command-line
+variables and are never copied into the generated site.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

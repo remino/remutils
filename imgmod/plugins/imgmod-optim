@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# imgmod optim
+# Optimize image files directly.
+
+VERSION='2.0.0'
+
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+IMGMOD_LIB="${IMGMOD_LIB:-$(dirname "$SCRIPT_DIR")/lib/imgmod.sh}"
+
+# shellcheck source=../lib/imgmod.sh
+. "$IMGMOD_LIB"
+
+optim_start() {
+	local input=
+	local output=
+	local opt
+
+	OPTIND=1
+	while getopts ho: opt; do
+		case $opt in
+			h)
+				optim_help
+				return
+				;;
+			o) output="$OPTARG" ;;
+			*) optim_invalid_opt ;;
+		esac
+	done
+
+	shift "$((OPTIND - 1))"
+
+	[ $# -lt 1 ] && optim_help && return $E_ARGS
+	[ $# -gt 1 ] && optim_help && return $E_ARGS
+
+	input="$1"
+	output="${output:-$input}"
+
+	[ ! -f "$input" ] && _fatal $E_NO_FILE "No such file: $input"
+
+	if [ "$output" != "$input" ]; then
+		imgmod_prepare_output "$output"
+		cp "$input" "$output"
+	fi
+
+	_require image_optim
+	image_optim "$output"
+	imgmod_output "$output"
+}
+
+optim_help() {
+	cat << USAGE
+$USAGE_NAME $VERSION
+
+USAGE: $USAGE_NAME [<options>] [-o <output>] <input>
+
+Optimize an image file with image_optim.
+
+When output is omitted, the input file is optimized in place. When output is
+provided, the input is copied there first and the copy is optimized.
+
+OPTIONS:
+
+	-h        Show this help screen.
+	-o        Output image file.
+	-v        Show plugin name and version number.
+
+USAGE
+}
+
+optim_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	optim_help
+	exit $E_ARGS
+}
+
+imgmod_plugin_run "$@"

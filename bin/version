@@ -18,48 +18,220 @@ version_main() {
 
 	[ ! -f "$FILE" ] && echo "Missing file: $FILE" >&2 && return $E_NO_FILE
 
-	VERSION="$(grep -m1 -E "^VERSION=['\"]?(\d+\.){2}(\d+)" "$FILE" | grep -o -E '(\d+\.){2}(\d+)' || true)"
+	PACKAGE_JSON="$(_package_json_for "$FILE")"
+	CARGO_TOML="$(_cargo_toml_for "$FILE")"
+	VERSION_SOURCE="shell"
+
+	if [ -f "$PACKAGE_JSON" ]; then
+		VERSION="$(_read_package_version "$PACKAGE_JSON")"
+		VERSION_SOURCE="package"
+	elif [ -f "$CARGO_TOML" ]; then
+		VERSION="$(_read_cargo_version "$CARGO_TOML")"
+		VERSION_SOURCE="cargo"
+	else
+		VERSION="$(_read_shell_version "$FILE")"
+	fi
 
 	[ -z "$VERSION" ] && echo "No VERSION found." >&2 && return $E_NO_VERSION
 
 	case "$CMD" in
-	show)
-		echo "$VERSION"
-		;;
-	major | minor | patch)
-		_update
-		;;
-	*)
-		echo "Invalid command: $CMD" >&2 && return $E_ARGS
-		;;
+		show)
+			echo "$VERSION"
+			;;
+		major | minor | patch)
+			_update "$VERSION_SOURCE" "$FILE" "$PACKAGE_JSON"
+			;;
+		*)
+			echo "Invalid command: $CMD" >&2 && return $E_ARGS
+			;;
 	esac
 }
 
+_package_json_for() {
+	local file=$1
+	local dir
+
+	dir="$(dirname "$file")"
+	echo "$dir/package.json"
+}
+
+_cargo_toml_for() {
+	local file=$1
+	local dir
+
+	dir="$(dirname "$file")"
+	echo "$dir/Cargo.toml"
+}
+
+_read_package_version() {
+	local package_json=$1
+
+	node -e '
+const fs = require("node:fs");
+const file = process.argv[1];
+const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+if (typeof pkg.version !== "string") {
+  process.exit(1);
+}
+process.stdout.write(pkg.version);
+' "$package_json"
+}
+
+_read_cargo_version() {
+	local cargo_toml=$1
+
+	awk '
+		$0 == "[package]" {
+			in_package = 1
+			next
+		}
+		/^\[/ {
+			in_package = 0
+		}
+		in_package && $1 == "version" {
+			gsub(/"/, "", $3)
+			print $3
+			exit
+		}
+	' "$cargo_toml"
+}
+
+_read_shell_version() {
+	local file=$1
+
+	grep -m1 -E "^VERSION=['\"]?(\d+\.){2}(\d+)" "$file" | grep -o -E '(\d+\.){2}(\d+)' || true
+}
+
 _update() {
+	local source=$1
+	local file=$2
+	local package_json=$3
 	local major
 	local minor
 	local patch
 
-	IFS=. read -r major minor patch <<<"$VERSION"
+	IFS=. read -r major minor patch <<< "$VERSION"
 
 	case "$CMD" in
-	major)
-		major="$((major + 1))"
-		;;
-	minor)
-		minor="$((minor + 1))"
-		;;
-	patch)
-		patch="$((patch + 1))"
-		;;
+		major)
+			major="$((major + 1))"
+			minor=0
+			patch=0
+			;;
+		minor)
+			minor="$((minor + 1))"
+			patch=0
+			;;
+		patch)
+			patch="$((patch + 1))"
+			;;
 	esac
 
 	NEW_VERSION="$major.$minor.$patch"
 
-	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$FILE"
+	printf "%s %s %s\n" "$VERSION" "$NEW_VERSION" "$file"
 
-	export NEW_VERSION
-	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$FILE"
+	case "$source" in
+		cargo)
+			_write_cargo_version "$CARGO_TOML" "$NEW_VERSION"
+			;;
+		package)
+			_write_package_version "$package_json" "$NEW_VERSION"
+			;;
+		shell)
+			_write_shell_version "$file" "$NEW_VERSION"
+			;;
+	esac
+
+	_update_release_files "$file" "$VERSION" "$NEW_VERSION"
+}
+
+_write_package_version() {
+	local package_json=$1
+	local new_version=$2
+
+	node -e '
+const fs = require("node:fs");
+const file = process.argv[1];
+const version = process.argv[2];
+const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+pkg.version = version;
+fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+' "$package_json" "$new_version"
+}
+
+_write_cargo_version() {
+	local cargo_toml=$1
+	local new_version=$2
+
+	NEW_VERSION="$new_version" perl -0pi -e '
+my $version = $ENV{NEW_VERSION};
+s/(\[package\][\s\S]*?^version\s*=\s*")(\d+\.\d+\.\d+)(")/$1$version$3/m;
+' "$cargo_toml"
+}
+
+_write_shell_version() {
+	local file=$1
+	local new_version=$2
+
+	export NEW_VERSION="$new_version"
+	perl -pi -e "s/^(VERSION=['\"]?)(\d+\.){2}(\d+)/\$1\$ENV{NEW_VERSION}/" "$file"
+}
+
+_update_release_files() {
+	local file=$1
+	local old_version=$2
+	local new_version=$3
+	local script_dir
+	local script_name
+
+	script_dir="$(dirname "$file")"
+	script_name="$(basename "$script_dir")"
+
+	_update_changelog "$script_dir/CHANGELOG.md" "$new_version"
+	_update_manpages "$script_dir" "$script_name" "$old_version" "$new_version"
+}
+
+_update_changelog() {
+	local changelog=$1
+	local new_version=$2
+	local heading
+	local anchor
+
+	[ -f "$changelog" ] || return 0
+	grep -Eq '^##[[:space:]]+(HEAD|Unreleased)[[:space:]]*$' "$changelog" || return 0
+
+	heading="v$new_version"
+	anchor="v${new_version//./}"
+
+	CHANGELOG_HEADING="$heading" CHANGELOG_ANCHOR="$anchor" perl -0pi -e '
+my $heading = $ENV{CHANGELOG_HEADING};
+my $anchor = $ENV{CHANGELOG_ANCHOR};
+s/^##[ \t]+(?:HEAD|Unreleased)[ \t]*$/## $heading/m;
+s/^- \[(?:HEAD|Unreleased)\]\(#(?:head|unreleased)\)$/- [$heading](#$anchor)/m;
+' "$changelog"
+}
+
+_update_manpages() {
+	local script_dir=$1
+	local script_name=$2
+	local old_version=$3
+	local new_version=$4
+	local manpage
+
+	[ -d "$script_dir/man" ] || return 0
+
+	while IFS= read -r manpage; do
+		MAN_SCRIPT_NAME="$script_name" MAN_OLD_VERSION="$old_version" MAN_NEW_VERSION="$new_version" perl -pi -e '
+my $name = quotemeta($ENV{MAN_SCRIPT_NAME});
+my $old = quotemeta($ENV{MAN_OLD_VERSION});
+my $new = $ENV{MAN_NEW_VERSION};
+if ($. == 1 && /^\.TH\b/) {
+	s/\b$old\b/$new/g;
+	s/\b($name)\s+\d+\.\d+\.\d+\b/$1 $new/gi;
+}
+' "$manpage"
+	done < <(find "$script_dir/man" -type f -name '*.1' | sort)
 }
 
 _usage() {

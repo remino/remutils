@@ -1,0 +1,1 @@
+eval "$(imgmod completion bash)"

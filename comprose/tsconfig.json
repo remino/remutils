@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noEmit": true,
+		"noImplicitAny": false,
+		"strict": false,
+		"skipLibCheck": true,
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"types": ["node"]
+	},
+	"include": ["bin/**/*.js", "lib/**/*.js", "*.d.ts"],
+	"exclude": ["**/*.test.js"]
+}

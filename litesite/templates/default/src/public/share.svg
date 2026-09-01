@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="LiteSite share image">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6f1ea" />
+      <stop offset="100%" stop-color="#e7d6be" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2f5dff" />
+      <stop offset="100%" stop-color="#1639b9" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1030" cy="120" r="150" fill="#2f5dff" fill-opacity="0.12" />
+  <circle cx="160" cy="500" r="220" fill="#17120d" fill-opacity="0.06" />
+  <rect x="80" y="80" width="1040" height="470" rx="42" fill="#ffffff" fill-opacity="0.68" stroke="#17120d" stroke-opacity="0.1" />
+  <text x="140" y="210" fill="#1639b9" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="6">LITESITE</text>
+  <text x="140" y="320" fill="#17120d" font-family="Georgia, serif" font-size="82" font-weight="700">Small sites,</text>
+  <text x="140" y="410" fill="#17120d" font-family="Georgia, serif" font-size="82" font-weight="700">less ceremony.</text>
+  <rect x="140" y="454" width="280" height="18" rx="9" fill="url(#accent)" />
+</svg>

@@ -1,0 +1,34 @@
+.TH MKISO 1 "2026-08-02" "mkiso 1.0.2"
+.SH NAME
+mkiso \- create an ISO image from a directory
+.SH SYNOPSIS
+.B mkiso
+[\fB-v\fR] \fIinput_dir\fR \fIoutput.iso\fR
+.SH DESCRIPTION
+.B mkiso
+uses macOS
+.BR hdiutil (1)
+to create a hybrid ISO 9660 and Joliet volume image from \fIinput_dir\fR.
+Existing output is overwritten.
+.SH OPTIONS
+.TP
+.B \-v
+Show the command name and version.
+.SH DEPENDENCIES
+.TP
+.B hdiutil
+The macOS utility that writes the disk image.
+.SH EXAMPLES
+.TP
+Create an ISO image from a directory:
+.nf
+.B mkiso release-files release.iso
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -11,9 +11,15 @@ binary_next_line = true
 function_next_line = false
 keep_padding = false
 never_split = true
-shell_variant = posix
+shell_variant = bash
 space_redirects = true
 switch_case_indent = true
+
+[*.bats]
+shell_variant = bats
+
+[**/node_modules/**]
+ignore = true
 
 [*.md]
 indent_size = 4
@@ -22,3 +28,10 @@ indent_style = space
 [*.{yaml,yml}]
 indent_size = 4
 indent_style = space
+
+[*.1]
+indent_size = 4
+indent_style = space
+
+[mo]
+ignore = true

@@ -1,0 +1,83 @@
+.TH RSDEPLOY 1 "2026-08-02" "rsdeploy 1.1.3"
+.SH NAME
+rsdeploy \- deploy a directory to a remote host with rsync
+.SH SYNOPSIS
+.B rsdeploy
+[\fIoptions\fR] [\fB-c\fR \fIconfig\fR] [\fIrsync_args\fR ...]
+.SH DESCRIPTION
+.B rsdeploy
+uses
+.BR rsync (1)
+to synchronize a source directory with a remote destination. It performs a dry
+run by default; pass \fB-w\fR to make changes.
+
+Configuration may be provided by environment variables or a \fI.env\fR file.
+Without \fB-c\fR, the command searches upward from the current directory for
+\fI.env\fR. Relative source and filter paths are resolved from the current
+working directory.
+.SH OPTIONS
+.TP
+.BI \-c " file"
+Load \fIfile\fR as configuration. May be specified more than once.
+.TP
+.BI \-d " destination"
+Set the remote destination. Overrides \fBRSDEPLOY_DEST\fR.
+.TP
+.BI \-f " filter"
+Use \fIfilter\fR as an rsync merge filter. Overrides \fBRSDEPLOY_FILTER\fR.
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-r
+Alias for \fB-w\fR.
+.TP
+.BI \-s " source"
+Set the source directory. Overrides \fBRSDEPLOY_SRC\fR.
+.TP
+.B \-v
+Show the command name and version.
+.TP
+.B \-w
+Perform a wet run. Without this option, rsdeploy passes rsync its dry-run flag.
+.SH ENVIRONMENT
+.TP
+.B RSDEPLOY_DEST
+Remote destination in rsync syntax.
+.TP
+.B RSDEPLOY_FILTER
+Optional rsync filter file.
+.TP
+.B RSDEPLOY_SRC
+Source directory to deploy.
+.PP
+The legacy \fBDEPLOY_DEST\fR, \fBDEPLOY_FILTER\fR, and \fBDEPLOY_SRC\fR
+variables are also accepted from configuration files.
+.SH DEPENDENCIES
+.TP
+.B rsync
+Copies files to the configured destination.
+.SH EXAMPLES
+.TP
+Preview a deployment using a nearby \fI.env\fR file:
+.nf
+.B rsdeploy
+.fi
+.TP
+Deploy using an explicit configuration file:
+.nf
+.B rsdeploy -w -c deploy.env
+.fi
+.TP
+Deploy with values supplied on the command line:
+.nf
+.B rsdeploy -w -s public -d user@example.com:/var/www/site
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -1,0 +1,33 @@
+.TH IMGMOD-PNG8 1 "July 7, 2026" "imgmod 2.2.0"
+.SH NAME
+imgmod-png8 \- Convert an image to PNG8
+.SH SYNOPSIS
+.B imgmod png8
+[\fB-h\fR] [\fB-o\fR \fIOUTPUT\fR] \fIINPUT\fR
+.SH DESCRIPTION
+.B imgmod png8
+uses ImageMagick to write an image as PNG8.
+
+When \fIOUTPUT\fR is omitted, the output path is generated from \fIINPUT\fR as
+\fISTEM\fB-png8.png\fR.
+.SH OPTIONS
+.TP
+.B \-h
+Show usage help.
+.TP
+.B \-o \fIOUTPUT\fR
+Write the converted image to \fIOUTPUT\fR.
+.TP
+.B \-v, --version
+Show the plugin name and version.
+.SH OUTPUT
+The command prints the output file path and reports it through
+\fBimgmod_output\fR so it can be optimized by \fBimgmod -O\fR.
+.SH DEPENDENCIES
+.TP
+.B magick
+ImageMagick command used to transform the image.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH SEE ALSO
+.BR imgmod (1)

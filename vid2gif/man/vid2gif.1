@@ -1,0 +1,117 @@
+.TH VID2GIF 1 "July 2026" "vid2gif 2.0.0"
+.SH NAME
+vid2gif \- convert a video file into an animated GIF file
+.SH SYNOPSIS
+.B vid2gif
+[\fIoptions\fR] \fIinput\fR [\fIoutput\fR]
+.SH DESCRIPTION
+.B vid2gif
+uses FFmpeg to make an animated GIF from a video file. It generates a palette
+for the GIF, applies the requested filters, and optimizes the result with
+.B image_optim
+when that program is installed.
+
+When \fIoutput\fR is omitted, vid2gif uses the input filename with a
+.I .gif
+extension. The Homebrew formula also installs
+.B movie2gif
+as a compatibility alias.
+.SH OPTIONS
+.TP
+.BR \-a , " --time-scale " \fIfactor\fR
+Set the FFmpeg presentation-time factor. Values below 1 speed up the GIF;
+values above 1 slow it down.
+.TP
+.BR \-c , " --colors " \fIcount\fR
+Set palette colours. The default is 32.
+.TP
+.BR \-C , " --crop " \fIfilter\fR
+Apply a crop filter in FFmpeg's \fIout_w:out_h:x:y\fR form. The legacy
+.B -o
+spelling is also accepted.
+.TP
+.BR \-d , " --duration " \fIseconds\fR
+Limit the converted duration.
+.TP
+.BR \-f , " --filters " \fIfilters\fR
+Replace all generated FFmpeg filters.
+.TP
+.BR \-i , " --interactive"
+Always ask before overwriting an existing output.
+.TP
+.BR \-m , " --append-filter " \fIfilters\fR
+Append FFmpeg filters to the generated filter chain.
+.TP
+.BR \-n , " --dry-run"
+Print commands without writing files.
+.TP
+.BR \-N , " --no-overwrite"
+Refuse to overwrite an existing output.
+.TP
+.BR \-O , " --optim, --optimize"
+Require \fBimage_optim\fR to optimize the finished GIF. The command fails if
+the optimizer is unavailable.
+.TP
+.BR "--no-optim, --no-optimize"
+Do not run \fBimage_optim\fR.
+.B +O
+is a shorthand for this option.
+.TP
+.BR "--auto-optim, --auto-optimize"
+Run \fBimage_optim\fR when it is available. This is the default.
+.TP
+.BR \-p , " --palette " \fIfile\fR
+Use or write the specified palette PNG.
+.TP
+.BR \-r , " --fps " \fIfps\fR
+Set output frame rate. The default is 10.
+.TP
+.BR \-s , " --start " \fIseconds\fR
+Set input start time.
+.TP
+.BR \-H , " --height " \fIpixels\fR
+Set output height. The default is \fI-1\fR, which preserves aspect ratio. The
+legacy \fB-t\fR alias is also accepted.
+.TP
+.BR \-v , " --version"
+Show script name and version number.
+.TP
+.BR \-V , " --verbose"
+Show FFmpeg commands and settings.
+.TP
+.BR \-w , " --width " \fIpixels\fR
+Set output width. The default is 720.
+.TP
+.BR \-y , " --overwrite"
+Overwrite an existing output without asking.
+.SH DEPENDENCIES
+.TP
+.B ffmpeg
+Generates the palette and GIF.
+.TP
+.B ImageMagick
+Adjusts the palette. The \fBmagick\fR or \fBmogrify\fR command is required.
+.SH EXAMPLES
+.TP
+Convert a video:
+.nf
+.B vid2gif input.mp4
+.fi
+.TP
+Convert a five-second clip starting at three seconds:
+.nf
+.B vid2gif -s 3 -d 5 input.mp4 clip.gif
+.fi
+.TP
+Preview generated commands without writing files:
+.nf
+.B vid2gif --dry-run input.mp4
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright \(co 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>
