@@ -1,0 +1,53 @@
+.TH URLSHORTCUT 1 "September 2026" "urlshortcut 0.1.0"
+.SH NAME
+urlshortcut \- read and write Internet Shortcut files
+.SH SYNOPSIS
+.B urlshortcut
+[\fB-hv\fR] \fIcommand\fR [\fIarguments\fR]
+.SH DESCRIPTION
+.B urlshortcut
+reads and writes Internet Shortcut files, conventionally named with a
+.I .url
+extension.
+.SH COMMANDS
+.TP
+.B write \fIURL\fR [\fIFILE.url\fR]
+Write a shortcut containing
+.IR URL .
+When the output file is omitted, write it to standard output. URLs without a
+scheme are written with an
+.B https://
+prefix.
+.TP
+.B read [\fIFILE.url\fR]
+Print the first URL stored in
+.IR FILE.url . When the file is omitted, read the shortcut from standard input.
+Pass
+.B -
+explicitly to read from standard input.
+.SH OPTIONS
+.TP
+.B -h, --help
+Show the help screen.
+.TP
+.B -v, --version
+Show the version number.
+.SH EXAMPLES
+.TP
+Write a shortcut file:
+.nf
+.B urlshortcut write https://remino.net remino.url
+.fi
+.TP
+Read a shortcut file:
+.nf
+.B urlshortcut read remino.url
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright © 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

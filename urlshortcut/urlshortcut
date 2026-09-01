@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Read and write Internet Shortcut (.url) files.
+
+set -euo pipefail
+
+VERSION=0.1.0
+
+usage() {
+	cat << EOF
+urlshortcut $VERSION
+
+USAGE: urlshortcut [-hv] <command> [arguments]
+
+Read and write Internet Shortcut (.url) files.
+
+COMMANDS:
+	write URL [FILE.url]  Write URL to FILE.url, or standard output when omitted.
+	read [FILE.url]       Print the URL stored in FILE.url, or standard input when omitted.
+
+OPTIONS:
+	-h                    Show this help screen.
+	-v                    Show the version number.
+EOF
+}
+
+write_usage() {
+	printf '%s\n' 'Usage: urlshortcut write URL [FILE.url]'
+}
+
+read_usage() {
+	printf '%s\n' 'Usage: urlshortcut read [FILE.url]'
+}
+
+error() {
+	printf 'urlshortcut: %s\n' "$*" >&2
+}
+
+normalize_url() {
+	local url=$1
+
+	if [[ "$url" == *$'\r'* || "$url" == *$'\n'* ]]; then
+		error 'URL must not contain a newline'
+		return 17
+	fi
+
+	[[ "$url" == *://* ]] || url="https://$url"
+	printf '%s' "$url"
+}
+
+write_shortcut() {
+	local url
+
+	if (($# < 1 || $# > 2)); then
+		write_usage >&2
+		return 16
+	fi
+
+	url="$(normalize_url "$1")" || return
+
+	if (($# == 2)); then
+		printf '[InternetShortcut]\r\nURL=%s\r\n' "$url" > "$2"
+	else
+		printf '[InternetShortcut]\r\nURL=%s\r\n' "$url"
+	fi
+}
+
+read_shortcut() {
+	local input source url
+
+	if (($# > 1)); then
+		read_usage >&2
+		return 16
+	fi
+
+	input="${1:--}"
+	if [[ "$input" == '-' ]]; then
+		source='standard input'
+		url="$(sed -n 's/^URL=//p' | head -n 1 | tr -d '\r')"
+	else
+		if [[ ! -f "$input" ]]; then
+			error "file not found: $input"
+			return 17
+		fi
+
+		source=$input
+		url="$(sed -n 's/^URL=//p' "$input" | head -n 1 | tr -d '\r')"
+	fi
+
+	if [[ -z "$url" ]]; then
+		error "no URL entry found: $source"
+		return 18
+	fi
+
+	printf '%s\n' "$url"
+}
+
+main() {
+	local command
+
+	case "${1:-}" in
+		-h | --help | '')
+			usage
+			return
+			;;
+		-v | --version)
+			printf 'urlshortcut %s\n' "$VERSION"
+			return
+			;;
+	esac
+
+	command=$1
+	shift
+	case "$command" in
+		write) write_shortcut "$@" ;;
+		read) read_shortcut "$@" ;;
+		*)
+			error "unknown command: $command"
+			usage >&2
+			return 16
+			;;
+	esac
+}
+
+main "$@"
