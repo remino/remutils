@@ -40,6 +40,7 @@ Private key on the backup host used to authenticate as \fBREMOTE_USER\fR.
 .TP
 \fBBACKUP_ROOT\fR
 Local directory containing \fBsnapshots\fR, \fBlatest\fR, and \fBlogs\fR.
+It may instead be set by an optional storage mount hook.
 .SS Optional variables
 .TP
 \fBHOSTNAME_REMOTE\fR
@@ -61,10 +62,19 @@ not present).
 .TP
 \fBSNAPS_DIR\fR, \fBLOG_DIR\fR, \fBLATEST_LINK\fR
 Override the default locations inside \fBBACKUP_ROOT\fR.
+.SS Optional storage hooks
+By default, rrrr writes directly to \fBBACKUP_ROOT\fR. A sourced config may
+define both \fBrrrr_storage_mount\fR and \fBrrrr_storage_unmount\fR to mount
+and release image files, encrypted volumes, datasets, or network storage.
+The mount hook must set \fBBACKUP_ROOT\fR to an existing writable directory.
+rrrr calls the mount hook before preparing backup paths and calls the unmount
+hook whenever it exits, including after rsync fails or is interrupted. This
+keeps the storage backend platform-specific while rrrr remains portable.
 .SH OPERATION
 The workflow is:
 .IP "1." 4
-Validate required commands and confirm the SSH key/filter file exist.
+Mount optional backup storage, validate required commands, and confirm the SSH
+key/filter file exist.
 .IP "2." 4
 Create \fBsnapshots/YYYY\-MM\-DD\fR and compute a prior snapshot for
 \fB\-\-link\-dest\fR when the \fBlatest\fR symlink points to a valid directory.

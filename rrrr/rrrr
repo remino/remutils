@@ -21,6 +21,7 @@ LATEST_LINK=""
 LOG_DIR=""
 LOG_FILE=""
 SSH_CMD=""
+STORAGE_HOOK_ACTIVE=0
 
 HOSTNAME_REMOTE=""
 REMOTE_USER=""
@@ -37,13 +38,24 @@ declare -a RSYNC_FILTER_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 rrrr_cleanup() {
+	local exit_status=$?
+
 	if [ -n "${SNAP_TMP_DIR:-}" ] && [ -d "${SNAP_TMP_DIR}" ]; then
 		rm -rf -- "${SNAP_TMP_DIR}"
+	fi
+
+	if [ "${STORAGE_HOOK_ACTIVE:-0}" -eq 1 ] && declare -F rrrr_storage_unmount > /dev/null; then
+		if ! rrrr_storage_unmount; then
+			printf "%s\n" "rrrr: ERROR: storage unmount hook failed" >&2
+		fi
+		STORAGE_HOOK_ACTIVE=0
 	fi
 
 	if [ -n "${DEFAULT_FILTERS_FILE:-}" ] && [ -f "${DEFAULT_FILTERS_FILE}" ]; then
 		rm -f "${DEFAULT_FILTERS_FILE}"
 	fi
+
+	return "${exit_status}"
 }
 
 trap rrrr_cleanup EXIT
@@ -102,6 +114,8 @@ rrrr_main() {
 	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
 	rrrr_set_derived_defaults
 	rrrr_validate_config
+	rrrr_prepare_storage
+	rrrr_validate_storage
 	rrrr_check_requirements
 	rrrr_prepare_runtime
 
@@ -260,7 +274,27 @@ rrrr_set_derived_defaults() {
 rrrr_validate_config() {
 	[ -n "${REMOTE_USER}" ] || die "REMOTE_USER must be set in host config"
 	[ -n "${SSH_KEY}" ] || die "SSH_KEY must be set in host config"
+	return 0
+}
+
+rrrr_prepare_storage() {
+	if ! declare -F rrrr_storage_mount > /dev/null; then
+		return 0
+	fi
+
+	declare -F rrrr_storage_unmount > /dev/null || die "rrrr_storage_unmount must be defined when rrrr_storage_mount is used"
+
+	STORAGE_HOOK_ACTIVE=1
+	log "Mounting backup storage..."
+	rrrr_storage_mount
+}
+
+rrrr_validate_storage() {
 	[ -n "${BACKUP_ROOT}" ] || die "BACKUP_ROOT must be set in host config"
+
+	if [ "${STORAGE_HOOK_ACTIVE:-0}" -eq 1 ] && { [ ! -d "${BACKUP_ROOT}" ] || [ ! -w "${BACKUP_ROOT}" ]; }; then
+		die "Storage mount hook did not provide a writable directory BACKUP_ROOT: ${BACKUP_ROOT}"
+	fi
 }
 
 rrrr_prepare_runtime() {

@@ -145,12 +145,76 @@ EOF
 	[ "$used_path" = "$expected_path" ]
 }
 
+@test "runs storage hooks around a backup" {
+	local host="mounted"
+	_write_basic_config "$host"
+
+	local storage_root="$TEST_ROOT/mounted-storage"
+	local hooks_log="$TEST_ROOT/storage-hooks.log"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+rrrr_storage_mount() {
+	mkdir -p "${storage_root}"
+	BACKUP_ROOT="${storage_root}"
+	printf 'mount\\n' >> "${hooks_log}"
+}
+
+rrrr_storage_unmount() {
+	printf 'unmount\\n' >> "${hooks_log}"
+}
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ -d "$storage_root/snapshots/$(date +%F)" ]
+	[ "$(cat "$hooks_log")" = $'mount\nunmount' ]
+}
+
+@test "requires an unmount hook when a mount hook is configured" {
+	local host="missing-unmount"
+	_write_basic_config "$host"
+
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+rrrr_storage_mount() {
+	BACKUP_ROOT="/unused"
+}
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"rrrr_storage_unmount must be defined"* ]]
+}
+
+@test "runs the unmount hook after rsync fails" {
+	local host="failed-mounted"
+	_write_basic_config "$host"
+
+	local storage_root="$TEST_ROOT/failed-mounted-storage"
+	local hooks_log="$TEST_ROOT/failed-storage-hooks.log"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+rrrr_storage_mount() {
+	mkdir -p "${storage_root}"
+	BACKUP_ROOT="${storage_root}"
+	printf 'mount\\n' >> "${hooks_log}"
+}
+
+rrrr_storage_unmount() {
+	printf 'unmount\\n' >> "${hooks_log}"
+}
+EOF
+
+	run env RRRR_TEST_RSYNC_FAIL=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 12 ]
+	[ "$(cat "$hooks_log")" = $'mount\nunmount' ]
+}
+
 @test "removes an incomplete snapshot after rsync fails" {
 	local host="failed"
 	_write_basic_config "$host"
-	export RRRR_TEST_RSYNC_FAIL=1
 
-	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+	run env RRRR_TEST_RSYNC_FAIL=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 12 ]
 	[ ! -e "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
@@ -161,7 +225,6 @@ EOF
 	incomplete=("$RRRR_TEST_BACKUP_ROOT/$host/snapshots"/.*.incomplete.*)
 	[ "${#incomplete[@]}" -eq 0 ]
 
-	unset RRRR_TEST_RSYNC_FAIL
 	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]

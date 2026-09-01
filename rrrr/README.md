@@ -35,7 +35,8 @@ variables are required:
 
 - `REMOTE_USER` – SSH user to connect as.
 - `SSH_KEY` – private key on the backup host.
-- `BACKUP_ROOT` – local directory that stores the snapshots.
+- `BACKUP_ROOT` – local directory that stores the snapshots, unless an optional
+  storage mount hook sets it.
 
 Common optional variables:
 
@@ -49,6 +50,39 @@ Common optional variables:
   host-local `filters` file).
 - `SNAPS_DIR`, `LOG_DIR`, `LATEST_LINK` – override default paths inside
   `BACKUP_ROOT`.
+
+### Optional storage hooks
+
+By default, `rrrr` writes directly to `BACKUP_ROOT`. For image files, encrypted
+volumes, datasets, or network storage, the sourced config may define both of
+these functions:
+
+- `rrrr_storage_mount` – mount or prepare the storage and set `BACKUP_ROOT` to
+  its existing writable directory.
+- `rrrr_storage_unmount` – detach or release that storage.
+
+`rrrr` calls the mount hook before preparing backup paths and always calls the
+unmount hook when it exits, including after an rsync failure or interruption.
+The functions make the storage backend platform-specific while the backup runner
+remains portable.
+
+For example, a macOS APFS sparse image can be used without making `hdiutil` a
+global `rrrr` dependency:
+
+```bash
+IMAGE_PATH="$HOME/Backups/webhost.sparseimage"
+IMAGE_MOUNTPOINT="/Volumes/rrrr-webhost"
+
+rrrr_storage_mount() {
+  mkdir -p "$IMAGE_MOUNTPOINT"
+  hdiutil attach "$IMAGE_PATH" -nobrowse -mountpoint "$IMAGE_MOUNTPOINT"
+  BACKUP_ROOT="$IMAGE_MOUNTPOINT"
+}
+
+rrrr_storage_unmount() {
+  hdiutil detach "$BACKUP_ROOT"
+}
+```
 
 Example:
 
