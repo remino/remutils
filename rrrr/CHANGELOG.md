@@ -8,6 +8,8 @@
 
 ## Unreleased
 
+- Add a Homebrew formula template and document installation.
+- Align the manpage header with rrrr's initial release version.
 - Add optional mount and unmount hooks for image-backed or otherwise managed
   backup storage.
 - Write backups to a temporary snapshot and publish only after rsync succeeds,

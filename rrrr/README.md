@@ -18,6 +18,20 @@ Run `rrrr <hostname>` and it will look for host-specific configuration at:
 
 The first directory found wins.
 
+## Installation
+
+```sh
+brew install remino/remino/rrrr
+```
+
+Or run the script directly from a clone:
+
+```sh
+git clone git@github.com:remino/remutils.git
+cd remutils/rrrr
+./rrrr -h
+```
+
 ## Host directory layout
 
 Each host directory must contain at least a `config` file:
