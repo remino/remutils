@@ -5,8 +5,7 @@ incremental backups from a remote host. Each run creates
 `<backup_root>/snapshots/YYYY-MM-DD`, updates a `latest` symlink, and enforces a
 daily/weekly/monthly retention policy.
 
-It requires Bash 4 or newer, `rsync`, and OpenSSH. On macOS, invoke `rrrr` with
-a Bash 4+ installation (for example, Homebrew's `bash`).
+It requires Bash 3 or newer, `rsync`, and OpenSSH.
 
 The tool is configured per host so the same script can back up multiple servers.
 Run `rrrr <hostname>` and it will look for host-specific configuration at:
@@ -96,6 +95,39 @@ rrrr_storage_mount() {
 rrrr_storage_unmount() {
   hdiutil detach "$BACKUP_ROOT"
 }
+```
+
+### Built-in ext4 image storage
+
+On Linux systems such as a QNAP NAS, set `STORAGE_PROVIDER="ext4-image"` to
+store a host's snapshots in one ext4 filesystem image. The image is attached to
+a loop device for the backup and detached when rrrr exits. `STORAGE_MOUNTPOINT`
+is optional; rrrr creates and removes a private temporary mountpoint by default.
+
+```bash
+STORAGE_PROVIDER="ext4-image"
+STORAGE_IMAGE="/share/Backups/rrrr/webhost.img"
+STORAGE_IMAGE_SIZE_MIB=512000
+STORAGE_ELEVATE_USER="admin"
+```
+
+An image is created and formatted only when `STORAGE_IMAGE` does not yet exist.
+`STORAGE_IMAGE_SIZE_MIB` is required only for that first run. The provider
+requires permission to use `losetup`, `mount`, and `umount`, plus `mkfs.ext4`
+when creating an image. Set `STORAGE_MOUNTPOINT` only if you need a stable mount
+location.
+
+Set `STORAGE_ELEVATE_USER` when those operations need a privileged QNAP account.
+rrrr then invokes only the image lifecycle commands with `sudo -n -u` and
+changes the mounted image root back to the backup user. Configure a narrowly
+scoped passwordless sudo rule; rrrr never prompts for a password. Images are
+formatted with `metadata_csum_seed` disabled for compatibility with older QNAP
+kernels.
+
+For QNAP scheduled jobs, make the Entware tools available first:
+
+```bash
+export PATH="/opt/sbin:/opt/bin:/usr/bin:/bin"
 ```
 
 Example:

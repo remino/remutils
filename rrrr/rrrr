@@ -22,6 +22,15 @@ LOG_DIR=""
 LOG_FILE=""
 SSH_CMD=""
 STORAGE_HOOK_ACTIVE=0
+STORAGE_PROVIDER=""
+STORAGE_IMAGE=""
+STORAGE_IMAGE_SIZE_MIB=""
+STORAGE_MOUNTPOINT=""
+STORAGE_MOUNTPOINT_CREATED=0
+STORAGE_LOOP_DEVICE=""
+STORAGE_ELEVATE_USER=""
+RETENTION_ALL_FILE=""
+RETENTION_KEEP_FILE=""
 
 HOSTNAME_REMOTE=""
 REMOTE_USER=""
@@ -38,18 +47,24 @@ declare -a RSYNC_FILTER_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 rrrr_cleanup() {
-	local exit_status=$?
+	local exit_status=$? tmp_file
 
 	if [ -n "${SNAP_TMP_DIR:-}" ] && [ -d "${SNAP_TMP_DIR}" ]; then
 		rm -rf -- "${SNAP_TMP_DIR}"
 	fi
 
-	if [ "${STORAGE_HOOK_ACTIVE:-0}" -eq 1 ] && declare -F rrrr_storage_unmount > /dev/null; then
-		if ! rrrr_storage_unmount; then
+	if [ "${STORAGE_HOOK_ACTIVE:-0}" -eq 1 ]; then
+		if ! rrrr_release_storage; then
 			printf "%s\n" "rrrr: ERROR: storage unmount hook failed" >&2
 		fi
 		STORAGE_HOOK_ACTIVE=0
 	fi
+
+	for tmp_file in "${RETENTION_ALL_FILE}" "${RETENTION_KEEP_FILE}"; do
+		if [ -n "${tmp_file}" ] && [ -f "${tmp_file}" ]; then
+			rm -f "${tmp_file}"
+		fi
+	done
 
 	if [ -n "${DEFAULT_FILTERS_FILE:-}" ] && [ -f "${DEFAULT_FILTERS_FILE}" ]; then
 		rm -f "${DEFAULT_FILTERS_FILE}"
@@ -114,9 +129,9 @@ rrrr_main() {
 	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
 	rrrr_set_derived_defaults
 	rrrr_validate_config
+	rrrr_check_requirements
 	rrrr_prepare_storage
 	rrrr_validate_storage
-	rrrr_check_requirements
 	rrrr_prepare_runtime
 
 	rrrr_run_backup
@@ -161,6 +176,13 @@ rrrr_reset_config_to_defaults() {
 	LOG_FILE=""
 	FILTERS_FILE=""
 	HOST_FILTER_FILE=""
+	STORAGE_PROVIDER=""
+	STORAGE_IMAGE=""
+	STORAGE_IMAGE_SIZE_MIB=""
+	STORAGE_MOUNTPOINT=""
+	STORAGE_MOUNTPOINT_CREATED=0
+	STORAGE_LOOP_DEVICE=""
+	STORAGE_ELEVATE_USER=""
 }
 
 rrrr_find_host_config_dir() {
@@ -278,15 +300,36 @@ rrrr_validate_config() {
 }
 
 rrrr_prepare_storage() {
-	if ! declare -F rrrr_storage_mount > /dev/null; then
-		return 0
-	fi
+	case "${STORAGE_PROVIDER}" in
+		"")
+			if ! declare -F rrrr_storage_mount > /dev/null; then
+				return 0
+			fi
 
-	declare -F rrrr_storage_unmount > /dev/null || die "rrrr_storage_unmount must be defined when rrrr_storage_mount is used"
+			declare -F rrrr_storage_unmount > /dev/null || die "rrrr_storage_unmount must be defined when rrrr_storage_mount is used"
+			STORAGE_HOOK_ACTIVE=1
+			log "Mounting backup storage..."
+			rrrr_storage_mount
+			;;
+		ext4-image)
+			if declare -F rrrr_storage_mount > /dev/null || declare -F rrrr_storage_unmount > /dev/null; then
+				die "STORAGE_PROVIDER cannot be combined with custom storage hooks"
+			fi
 
-	STORAGE_HOOK_ACTIVE=1
-	log "Mounting backup storage..."
-	rrrr_storage_mount
+			STORAGE_HOOK_ACTIVE=1
+			log "Mounting ext4 image storage..."
+			rrrr_ext4_image_mount
+			;;
+		*) die "Unsupported STORAGE_PROVIDER: ${STORAGE_PROVIDER}" ;;
+	esac
+}
+
+rrrr_release_storage() {
+	case "${STORAGE_PROVIDER}" in
+		ext4-image) rrrr_ext4_image_unmount ;;
+		"") rrrr_storage_unmount ;;
+		*) return 0 ;;
+	esac
 }
 
 rrrr_validate_storage() {
@@ -309,8 +352,8 @@ rrrr_prepare_runtime() {
 }
 
 rrrr_check_requirements() {
-	if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
-		die "rrrr requires Bash 4 or newer"
+	if [ "${BASH_VERSINFO[0]}" -lt 3 ]; then
+		die "rrrr requires Bash 3 or newer"
 	fi
 
 	require_cmd rsync
@@ -326,6 +369,7 @@ rrrr_check_requirements() {
 	require_cmd mv
 	require_cmd readlink
 	require_cmd awk
+	require_cmd grep
 	require_cmd mktemp
 
 	if ! rrrr_weekday "2000-01-02" > /dev/null; then
@@ -337,6 +381,85 @@ rrrr_check_requirements() {
 	if [ -n "${HOST_FILTER_FILE}" ] && [ ! -f "${HOST_FILTER_FILE}" ]; then
 		die "Filter file not found: ${HOST_FILTER_FILE}"
 	fi
+}
+
+rrrr_ext4_image_mount() {
+	require_cmd dd
+	require_cmd dirname
+	require_cmd losetup
+	require_cmd mkfs.ext4
+	require_cmd mount
+	require_cmd rmdir
+	require_cmd umount
+	if [ -n "${STORAGE_ELEVATE_USER}" ]; then
+		require_cmd chown
+		require_cmd id
+		require_cmd sudo
+	fi
+
+	[ -n "${STORAGE_IMAGE}" ] || die "STORAGE_IMAGE must be set when STORAGE_PROVIDER=ext4-image"
+
+	if [ ! -f "${STORAGE_IMAGE}" ]; then
+		case "${STORAGE_IMAGE_SIZE_MIB}" in
+			"" | *[!0-9]*) die "STORAGE_IMAGE_SIZE_MIB must be a positive integer when creating an image" ;;
+		esac
+		[ "${STORAGE_IMAGE_SIZE_MIB}" -gt 0 ] || die "STORAGE_IMAGE_SIZE_MIB must be greater than zero"
+
+		mkdir -p "$(dirname "${STORAGE_IMAGE}")"
+		log "Creating ext4 image: ${STORAGE_IMAGE} (${STORAGE_IMAGE_SIZE_MIB} MiB)"
+		rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count="${STORAGE_IMAGE_SIZE_MIB}"
+		rrrr_storage_privileged mkfs.ext4 -F -O ^metadata_csum_seed "${STORAGE_IMAGE}"
+	fi
+
+	if [ -z "${STORAGE_MOUNTPOINT}" ]; then
+		STORAGE_MOUNTPOINT="${TMPDIR:-/tmp}/rrrr-${HOST_ARG}-$$"
+		STORAGE_MOUNTPOINT_CREATED=1
+	fi
+	mkdir -p "${STORAGE_MOUNTPOINT}"
+
+	STORAGE_LOOP_DEVICE="$(rrrr_storage_privileged losetup -f)"
+	[ -n "${STORAGE_LOOP_DEVICE}" ] || die "No free loop device available"
+	rrrr_storage_privileged losetup "${STORAGE_LOOP_DEVICE}" "${STORAGE_IMAGE}"
+	rrrr_storage_privileged mount -t ext4 "${STORAGE_LOOP_DEVICE}" "${STORAGE_MOUNTPOINT}"
+	if [ -n "${STORAGE_ELEVATE_USER}" ]; then
+		rrrr_storage_privileged chown "$(id -u):$(id -g)" "${STORAGE_MOUNTPOINT}"
+	fi
+	BACKUP_ROOT="${STORAGE_MOUNTPOINT}"
+}
+
+rrrr_storage_privileged() {
+	if [ -n "${STORAGE_ELEVATE_USER}" ]; then
+		sudo -n -u "${STORAGE_ELEVATE_USER}" "$@"
+	else
+		"$@"
+	fi
+}
+
+rrrr_ext4_image_unmount() {
+	local status=0
+
+	if [ -n "${STORAGE_MOUNTPOINT}" ] && rrrr_storage_is_mounted; then
+		if ! rrrr_storage_privileged umount "${STORAGE_MOUNTPOINT}"; then
+			status=1
+		fi
+	fi
+
+	if [ "${status}" -eq 0 ] && [ -n "${STORAGE_LOOP_DEVICE}" ]; then
+		if ! rrrr_storage_privileged losetup -d "${STORAGE_LOOP_DEVICE}"; then
+			status=1
+		fi
+		STORAGE_LOOP_DEVICE=""
+	fi
+
+	if [ "${STORAGE_MOUNTPOINT_CREATED}" -eq 1 ] && [ -d "${STORAGE_MOUNTPOINT}" ]; then
+		rmdir "${STORAGE_MOUNTPOINT}" || status=1
+	fi
+
+	return "${status}"
+}
+
+rrrr_storage_is_mounted() {
+	mount | awk -v mountpoint="${STORAGE_MOUNTPOINT}" '$3 == mountpoint { found = 1 } END { exit !found }'
 }
 
 rrrr_run_backup() {
@@ -457,57 +580,52 @@ rrrr_update_latest() {
 rrrr_apply_retention() {
 	log "Applying retention: daily=${KEEP_DAILY}, weekly=${KEEP_WEEKLY}, monthly=${KEEP_MONTHLY}"
 
-	local -a ALL_SNAPS=()
-	local snapshot_path
-	for snapshot_path in "${SNAPS_DIR}"/*; do
-		[ -d "${snapshot_path}" ] || continue
-		ALL_SNAPS+=("$(basename "${snapshot_path}")")
-	done
+	local snapshot_path d deleted=0
+	RETENTION_ALL_FILE="$(mktemp)"
+	RETENTION_KEEP_FILE="$(mktemp)"
 
-	if [ "${#ALL_SNAPS[@]}" -gt 0 ]; then
-		mapfile -t ALL_SNAPS < <(printf "%s\n" "${ALL_SNAPS[@]}" | sort)
-	fi
-	if [ "${#ALL_SNAPS[@]}" -eq 0 ]; then
+	{
+		for snapshot_path in "${SNAPS_DIR}"/*; do
+			[ -d "${snapshot_path}" ] || continue
+			basename "${snapshot_path}"
+		done
+	} | sort > "${RETENTION_ALL_FILE}"
+
+	if [ ! -s "${RETENTION_ALL_FILE}" ]; then
 		log "No snapshots found. Skipping retention."
 		return
 	fi
 
-	local -A KEEP=()
-
 	if [ "${KEEP_DAILY}" -gt 0 ]; then
-		while read -r d; do
-			[ -n "${d}" ] && KEEP["$d"]=1
-		done < <(printf "%s\n" "${ALL_SNAPS[@]}" | tail -n "${KEEP_DAILY}")
+		tail -n "${KEEP_DAILY}" "${RETENTION_ALL_FILE}" >> "${RETENTION_KEEP_FILE}"
 	fi
 
 	if [ "${KEEP_WEEKLY}" -gt 0 ]; then
-		while read -r d; do
-			[ -n "${d}" ] && KEEP["$d"]=1
-		done < <(
-			for d in "${ALL_SNAPS[@]}"; do
-				if [ "$(rrrr_weekday "${d}" 2> /dev/null || echo "0")" = "7" ]; then
-					printf "%s\n" "${d}"
-				fi
-			done | tail -n "${KEEP_WEEKLY}"
-		)
+		while IFS= read -r d; do
+			if [ "$(rrrr_weekday "${d}" 2> /dev/null || echo "0")" = "7" ]; then
+				printf "%s\n" "${d}"
+			fi
+		done < "${RETENTION_ALL_FILE}" | tail -n "${KEEP_WEEKLY}" >> "${RETENTION_KEEP_FILE}"
 	fi
 
 	if [ "${KEEP_MONTHLY}" -gt 0 ]; then
-		while read -r d; do
-			[ -n "${d}" ] && KEEP["$d"]=1
-		done < <(printf "%s\n" "${ALL_SNAPS[@]}" | awk -F- '$3=="01"{print $0}' | tail -n "${KEEP_MONTHLY}")
+		awk -F- '$3=="01"{print $0}' "${RETENTION_ALL_FILE}" | tail -n "${KEEP_MONTHLY}" >> "${RETENTION_KEEP_FILE}"
 	fi
 
-	local deleted=0
-	for d in "${ALL_SNAPS[@]}"; do
-		if [ "${KEEP[$d]+x}" = "x" ]; then
+	sort -u "${RETENTION_KEEP_FILE}" -o "${RETENTION_KEEP_FILE}"
+	while IFS= read -r d; do
+		if grep -Fx -- "${d}" "${RETENTION_KEEP_FILE}" > /dev/null; then
 			log "Keep: ${d}"
 		else
 			log "Delete: ${d}"
 			rm -rf -- "${SNAPS_DIR:?}/${d}"
 			deleted=$((deleted + 1))
 		fi
-	done
+	done < "${RETENTION_ALL_FILE}"
+
+	rm -f "${RETENTION_ALL_FILE}" "${RETENTION_KEEP_FILE}"
+	RETENTION_ALL_FILE=""
+	RETENTION_KEEP_FILE=""
 
 	log "Retention done. Deleted ${deleted} snapshots."
 }

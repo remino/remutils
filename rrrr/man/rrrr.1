@@ -70,6 +70,24 @@ The mount hook must set \fBBACKUP_ROOT\fR to an existing writable directory.
 rrrr calls the mount hook before preparing backup paths and calls the unmount
 hook whenever it exits, including after rsync fails or is interrupted. This
 keeps the storage backend platform-specific while rrrr remains portable.
+.SS Built-in ext4 image storage
+On Linux systems, set \fBSTORAGE_PROVIDER=ext4-image\fR to store a host's
+snapshots in one ext4 filesystem image. Set \fBSTORAGE_IMAGE\fR to the image
+file. When the image does not exist, \fBSTORAGE_IMAGE_SIZE_MIB\fR is required
+and specifies its creation size in MiB. rrrr attaches the image to a loop
+device for the backup and detaches it when rrrr exits.
+.PP
+\fBSTORAGE_MOUNTPOINT\fR is optional. When unset, rrrr creates and removes a
+private temporary mountpoint. The provider requires permission to use
+\fBlosetup\fR, \fBmount\fR, and \fBumount\fR, plus \fBmkfs.ext4\fR when
+creating an image.
+.PP
+Set \fBSTORAGE_ELEVATE_USER\fR when these operations need a privileged QNAP
+account. rrrr invokes only image lifecycle commands with
+\fBsudo -n -u\fR and changes the mounted image root back to the backup user.
+Configure a narrowly scoped passwordless sudo rule; rrrr never prompts for a
+password. Images disable the \fBmetadata_csum_seed\fR ext4 feature for
+compatibility with older QNAP kernels.
 .SH OPERATION
 The workflow is:
 .IP "1." 4
@@ -119,8 +137,9 @@ Primary location for per-user configuration (defaults to \fB~/.config\fR).
 Colon-separated list of additional configuration roots (defaults to
 \fB/etc/xdg\fR).
 .SH REQUIREMENTS
-rrrr requires Bash 4 or newer, \fBrsync\fR, and OpenSSH. On macOS, run rrrr
-with a Bash 4+ installation.
+rrrr requires Bash 3 or newer, \fBrsync\fR, and OpenSSH. The built-in ext4
+image provider additionally requires \fBlosetup\fR, \fBmount\fR,
+\fBumount\fR, and \fBmkfs.ext4\fR when creating an image.
 .SH EXIT STATUS
 Returns 0 on success. Exits non-zero if configuration is missing, the SSH
 connection or rsync invocation fails, or retention processing encounters an

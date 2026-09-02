@@ -15,7 +15,9 @@ setup() {
 
 	export RRRR_TEST_BACKUP_ROOT="$TEST_ROOT/backups"
 	export RRRR_TEST_RSYNC_LOG="$TEST_ROOT/rsync.log"
+	export RRRR_TEST_STORAGE_LOG="$TEST_ROOT/storage.log"
 	: > "$RRRR_TEST_RSYNC_LOG"
+	: > "$RRRR_TEST_STORAGE_LOG"
 
 	STUB_DIR="$TEST_ROOT/bin"
 	mkdir -p "$STUB_DIR"
@@ -23,6 +25,7 @@ setup() {
 	unset RRRR_TEST_RSYNC_FAIL
 
 	_create_stub_rsync
+	_create_stub_storage_commands
 }
 
 teardown() {
@@ -41,6 +44,67 @@ if [ "${RRRR_TEST_RSYNC_FAIL:-0}" = "1" ]; then
 fi
 EOF
 	chmod +x "$STUB_DIR/rsync"
+}
+
+_create_stub_storage_commands() {
+	cat << 'EOF' > "$STUB_DIR/dd"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'dd %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+for arg in "$@"; do
+	case "$arg" in
+		of=*) : > "${arg#of=}" ;;
+	esac
+done
+EOF
+
+	cat << 'EOF' > "$STUB_DIR/mkfs.ext4"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'mkfs.ext4 %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+EOF
+
+	cat << 'EOF' > "$STUB_DIR/losetup"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'losetup %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+if [ "$1" = "-f" ]; then
+	printf '%s\n' '/dev/loop-test'
+fi
+EOF
+
+	cat << 'EOF' > "$STUB_DIR/mount"
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "$#" -eq 0 ]; then
+	printf '/dev/loop-test on %s type ext4 (rw)\n' "${RRRR_TEST_MOUNTPOINT:?}"
+	exit 0
+fi
+printf 'mount %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+EOF
+
+	cat << 'EOF' > "$STUB_DIR/umount"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'umount %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+EOF
+
+	cat << 'EOF' > "$STUB_DIR/sudo"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'sudo %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+if [ "$1" = "-n" ]; then
+	shift
+fi
+if [ "$1" = "-u" ]; then
+	shift 2
+fi
+exec "$@"
+EOF
+
+	for cmd in dd mkfs.ext4 losetup mount sudo umount; do
+		chmod +x "$STUB_DIR/$cmd"
+	done
 }
 
 _write_basic_config() {
@@ -143,6 +207,34 @@ EOF
 	used_path="${filter_arg#--filter=merge }"
 	expected_path="$(_canonical_path "${custom_filters}")"
 	[ "$used_path" = "$expected_path" ]
+}
+
+@test "creates, mounts, and unmounts an ext4 image" {
+	local host="image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.img"
+	export RRRR_TEST_MOUNTPOINT="$TEST_ROOT/mounts/$host"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="ext4-image"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE_MIB=16
+STORAGE_MOUNTPOINT="${RRRR_TEST_MOUNTPOINT}"
+STORAGE_ELEVATE_USER="admin"
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ -f "$image" ]
+	[ -d "$RRRR_TEST_MOUNTPOINT/snapshots/$(date +%F)" ]
+	grep -Fx -- "dd if=/dev/zero of=$image bs=1M count=16" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "mkfs.ext4 -F -O ^metadata_csum_seed $image" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "sudo -n -u admin losetup -f" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "losetup /dev/loop-test $image" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "mount -t ext4 /dev/loop-test $RRRR_TEST_MOUNTPOINT" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "umount $RRRR_TEST_MOUNTPOINT" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "losetup -d /dev/loop-test" "$RRRR_TEST_STORAGE_LOG"
 }
 
 @test "runs storage hooks around a backup" {
