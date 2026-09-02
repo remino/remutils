@@ -3,7 +3,7 @@
 rrrr \- Reliable Recursive Redundant RSync
 .SH SYNOPSIS
 .B rrrr
-.RB [ \-hV ]
+.RB [ \-hv ]
 .I hostname
 .SH DESCRIPTION
 \fBrrrr\fR orchestrates snapshot-style backups via \fBrsync\fR over SSH.
@@ -13,6 +13,16 @@ on daily/weekly/monthly retention counts.
 .PP
 The tool is host-driven: the \fIhostname\fR argument selects a directory that
 describes how to reach the remote server and where to store the snapshots.
+.SH OPTIONS
+.TP
+.B \-h
+Show help text.
+.TP
+.B \-v
+Print the rrrr version.
+.TP
+.B \-V
+Compatibility alias for \fB\-v\fR.
 .SH CONFIGURATION
 The script inspects the following locations in order until it finds a matching
 directory named after the specified hostname:

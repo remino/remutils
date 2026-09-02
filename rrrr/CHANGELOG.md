@@ -11,6 +11,8 @@
 ## Unreleased
 
 - Add a built-in APFS sparse bundle storage provider for macOS.
+- Add `-v` as the documented version flag and retain `-V` as a compatibility
+  alias.
 
 ## v1.1.0
 

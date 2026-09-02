@@ -159,6 +159,18 @@ EOF
 	[[ "$output" == *"Usage: rrrr"* ]]
 }
 
+@test "prints version with -v and accepts -V for compatibility" {
+	run "$BATS_TEST_DIRNAME/../rrrr" -v
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "rrrr 1.1.0" ]
+
+	run "$BATS_TEST_DIRNAME/../rrrr" -V
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "rrrr 1.1.0" ]
+}
+
 @test "rejects an unsafe hostname" {
 	run "$BATS_TEST_DIRNAME/../rrrr" "../webhost"
 
