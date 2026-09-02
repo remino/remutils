@@ -117,6 +117,11 @@ label; it defaults to `rrrr-<hostname>`.
 The provider requires macOS `hdiutil` and access to both the image location and
 the mountpoint. Do not combine it with custom storage hooks.
 
+Before mounting storage, `rrrr` checks that the configured SSH key can
+authenticate without interaction. Password and keyboard-interactive
+authentication are disabled for this check and for rsync, so use an unencrypted
+key or a running SSH agent when the key has a passphrase.
+
 ### Built-in ext4 image storage
 
 On Linux systems such as a QNAP NAS, set `STORAGE_PROVIDER="ext4-image"` to

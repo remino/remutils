@@ -14,6 +14,8 @@
 - Add `-v` as the documented version flag and retain `-V` as a compatibility
   alias.
 - Use a writable temporary mountpoint by default for APFS sparse bundles.
+- Verify SSH key authentication without password prompts before mounting
+  storage.
 
 ## v1.1.0
 
