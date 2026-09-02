@@ -93,10 +93,9 @@ to a private temporary directory. Set \fBSTORAGE_VOLUME_NAME\fR to change the
 APFS volume label; it defaults to \fBrrrr-<hostname>\fR. The provider requires
 macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
 .PP
-Before mounting storage, rrrr verifies that the configured SSH key can
-authenticate without interaction. Password and keyboard-interactive
-authentication are disabled for this check and for rsync. Use an unencrypted
-key or a running SSH agent when the key has a passphrase.
+SSH inherits terminal input. When the key needs a passphrase or the remote host
+requires a password, its prompt remains interactive. rrrr sends both rsync
+output and errors to the terminal and run log.
 .SS Built-in ext4 image storage
 On Linux systems, set \fBSTORAGE_PROVIDER=ext4-image\fR to store a host's
 snapshots in one ext4 filesystem image. Set \fBSTORAGE_IMAGE\fR to the image

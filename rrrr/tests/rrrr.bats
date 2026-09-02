@@ -16,20 +16,17 @@ setup() {
 	export RRRR_TEST_BACKUP_ROOT="$TEST_ROOT/backups"
 	export RRRR_TEST_RSYNC_LOG="$TEST_ROOT/rsync.log"
 	export RRRR_TEST_STORAGE_LOG="$TEST_ROOT/storage.log"
-	export RRRR_TEST_SSH_LOG="$TEST_ROOT/ssh.log"
 	export TMPDIR="$TEST_ROOT/tmp"
 	mkdir -p "$TMPDIR"
 	: > "$RRRR_TEST_RSYNC_LOG"
 	: > "$RRRR_TEST_STORAGE_LOG"
-	: > "$RRRR_TEST_SSH_LOG"
 
 	STUB_DIR="$TEST_ROOT/bin"
 	mkdir -p "$STUB_DIR"
 	export PATH="$STUB_DIR:$PATH"
-	unset RRRR_TEST_RSYNC_FAIL RRRR_TEST_SSH_FAIL
+	unset RRRR_TEST_RSYNC_FAIL
 
 	_create_stub_rsync
-	_create_stub_ssh
 	_create_stub_storage_commands
 }
 
@@ -49,19 +46,6 @@ if [ "${RRRR_TEST_RSYNC_FAIL:-0}" = "1" ]; then
 fi
 EOF
 	chmod +x "$STUB_DIR/rsync"
-}
-
-_create_stub_ssh() {
-	cat << 'EOF' > "$STUB_DIR/ssh"
-#!/usr/bin/env bash
-set -euo pipefail
-printf "%s\n" "$@" >> "$RRRR_TEST_SSH_LOG"
-
-if [ "${RRRR_TEST_SSH_FAIL:-0}" = "1" ]; then
-	exit 255
-fi
-EOF
-	chmod +x "$STUB_DIR/ssh"
 }
 
 _create_stub_storage_commands() {
@@ -268,23 +252,14 @@ EOF
 	[ "$used_path" = "$expected_path" ]
 }
 
-@test "checks SSH key authentication before mounting storage" {
-	local host="failed-auth"
+@test "allows interactive SSH authentication" {
+	local host="interactive-auth"
 	_write_basic_config "$host"
 
-	local image="$TEST_ROOT/images/$host.sparsebundle"
-	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
-STORAGE_PROVIDER="apfs-sparsebundle"
-STORAGE_IMAGE="${image}"
-STORAGE_IMAGE_SIZE="16g"
-EOF
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
-	run env RRRR_TEST_SSH_FAIL=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
-
-	[ "$status" -eq 1 ]
-	[[ "$output" == *"SSH key authentication failed"* ]]
-	grep -Fx -- "PasswordAuthentication=no" "$RRRR_TEST_SSH_LOG"
-	! grep -q '^hdiutil ' "$RRRR_TEST_STORAGE_LOG"
+	[ "$status" -eq 0 ]
+	grep -Fx -- "ssh -p 22 -i $TEST_ROOT/id_rrrr -o BatchMode=no -o StrictHostKeyChecking=accept-new" "$RRRR_TEST_RSYNC_LOG"
 }
 
 @test "creates, mounts, and unmounts an ext4 image" {

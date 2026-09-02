@@ -133,7 +133,6 @@ rrrr_main() {
 	rrrr_set_derived_defaults
 	rrrr_validate_config
 	rrrr_check_requirements
-	rrrr_check_ssh_connection
 	rrrr_prepare_storage
 	rrrr_validate_storage
 	rrrr_prepare_runtime
@@ -400,19 +399,6 @@ rrrr_check_requirements() {
 	fi
 }
 
-rrrr_check_ssh_connection() {
-	log "Checking SSH key authentication..."
-	ssh -p "${REMOTE_SSH_PORT}" -i "${SSH_KEY}" \
-		-o BatchMode=yes \
-		-o IdentitiesOnly=yes \
-		-o NumberOfPasswordPrompts=0 \
-		-o KbdInteractiveAuthentication=no \
-		-o PasswordAuthentication=no \
-		-o PreferredAuthentications=publickey \
-		-o StrictHostKeyChecking=accept-new \
-		"${REMOTE_USER}@${REMOTE_SSH_HOST}" true || die "SSH key authentication failed for ${REMOTE_USER}@${REMOTE_SSH_HOST}"
-}
-
 rrrr_ext4_image_mount() {
 	require_cmd dd
 	require_cmd dirname
@@ -620,7 +606,7 @@ rrrr_build_filter_args() {
 }
 
 rrrr_build_ssh_command() {
-	SSH_CMD="ssh -p ${REMOTE_SSH_PORT} -i ${SSH_KEY} -o BatchMode=yes -o IdentitiesOnly=yes -o NumberOfPasswordPrompts=0 -o KbdInteractiveAuthentication=no -o PasswordAuthentication=no -o PreferredAuthentications=publickey -o StrictHostKeyChecking=accept-new"
+	SSH_CMD="ssh -p ${REMOTE_SSH_PORT} -i ${SSH_KEY} -o BatchMode=no -o StrictHostKeyChecking=accept-new"
 }
 
 rrrr_run_rsync() {
@@ -635,7 +621,7 @@ rrrr_run_rsync() {
 		-e "${SSH_CMD}" \
 		"${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}" \
 		"${SNAP_TMP_DIR}/" \
-		| tee -a "${LOG_FILE}"
+		2>&1 | tee -a "${LOG_FILE}"
 
 	log "rsync finished."
 }
