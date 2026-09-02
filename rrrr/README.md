@@ -1,21 +1,20 @@
-# rrrr — Reliable Recursive Redundant RSync
+# rrrr
 
-`rrrr` is a snapshot-style backup runner that uses `rsync` over SSH to pull
-incremental backups from a remote host. Each run creates
-`<backup_root>/snapshots/YYYY-MM-DD`, updates a `latest` symlink, and enforces a
-daily/weekly/monthly retention policy.
+Create snapshot-style rsync backups over SSH.
 
-It requires Bash 3 or newer, `rsync`, and OpenSSH.
+2026 Rémino Rem <https://remino.net/>
 
-The tool is configured per host so the same script can back up multiple servers.
-Run `rrrr <hostname>` and it will look for host-specific configuration at:
+<!-- mtoc-start -->
 
-1. `$XDG_CONFIG_HOME/rrrr/<hostname>`
-2. Each directory in `$XDG_CONFIG_DIRS` (default: `/etc/xdg`), under
-   `rrrr/<hostname>`
-3. `/etc/rrrr/<hostname>`
+- [Installation](#installation)
+- [Configuration](#configuration)
+    - [Host directory layout](#host-directory-layout)
+    - [Storage hooks](#storage-hooks)
+    - [Built-in ext4 image storage](#built-in-ext4-image-storage)
+    - [Filters](#filters-optional)
+- [Usage](#usage)
 
-The first directory found wins.
+<!-- mtoc-end -->
 
 ## Installation
 
@@ -31,7 +30,20 @@ cd remutils/rrrr
 ./rrrr -h
 ```
 
-## Host directory layout
+## Configuration
+
+`rrrr` requires Bash 3 or newer, `rsync`, and OpenSSH. It is configured per
+host, so the same runner can back up multiple servers. `rrrr <hostname>` looks
+for host-specific configuration in this order:
+
+1. `$XDG_CONFIG_HOME/rrrr/<hostname>`
+2. Each directory in `$XDG_CONFIG_DIRS` (default: `/etc/xdg`), under
+   `rrrr/<hostname>`
+3. `/etc/rrrr/<hostname>`
+
+The first directory found wins.
+
+### Host directory layout
 
 Each host directory must contain at least a `config` file:
 
@@ -41,7 +53,7 @@ Each host directory must contain at least a `config` file:
 └── filters     # optional (overrides builtin defaults)
 ```
 
-### `config`
+#### `config`
 
 The file is `source`d by the script, so set shell variables there. The following
 variables are required:
@@ -64,7 +76,7 @@ Common optional variables:
 - `SNAPS_DIR`, `LOG_DIR`, `LATEST_LINK` – override default paths inside
   `BACKUP_ROOT`.
 
-### Optional storage hooks
+### Storage hooks
 
 By default, `rrrr` writes directly to `BACKUP_ROOT`. For image files, encrypted
 volumes, datasets, or network storage, the sourced config may define both of
@@ -163,7 +175,7 @@ Example `filters` file:
 - *
 ```
 
-## Running
+## Usage
 
 ```bash
 rrrr webhost
