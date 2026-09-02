@@ -4,7 +4,7 @@
 #
 set -euo pipefail
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 
 DEFAULT_FILTERS_CONTENT=$'- /dev/**\n- /proc/**\n- /sys/**\n- /run/**\n- /tmp/**\n- /mnt/**\n- /media/**\n- /lost+found\n- /swapfile'
 DEFAULT_FILTERS_FILE=""

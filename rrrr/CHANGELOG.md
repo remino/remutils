@@ -2,13 +2,13 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.2.0](#v120)
 - [v1.1.0](#v110)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.2.0
 
 - Add a built-in APFS sparse bundle storage provider for macOS.
 - Add `-v` as the documented version flag and retain `-V` as a compatibility
