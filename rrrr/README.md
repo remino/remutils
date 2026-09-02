@@ -9,9 +9,10 @@ Create snapshot-style rsync backups over SSH.
 - [Installation](#installation)
 - [Configuration](#configuration)
     - [Host directory layout](#host-directory-layout)
+        - [`config`](#config)
     - [Storage hooks](#storage-hooks)
     - [Built-in ext4 image storage](#built-in-ext4-image-storage)
-    - [Filters](#filters-optional)
+    - [`filters` (optional)](#filters-optional)
 - [Usage](#usage)
 
 <!-- mtoc-end -->
