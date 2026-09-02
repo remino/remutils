@@ -2,59 +2,16 @@
 #
 # rrrr - Reliable Recursive Redundant RSync
 #
-set -euo pipefail
-
 VERSION="1.2.2"
 
 DEFAULT_FILTERS_CONTENT=$'- /dev/**\n- /proc/**\n- /sys/**\n- /run/**\n- /tmp/**\n- /mnt/**\n- /media/**\n- /lost+found\n- /swapfile'
-DEFAULT_FILTERS_FILE=""
-
-HOST_ARG=""
-HOST_CONFIG_DIR=""
-HOST_FILTER_FILE=""
-
-DATE_TODAY=""
-SNAP_DIR=""
-SNAP_TMP_DIR=""
-SNAPS_DIR=""
-PARTIALS_DIR=""
-LATEST_LINK=""
-LOG_DIR=""
-LOG_FILE=""
-SSH_CMD=""
-STORAGE_HOOK_ACTIVE=0
-STORAGE_PROVIDER=""
-STORAGE_IMAGE=""
-STORAGE_IMAGE_SIZE_MIB=""
-STORAGE_IMAGE_SIZE=""
-STORAGE_VOLUME_NAME=""
-STORAGE_MOUNTPOINT=""
-STORAGE_MOUNTPOINT_CREATED=0
-STORAGE_LOOP_DEVICE=""
-STORAGE_APFS_ATTACHED=0
-STORAGE_ELEVATE_USER=""
-RETENTION_ALL_FILE=""
-RETENTION_KEEP_FILE=""
-
-HOSTNAME_REMOTE=""
-REMOTE_USER=""
-REMOTE_SSH_HOST=""
-REMOTE_SSH_PORT=""
-SSH_KEY=""
-BACKUP_ROOT=""
-REMOTE_ROOT="/"
-RSYNC_VERBOSE="0"
-RSYNC_PRESERVE_ACLS="1"
-RSYNC_KEEP_PARTIAL="0"
-RSYNC_ACCEPT_PARTIAL="0"
-KEEP_DAILY=7
-KEEP_WEEKLY=4
-KEEP_MONTHLY=6
 
 declare -a RSYNC_FILTER_ARGS=()
 declare -a RSYNC_VERBOSE_ARGS=()
 declare -a RSYNC_ACL_ARGS=()
 declare -a LINK_DEST_ARGS=()
+
+# Cleanup --------------------------------------------------------------------
 
 rrrr_cleanup() {
 	local exit_status=$? tmp_file
@@ -86,7 +43,7 @@ rrrr_cleanup() {
 	return "${exit_status}"
 }
 
-trap rrrr_cleanup EXIT
+# Shared helpers -------------------------------------------------------------
 
 log() {
 	local timestamp message
@@ -111,6 +68,12 @@ require_cmd() {
 
 rrrr_main() {
 	local opt host
+
+	set -euo pipefail
+	rrrr_reset_state
+	trap rrrr_cleanup EXIT
+
+	OPTIND=1
 	while getopts ":hVv" opt; do
 		case "${opt}" in
 			h)
@@ -137,7 +100,7 @@ rrrr_main() {
 
 	HOST_CONFIG_DIR="$(rrrr_find_host_config_dir "${host}")" || die "No host config directory found for ${host}"
 
-	rrrr_reset_config_to_defaults
+	rrrr_reset_config
 	rrrr_source_host_config "${HOST_CONFIG_DIR}"
 	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
 	rrrr_set_derived_defaults
@@ -172,7 +135,40 @@ Options:
 USAGE
 }
 
-rrrr_reset_config_to_defaults() {
+# Per-run state --------------------------------------------------------------
+
+rrrr_reset_state() {
+	HOST_ARG=""
+	HOST_CONFIG_DIR=""
+	HOST_FILTER_FILE=""
+	DATE_TODAY=""
+	SNAP_DIR=""
+	SNAP_TMP_DIR=""
+	SNAPS_DIR=""
+	PARTIALS_DIR=""
+	LATEST_LINK=""
+	LOG_DIR=""
+	LOG_FILE=""
+	SSH_CMD=""
+	STORAGE_HOOK_ACTIVE=0
+	STORAGE_PROVIDER=""
+	STORAGE_IMAGE=""
+	STORAGE_IMAGE_SIZE_MIB=""
+	STORAGE_IMAGE_SIZE=""
+	STORAGE_VOLUME_NAME=""
+	STORAGE_MOUNTPOINT=""
+	STORAGE_MOUNTPOINT_CREATED=0
+	STORAGE_LOOP_DEVICE=""
+	STORAGE_APFS_ATTACHED=0
+	STORAGE_ELEVATE_USER=""
+	RETENTION_ALL_FILE=""
+	RETENTION_KEEP_FILE=""
+	DEFAULT_FILTERS_FILE=""
+
+	rrrr_reset_config
+}
+
+rrrr_reset_config() {
 	HOSTNAME_REMOTE=""
 	REMOTE_USER=""
 	REMOTE_SSH_HOST=""
@@ -187,24 +183,10 @@ rrrr_reset_config_to_defaults() {
 	KEEP_DAILY=7
 	KEEP_WEEKLY=4
 	KEEP_MONTHLY=6
-	SNAPS_DIR=""
-	LOG_DIR=""
-	LATEST_LINK=""
-	LOG_FILE=""
-	PARTIALS_DIR=""
 	FILTERS_FILE=""
-	HOST_FILTER_FILE=""
-	STORAGE_PROVIDER=""
-	STORAGE_IMAGE=""
-	STORAGE_IMAGE_SIZE_MIB=""
-	STORAGE_IMAGE_SIZE=""
-	STORAGE_VOLUME_NAME=""
-	STORAGE_MOUNTPOINT=""
-	STORAGE_MOUNTPOINT_CREATED=0
-	STORAGE_LOOP_DEVICE=""
-	STORAGE_APFS_ATTACHED=0
-	STORAGE_ELEVATE_USER=""
 }
+
+# Configuration -------------------------------------------------------------
 
 rrrr_find_host_config_dir() {
 	local host="$1"
@@ -353,6 +335,8 @@ rrrr_prepare_storage() {
 		*) die "Unsupported STORAGE_PROVIDER: ${STORAGE_PROVIDER}" ;;
 	esac
 }
+
+# Storage providers ---------------------------------------------------------
 
 rrrr_release_storage() {
 	case "${STORAGE_PROVIDER}" in
@@ -538,6 +522,8 @@ rrrr_apfs_sparsebundle_unmount() {
 rrrr_storage_is_mounted() {
 	mount | awk -v mountpoint="${STORAGE_MOUNTPOINT}" '$3 == mountpoint { found = 1 } END { exit !found }'
 }
+
+# Backup pipeline -----------------------------------------------------------
 
 rrrr_run_backup() {
 	log "=== Backup start (${HOSTNAME_REMOTE}) ==="
