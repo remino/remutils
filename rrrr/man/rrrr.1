@@ -77,6 +77,10 @@ Retain rsync exit-23 results under \fBpartials\fR (\fB1\fR) instead of
 deleting the temporary snapshot (\fB0\fR, default). Retained partial snapshots
 are never made \fBlatest\fR and rrrr keeps exit status 23.
 .TP
+\fBRSYNC_ACCEPT_PARTIAL\fR
+Publish rsync exit-23 results as the current snapshot and update
+\fBlatest\fR (\fB1\fR); disabled by default.
+.TP
 \fBKEEP_DAILY\fR, \fBKEEP_WEEKLY\fR, \fBKEEP_MONTHLY\fR
 Retention counts (defaults: 7, 4, 6).
 .TP
@@ -109,6 +113,9 @@ macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
 .PP
 For a Linux source backed up to macOS, set \fBRSYNC_PRESERVE_ACLS=0\fR because
 Linux ACLs cannot be represented as macOS ACLs.
+.PP
+When unreadable paths are expected, set \fBRSYNC_ACCEPT_PARTIAL=1\fR to publish
+exit-23 runs as the current snapshot. The skipped paths remain in the run log.
 .PP
 SSH inherits terminal input. When the key needs a passphrase or the remote host
 requires a password, its prompt remains interactive. rrrr sends both rsync

@@ -82,6 +82,8 @@ Common optional variables:
   (`0`) when source and destination ACL formats are incompatible.
 - `RSYNC_KEEP_PARTIAL` – retain rsync exit-23 results under `partials/` (`1`)
   instead of deleting the temporary snapshot (`0`, default).
+- `RSYNC_ACCEPT_PARTIAL` – publish rsync exit-23 results as the current snapshot
+  and update `latest` (`1`); disabled by default.
 - `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention counts.
 - `FILTERS_FILE` – alternate path to an rsync filter file (if not using the
   host-local `filters` file).
@@ -130,6 +132,10 @@ source path, set `RSYNC_KEEP_PARTIAL=1` to retain the readable data in a
 date-and-process-specific directory under `partials/`. These retained snapshots
 are never made `latest` and rsync still exits with status `23`, so automation
 can report the incomplete run.
+
+When unreadable paths are expected, set `RSYNC_ACCEPT_PARTIAL=1` instead. An
+exit-23 run is then published and becomes `latest`, with the skipped paths
+recorded in the run log.
 
 SSH inherits the terminal input. When the key needs a passphrase or the remote
 host requires a password, its prompt remains interactive. `rrrr` sends both

@@ -46,6 +46,7 @@ REMOTE_ROOT="/"
 RSYNC_VERBOSE="0"
 RSYNC_PRESERVE_ACLS="1"
 RSYNC_KEEP_PARTIAL="0"
+RSYNC_ACCEPT_PARTIAL="0"
 KEEP_DAILY=7
 KEEP_WEEKLY=4
 KEEP_MONTHLY=6
@@ -182,6 +183,7 @@ rrrr_reset_config_to_defaults() {
 	RSYNC_VERBOSE="0"
 	RSYNC_PRESERVE_ACLS="1"
 	RSYNC_KEEP_PARTIAL="0"
+	RSYNC_ACCEPT_PARTIAL="0"
 	KEEP_DAILY=7
 	KEEP_WEEKLY=4
 	KEEP_MONTHLY=6
@@ -551,6 +553,14 @@ rrrr_run_backup() {
 
 	local rsync_status=0
 	rrrr_run_rsync || rsync_status=$?
+	if [ "${rsync_status}" -eq 23 ] && [ "${RSYNC_ACCEPT_PARTIAL}" = "1" ]; then
+		log "Accepting rsync exit 23 with unreadable paths."
+		rrrr_publish_snapshot
+		rrrr_update_latest
+		rrrr_apply_retention
+		log "=== Backup complete with unreadable paths (${HOSTNAME_REMOTE}) ==="
+		return 0
+	fi
 	if [ "${rsync_status}" -eq 23 ] && [ "${RSYNC_KEEP_PARTIAL}" = "1" ]; then
 		rrrr_publish_partial_snapshot
 		log "=== Partial backup retained (${HOSTNAME_REMOTE}); rsync exit status: ${rsync_status} ==="
@@ -653,6 +663,11 @@ rrrr_build_rsync_acl_args() {
 	case "${RSYNC_KEEP_PARTIAL}" in
 		0 | 1) ;;
 		*) die "RSYNC_KEEP_PARTIAL must be 0 or 1" ;;
+	esac
+
+	case "${RSYNC_ACCEPT_PARTIAL}" in
+		0 | 1) ;;
+		*) die "RSYNC_ACCEPT_PARTIAL must be 0 or 1" ;;
 	esac
 }
 

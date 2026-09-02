@@ -343,6 +343,21 @@ EOF
 	[ "${#partials[@]}" -eq 1 ]
 }
 
+@test "can accept exit-23 snapshots with unreadable paths" {
+	local host="accepted-partial"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_ACCEPT_PARTIAL=1
+EOF
+
+	run env RRRR_TEST_RSYNC_STATUS=23 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ -d "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+	[ -L "$RRRR_TEST_BACKUP_ROOT/$host/latest" ]
+	[ ! -d "$RRRR_TEST_BACKUP_ROOT/$host/partials" ] || [ -z "$(find "$RRRR_TEST_BACKUP_ROOT/$host/partials" -mindepth 1 -print -quit)" ]
+}
+
 @test "creates, mounts, and unmounts an ext4 image" {
 	local host="image"
 	_write_basic_config "$host"
