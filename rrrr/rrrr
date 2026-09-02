@@ -38,7 +38,7 @@ RETENTION_KEEP_FILE=""
 HOSTNAME_REMOTE=""
 REMOTE_USER=""
 REMOTE_SSH_HOST=""
-REMOTE_SSH_PORT="22"
+REMOTE_SSH_PORT=""
 SSH_KEY=""
 BACKUP_ROOT=""
 REMOTE_ROOT="/"
@@ -168,7 +168,7 @@ rrrr_reset_config_to_defaults() {
 	HOSTNAME_REMOTE=""
 	REMOTE_USER=""
 	REMOTE_SSH_HOST=""
-	REMOTE_SSH_PORT="22"
+	REMOTE_SSH_PORT=""
 	SSH_KEY=""
 	BACKUP_ROOT=""
 	REMOTE_ROOT="/"
@@ -622,7 +622,11 @@ rrrr_build_rsync_verbose_args() {
 }
 
 rrrr_build_ssh_command() {
-	SSH_CMD="ssh -p ${REMOTE_SSH_PORT} -i ${SSH_KEY} -o BatchMode=no -o StrictHostKeyChecking=accept-new"
+	SSH_CMD="ssh"
+	if [ -n "${REMOTE_SSH_PORT}" ]; then
+		SSH_CMD+=" -p ${REMOTE_SSH_PORT}"
+	fi
+	SSH_CMD+=" -i ${SSH_KEY} -o BatchMode=no -o StrictHostKeyChecking=accept-new"
 }
 
 rrrr_run_rsync() {

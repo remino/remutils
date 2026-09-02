@@ -73,7 +73,8 @@ Common optional variables:
 - `HOSTNAME_REMOTE` – label used for logging.
 - `REMOTE_SSH_HOST` – actual hostname/IP (defaults to the `<hostname>`
   argument).
-- `REMOTE_SSH_PORT` – SSH port (defaults to `22`).
+- `REMOTE_SSH_PORT` – optional SSH port override; when unset, SSH configuration
+  (or SSH's own default) selects the port.
 - `REMOTE_ROOT` – remote path to sync (defaults to `/`).
 - `RSYNC_VERBOSE` – rsync output level: `0` (default), `1` (`-v`), `2` (`-vv`),
   or `3` (`-vvv`).

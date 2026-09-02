@@ -57,8 +57,9 @@ It may instead be set by an optional storage mount hook.
 Label used in logs. Defaults to the supplied hostname.
 .TP
 \fBREMOTE_SSH_HOST\fR, \fBREMOTE_SSH_PORT\fR
-Actual address and port of the remote SSH service. Defaults: hostname argument
-and 22 respectively.
+Actual address and optional port override for the remote SSH service. The
+hostname defaults to the supplied hostname. When the port is unset, SSH
+configuration (or SSH's own default) selects it.
 .TP
 \fBREMOTE_ROOT\fR
 Remote path to sync (default: \fB/\fR).

@@ -255,11 +255,24 @@ EOF
 @test "allows interactive SSH authentication" {
 	local host="interactive-auth"
 	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+REMOTE_SSH_PORT=443
+EOF
 
 	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
-	grep -Fx -- "ssh -p 22 -i $TEST_ROOT/id_rrrr -o BatchMode=no -o StrictHostKeyChecking=accept-new" "$RRRR_TEST_RSYNC_LOG"
+	grep -Fx -- "ssh -p 443 -i $TEST_ROOT/id_rrrr -o BatchMode=no -o StrictHostKeyChecking=accept-new" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "uses SSH configuration when REMOTE_SSH_PORT is unset" {
+	local host="ssh-default-port"
+	_write_basic_config "$host"
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "ssh -i $TEST_ROOT/id_rrrr -o BatchMode=no -o StrictHostKeyChecking=accept-new" "$RRRR_TEST_RSYNC_LOG"
 }
 
 @test "supports configurable rsync verbosity" {

@@ -12,6 +12,7 @@
 ## Unreleased
 
 - Add configurable rsync verbosity.
+- Respect SSH configuration when no port override is set.
 
 ## v1.2.0
 
