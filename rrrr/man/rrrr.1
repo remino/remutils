@@ -68,6 +68,15 @@ Remote path to sync (default: \fB/\fR).
 Rsync output level: \fB0\fR (default), \fB1\fR (\fB-v\fR), \fB2\fR
 (\fB-vv\fR), or \fB3\fR (\fB-vvv\fR).
 .TP
+\fBRSYNC_PRESERVE_ACLS\fR
+Preserve ACLs with \fB-A\fR (\fB1\fR, default) or disable it (\fB0\fR)
+when source and destination ACL formats are incompatible.
+.TP
+\fBRSYNC_KEEP_PARTIAL\fR
+Retain rsync exit-23 results under \fBpartials\fR (\fB1\fR) instead of
+deleting the temporary snapshot (\fB0\fR, default). Retained partial snapshots
+are never made \fBlatest\fR and rrrr keeps exit status 23.
+.TP
 \fBKEEP_DAILY\fR, \fBKEEP_WEEKLY\fR, \fBKEEP_MONTHLY\fR
 Retention counts (defaults: 7, 4, 6).
 .TP
@@ -97,6 +106,9 @@ including after a failed run. \fBSTORAGE_MOUNTPOINT\fR is optional and defaults
 to a private temporary directory. Set \fBSTORAGE_VOLUME_NAME\fR to change the
 APFS volume label; it defaults to \fBrrrr-<hostname>\fR. The provider requires
 macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
+.PP
+For a Linux source backed up to macOS, set \fBRSYNC_PRESERVE_ACLS=0\fR because
+Linux ACLs cannot be represented as macOS ACLs.
 .PP
 SSH inherits terminal input. When the key needs a passphrase or the remote host
 requires a password, its prompt remains interactive. rrrr sends both rsync

@@ -17,6 +17,7 @@ DATE_TODAY=""
 SNAP_DIR=""
 SNAP_TMP_DIR=""
 SNAPS_DIR=""
+PARTIALS_DIR=""
 LATEST_LINK=""
 LOG_DIR=""
 LOG_FILE=""
@@ -43,18 +44,22 @@ SSH_KEY=""
 BACKUP_ROOT=""
 REMOTE_ROOT="/"
 RSYNC_VERBOSE="0"
+RSYNC_PRESERVE_ACLS="1"
+RSYNC_KEEP_PARTIAL="0"
 KEEP_DAILY=7
 KEEP_WEEKLY=4
 KEEP_MONTHLY=6
 
 declare -a RSYNC_FILTER_ARGS=()
 declare -a RSYNC_VERBOSE_ARGS=()
+declare -a RSYNC_ACL_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 rrrr_cleanup() {
 	local exit_status=$? tmp_file
 
 	if [ -n "${SNAP_TMP_DIR:-}" ] && [ -d "${SNAP_TMP_DIR}" ]; then
+		chmod -R u+w "${SNAP_TMP_DIR}" 2> /dev/null || true
 		rm -rf -- "${SNAP_TMP_DIR}"
 	fi
 
@@ -173,6 +178,8 @@ rrrr_reset_config_to_defaults() {
 	BACKUP_ROOT=""
 	REMOTE_ROOT="/"
 	RSYNC_VERBOSE="0"
+	RSYNC_PRESERVE_ACLS="1"
+	RSYNC_KEEP_PARTIAL="0"
 	KEEP_DAILY=7
 	KEEP_WEEKLY=4
 	KEEP_MONTHLY=6
@@ -180,6 +187,7 @@ rrrr_reset_config_to_defaults() {
 	LOG_DIR=""
 	LATEST_LINK=""
 	LOG_FILE=""
+	PARTIALS_DIR=""
 	FILTERS_FILE=""
 	HOST_FILTER_FILE=""
 	STORAGE_PROVIDER=""
@@ -362,12 +370,13 @@ rrrr_validate_storage() {
 rrrr_prepare_runtime() {
 	DATE_TODAY="$(date +%F)"
 	SNAPS_DIR="${SNAPS_DIR:-${BACKUP_ROOT}/snapshots}"
+	PARTIALS_DIR="${PARTIALS_DIR:-${BACKUP_ROOT}/partials}"
 	SNAP_DIR="${SNAPS_DIR}/${DATE_TODAY}"
 	LATEST_LINK="${LATEST_LINK:-${BACKUP_ROOT}/latest}"
 	LOG_DIR="${LOG_DIR:-${BACKUP_ROOT}/logs}"
 	LOG_FILE="${LOG_FILE:-${LOG_DIR}/${DATE_TODAY}.log}"
 
-	mkdir -p "${SNAPS_DIR}" "${LOG_DIR}"
+	mkdir -p "${SNAPS_DIR}" "${PARTIALS_DIR}" "${LOG_DIR}"
 }
 
 rrrr_check_requirements() {
@@ -535,9 +544,18 @@ rrrr_run_backup() {
 	rrrr_build_link_dest_args
 	rrrr_build_filter_args
 	rrrr_build_rsync_verbose_args
+	rrrr_build_rsync_acl_args
 	rrrr_build_ssh_command
 
-	rrrr_run_rsync
+	local rsync_status=0
+	rrrr_run_rsync || rsync_status=$?
+	if [ "${rsync_status}" -eq 23 ] && [ "${RSYNC_KEEP_PARTIAL}" = "1" ]; then
+		rrrr_publish_partial_snapshot
+		log "=== Partial backup retained (${HOSTNAME_REMOTE}); rsync exit status: ${rsync_status} ==="
+		return "${rsync_status}"
+	fi
+	[ "${rsync_status}" -eq 0 ] || return "${rsync_status}"
+
 	rrrr_publish_snapshot
 	rrrr_update_latest
 	rrrr_apply_retention
@@ -621,6 +639,21 @@ rrrr_build_rsync_verbose_args() {
 	esac
 }
 
+rrrr_build_rsync_acl_args() {
+	RSYNC_ACL_ARGS=()
+
+	case "${RSYNC_PRESERVE_ACLS}" in
+		0) ;;
+		1) RSYNC_ACL_ARGS=(-A) ;;
+		*) die "RSYNC_PRESERVE_ACLS must be 0 or 1" ;;
+	esac
+
+	case "${RSYNC_KEEP_PARTIAL}" in
+		0 | 1) ;;
+		*) die "RSYNC_KEEP_PARTIAL must be 0 or 1" ;;
+	esac
+}
+
 rrrr_build_ssh_command() {
 	SSH_CMD="ssh"
 	if [ -n "${REMOTE_SSH_PORT}" ]; then
@@ -630,26 +663,41 @@ rrrr_build_ssh_command() {
 }
 
 rrrr_run_rsync() {
+	local status=0
+
 	log "Running rsync..."
 	log "Remote: ${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}"
 	log "Log: ${LOG_FILE}"
 
-	rsync -aHAX "${RSYNC_VERBOSE_ARGS[@]}" --numeric-ids --delete \
+	if rsync -aHX "${RSYNC_ACL_ARGS[@]}" "${RSYNC_VERBOSE_ARGS[@]}" --numeric-ids --delete \
 		--info=stats2,progress2 \
 		"${RSYNC_FILTER_ARGS[@]}" \
 		"${LINK_DEST_ARGS[@]}" \
 		-e "${SSH_CMD}" \
 		"${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}" \
 		"${SNAP_TMP_DIR}/" \
-		2>&1 | tee -a "${LOG_FILE}"
+		2>&1 | tee -a "${LOG_FILE}"; then
+		log "rsync finished."
+		return 0
+	else
+		status=$?
+	fi
 
-	log "rsync finished."
+	return "${status}"
 }
 
 rrrr_publish_snapshot() {
 	mv "${SNAP_TMP_DIR}" "${SNAP_DIR}"
 	SNAP_TMP_DIR=""
 	log "Published snapshot: ${SNAP_DIR}"
+}
+
+rrrr_publish_partial_snapshot() {
+	local partial_dir="${PARTIALS_DIR}/${DATE_TODAY}.partial.$$"
+
+	mv "${SNAP_TMP_DIR}" "${partial_dir}"
+	SNAP_TMP_DIR=""
+	log "Retained partial snapshot: ${partial_dir}"
 }
 
 rrrr_update_latest() {

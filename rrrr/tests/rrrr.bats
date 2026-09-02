@@ -24,7 +24,7 @@ setup() {
 	STUB_DIR="$TEST_ROOT/bin"
 	mkdir -p "$STUB_DIR"
 	export PATH="$STUB_DIR:$PATH"
-	unset RRRR_TEST_RSYNC_FAIL
+	unset RRRR_TEST_RSYNC_FAIL RRRR_TEST_RSYNC_STATUS
 
 	_create_stub_rsync
 	_create_stub_storage_commands
@@ -40,6 +40,10 @@ _create_stub_rsync() {
 set -euo pipefail
 : "${RRRR_TEST_RSYNC_LOG:?}"
 printf "%s\n" "$@" >>"$RRRR_TEST_RSYNC_LOG"
+
+if [ -n "${RRRR_TEST_RSYNC_STATUS:-}" ]; then
+	exit "${RRRR_TEST_RSYNC_STATUS}"
+fi
 
 if [ "${RRRR_TEST_RSYNC_FAIL:-0}" = "1" ]; then
 	exit 12
@@ -286,6 +290,39 @@ EOF
 
 	[ "$status" -eq 0 ]
 	grep -Fx -- "-vv" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "can disable ACL preservation" {
+	local host="no-acls"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_PRESERVE_ACLS=0
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "-aHX" "$RRRR_TEST_RSYNC_LOG"
+	! grep -Fx -- "-A" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "retains exit-23 snapshots as partial without updating latest" {
+	local host="partial"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_KEEP_PARTIAL=1
+EOF
+
+	run env RRRR_TEST_RSYNC_STATUS=23 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 23 ]
+	[ ! -e "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+	[ ! -e "$RRRR_TEST_BACKUP_ROOT/$host/latest" ]
+
+	local partials=()
+	shopt -s nullglob
+	partials=("$RRRR_TEST_BACKUP_ROOT/$host/partials/$(date +%F).partial."*)
+	[ "${#partials[@]}" -eq 1 ]
 }
 
 @test "creates, mounts, and unmounts an ext4 image" {

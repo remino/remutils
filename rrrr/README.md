@@ -78,6 +78,10 @@ Common optional variables:
 - `REMOTE_ROOT` – remote path to sync (defaults to `/`).
 - `RSYNC_VERBOSE` – rsync output level: `0` (default), `1` (`-v`), `2` (`-vv`),
   or `3` (`-vvv`).
+- `RSYNC_PRESERVE_ACLS` – preserve ACLs with `-A` (`1`, default) or disable it
+  (`0`) when source and destination ACL formats are incompatible.
+- `RSYNC_KEEP_PARTIAL` – retain rsync exit-23 results under `partials/` (`1`)
+  instead of deleting the temporary snapshot (`0`, default).
 - `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention counts.
 - `FILTERS_FILE` – alternate path to an rsync filter file (if not using the
   host-local `filters` file).
@@ -119,6 +123,13 @@ label; it defaults to `rrrr-<hostname>`.
 
 The provider requires macOS `hdiutil` and access to both the image location and
 the mountpoint. Do not combine it with custom storage hooks.
+
+For a Linux source backed up to macOS, set `RSYNC_PRESERVE_ACLS=0`: Linux ACLs
+cannot be represented as macOS ACLs. If the backup account cannot read every
+source path, set `RSYNC_KEEP_PARTIAL=1` to retain the readable data in a
+date-and-process-specific directory under `partials/`. These retained snapshots
+are never made `latest` and rsync still exits with status `23`, so automation
+can report the incomplete run.
 
 SSH inherits the terminal input. When the key needs a passphrase or the remote
 host requires a password, its prompt remains interactive. `rrrr` sends both

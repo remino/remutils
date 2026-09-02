@@ -13,6 +13,8 @@
 
 - Add configurable rsync verbosity.
 - Respect SSH configuration when no port override is set.
+- Allow Linux-to-macOS backups to disable incompatible ACL preservation.
+- Retain readable data from rsync exit-23 runs as partial snapshots.
 
 ## v1.2.0
 
