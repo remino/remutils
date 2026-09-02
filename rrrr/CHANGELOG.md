@@ -2,10 +2,15 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v1.1.0](#v110)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Add a built-in APFS sparse bundle storage provider for macOS.
 
 ## v1.1.0
 

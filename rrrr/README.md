@@ -13,6 +13,7 @@ Create snapshot-style rsync backups over SSH.
     - [Host directory layout](#host-directory-layout)
         - [`config`](#config)
     - [Storage hooks](#storage-hooks)
+    - [Built-in APFS sparse bundle storage](#built-in-apfs-sparse-bundle-storage)
     - [Built-in ext4 image storage](#built-in-ext4-image-storage)
     - [`filters` (optional)](#filters-optional)
 - [Usage](#usage)
@@ -63,8 +64,9 @@ variables are required:
 
 - `REMOTE_USER` – SSH user to connect as.
 - `SSH_KEY` – private key on the backup host.
-- `BACKUP_ROOT` – local directory that stores the snapshots, unless an optional
-  storage mount hook sets it.
+
+Set `BACKUP_ROOT` to the local directory that stores snapshots when not using a
+storage provider or optional mount hook.
 
 Common optional variables:
 
@@ -94,23 +96,26 @@ unmount hook when it exits, including after an rsync failure or interruption.
 The functions make the storage backend platform-specific while the backup runner
 remains portable.
 
-For example, a macOS APFS sparse image can be used without making `hdiutil` a
-global `rrrr` dependency:
+### Built-in APFS sparse bundle storage
+
+On macOS, set `STORAGE_PROVIDER="apfs-sparsebundle"` to keep a host's snapshots
+in one APFS sparse bundle. `rrrr` creates the bundle on its first run, mounts it
+for the backup, and detaches it when the run finishes or fails.
 
 ```bash
-IMAGE_PATH="$HOME/Backups/webhost.sparseimage"
-IMAGE_MOUNTPOINT="/Volumes/rrrr-webhost"
-
-rrrr_storage_mount() {
-  mkdir -p "$IMAGE_MOUNTPOINT"
-  hdiutil attach "$IMAGE_PATH" -nobrowse -mountpoint "$IMAGE_MOUNTPOINT"
-  BACKUP_ROOT="$IMAGE_MOUNTPOINT"
-}
-
-rrrr_storage_unmount() {
-  hdiutil detach "$BACKUP_ROOT"
-}
+STORAGE_PROVIDER="apfs-sparsebundle"
+STORAGE_IMAGE="$HOME/Documents/Backups/webhost.sparsebundle"
+STORAGE_IMAGE_SIZE="500g"
 ```
+
+`STORAGE_IMAGE_SIZE` is required only when creating the bundle. It is the
+maximum virtual capacity; a sparse bundle consumes host filesystem space only as
+backup data is stored. `STORAGE_MOUNTPOINT` is optional and defaults to
+`/Volumes/rrrr-<hostname>`. Set `STORAGE_VOLUME_NAME` to change the APFS volume
+label; it defaults to `rrrr-<hostname>`.
+
+The provider requires macOS `hdiutil` and access to both the image location and
+the mountpoint. Do not combine it with custom storage hooks.
 
 ### Built-in ext4 image storage
 

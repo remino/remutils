@@ -25,9 +25,12 @@ STORAGE_HOOK_ACTIVE=0
 STORAGE_PROVIDER=""
 STORAGE_IMAGE=""
 STORAGE_IMAGE_SIZE_MIB=""
+STORAGE_IMAGE_SIZE=""
+STORAGE_VOLUME_NAME=""
 STORAGE_MOUNTPOINT=""
 STORAGE_MOUNTPOINT_CREATED=0
 STORAGE_LOOP_DEVICE=""
+STORAGE_APFS_ATTACHED=0
 STORAGE_ELEVATE_USER=""
 RETENTION_ALL_FILE=""
 RETENTION_KEEP_FILE=""
@@ -179,9 +182,12 @@ rrrr_reset_config_to_defaults() {
 	STORAGE_PROVIDER=""
 	STORAGE_IMAGE=""
 	STORAGE_IMAGE_SIZE_MIB=""
+	STORAGE_IMAGE_SIZE=""
+	STORAGE_VOLUME_NAME=""
 	STORAGE_MOUNTPOINT=""
 	STORAGE_MOUNTPOINT_CREATED=0
 	STORAGE_LOOP_DEVICE=""
+	STORAGE_APFS_ATTACHED=0
 	STORAGE_ELEVATE_USER=""
 }
 
@@ -320,6 +326,15 @@ rrrr_prepare_storage() {
 			log "Mounting ext4 image storage..."
 			rrrr_ext4_image_mount
 			;;
+		apfs-sparsebundle)
+			if declare -F rrrr_storage_mount > /dev/null || declare -F rrrr_storage_unmount > /dev/null; then
+				die "STORAGE_PROVIDER cannot be combined with custom storage hooks"
+			fi
+
+			STORAGE_HOOK_ACTIVE=1
+			log "Mounting APFS sparse bundle storage..."
+			rrrr_apfs_sparsebundle_mount
+			;;
 		*) die "Unsupported STORAGE_PROVIDER: ${STORAGE_PROVIDER}" ;;
 	esac
 }
@@ -327,6 +342,7 @@ rrrr_prepare_storage() {
 rrrr_release_storage() {
 	case "${STORAGE_PROVIDER}" in
 		ext4-image) rrrr_ext4_image_unmount ;;
+		apfs-sparsebundle) rrrr_apfs_sparsebundle_unmount ;;
 		"") rrrr_storage_unmount ;;
 		*) return 0 ;;
 	esac
@@ -449,6 +465,51 @@ rrrr_ext4_image_unmount() {
 			status=1
 		fi
 		STORAGE_LOOP_DEVICE=""
+	fi
+
+	if [ "${STORAGE_MOUNTPOINT_CREATED}" -eq 1 ] && [ -d "${STORAGE_MOUNTPOINT}" ]; then
+		rmdir "${STORAGE_MOUNTPOINT}" || status=1
+	fi
+
+	return "${status}"
+}
+
+rrrr_apfs_sparsebundle_mount() {
+	require_cmd dirname
+	require_cmd hdiutil
+	require_cmd rmdir
+
+	[ -n "${STORAGE_IMAGE}" ] || die "STORAGE_IMAGE must be set when STORAGE_PROVIDER=apfs-sparsebundle"
+
+	if [ ! -e "${STORAGE_IMAGE}" ]; then
+		[ -n "${STORAGE_IMAGE_SIZE}" ] || die "STORAGE_IMAGE_SIZE must be set when creating an APFS sparse bundle"
+
+		mkdir -p "$(dirname "${STORAGE_IMAGE}")"
+		STORAGE_VOLUME_NAME="${STORAGE_VOLUME_NAME:-rrrr-${HOST_ARG}}"
+		log "Creating APFS sparse bundle: ${STORAGE_IMAGE} (${STORAGE_IMAGE_SIZE})"
+		hdiutil create -size "${STORAGE_IMAGE_SIZE}" -type SPARSEBUNDLE -fs APFS -volname "${STORAGE_VOLUME_NAME}" "${STORAGE_IMAGE}"
+	elif [ ! -d "${STORAGE_IMAGE}" ]; then
+		die "STORAGE_IMAGE must be an APFS sparse bundle directory: ${STORAGE_IMAGE}"
+	fi
+
+	if [ -z "${STORAGE_MOUNTPOINT}" ]; then
+		STORAGE_MOUNTPOINT="/Volumes/rrrr-${HOST_ARG}"
+		STORAGE_MOUNTPOINT_CREATED=1
+	fi
+	mkdir -p "${STORAGE_MOUNTPOINT}"
+	hdiutil attach "${STORAGE_IMAGE}" -nobrowse -mountpoint "${STORAGE_MOUNTPOINT}"
+	STORAGE_APFS_ATTACHED=1
+	BACKUP_ROOT="${STORAGE_MOUNTPOINT}"
+}
+
+rrrr_apfs_sparsebundle_unmount() {
+	local status=0
+
+	if [ "${STORAGE_APFS_ATTACHED}" -eq 1 ]; then
+		if ! hdiutil detach "${STORAGE_MOUNTPOINT}"; then
+			status=1
+		fi
+		STORAGE_APFS_ATTACHED=0
 	fi
 
 	if [ "${STORAGE_MOUNTPOINT_CREATED}" -eq 1 ] && [ -d "${STORAGE_MOUNTPOINT}" ]; then

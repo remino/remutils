@@ -89,6 +89,27 @@ set -euo pipefail
 printf 'umount %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
 EOF
 
+	cat << 'EOF' > "$STUB_DIR/hdiutil"
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'hdiutil %s\n' "$*" >> "$RRRR_TEST_STORAGE_LOG"
+
+case "$1" in
+	create)
+		mkdir -p "${!#}"
+		;;
+	attach)
+		for ((i = 1; i <= $#; i += 1)); do
+			if [ "${!i}" = "-mountpoint" ]; then
+				j=$((i + 1))
+				mkdir -p "${!j}"
+				break
+			fi
+		done
+		;;
+esac
+EOF
+
 	cat << 'EOF' > "$STUB_DIR/sudo"
 #!/usr/bin/env bash
 set -euo pipefail
@@ -102,7 +123,7 @@ fi
 exec "$@"
 EOF
 
-	for cmd in dd mkfs.ext4 losetup mount sudo umount; do
+	for cmd in dd hdiutil mkfs.ext4 losetup mount sudo umount; do
 		chmod +x "$STUB_DIR/$cmd"
 	done
 }
@@ -235,6 +256,29 @@ EOF
 	grep -Fx -- "mount -t ext4 /dev/loop-test $RRRR_TEST_MOUNTPOINT" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "umount $RRRR_TEST_MOUNTPOINT" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "losetup -d /dev/loop-test" "$RRRR_TEST_STORAGE_LOG"
+}
+
+@test "creates, mounts, and unmounts an APFS sparse bundle" {
+	local host="mac-image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.sparsebundle"
+	local mountpoint="$TEST_ROOT/mounts/$host"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="apfs-sparsebundle"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE="16g"
+STORAGE_MOUNTPOINT="${mountpoint}"
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ -d "$image" ]
+	[ -d "$mountpoint/snapshots/$(date +%F)" ]
+	grep -Fx -- "hdiutil create -size 16g -type SPARSEBUNDLE -fs APFS -volname rrrr-$host $image" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 }
 
 @test "runs storage hooks around a backup" {

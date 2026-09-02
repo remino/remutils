@@ -70,6 +70,18 @@ The mount hook must set \fBBACKUP_ROOT\fR to an existing writable directory.
 rrrr calls the mount hook before preparing backup paths and calls the unmount
 hook whenever it exits, including after rsync fails or is interrupted. This
 keeps the storage backend platform-specific while rrrr remains portable.
+.SS Built-in APFS sparse bundle storage
+On macOS, set \fBSTORAGE_PROVIDER=apfs-sparsebundle\fR to store a host's
+snapshots in one APFS sparse bundle. Set \fBSTORAGE_IMAGE\fR to the sparse
+bundle path. When it does not exist, \fBSTORAGE_IMAGE_SIZE\fR is required and
+sets its maximum virtual capacity. The sparse bundle consumes host filesystem
+space only as backup data is stored.
+.PP
+rrrr mounts the sparse bundle for the backup and detaches it when rrrr exits,
+including after a failed run. \fBSTORAGE_MOUNTPOINT\fR is optional and defaults
+to \fB/Volumes/rrrr-<hostname>\fR. Set \fBSTORAGE_VOLUME_NAME\fR to change the
+APFS volume label; it defaults to \fBrrrr-<hostname>\fR. The provider requires
+macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
 .SS Built-in ext4 image storage
 On Linux systems, set \fBSTORAGE_PROVIDER=ext4-image\fR to store a host's
 snapshots in one ext4 filesystem image. Set \fBSTORAGE_IMAGE\fR to the image
