@@ -24,13 +24,15 @@ setup() {
 	STUB_DIR="$TEST_ROOT/bin"
 	mkdir -p "$STUB_DIR"
 	export PATH="$STUB_DIR:$PATH"
-	unset RRRR_TEST_RSYNC_FAIL RRRR_TEST_RSYNC_STATUS
+	unset RRRR_TEST_RM_FAIL RRRR_TEST_RSYNC_FAIL RRRR_TEST_RSYNC_STATUS
 
 	_create_stub_rsync
+	_create_stub_rm
 	_create_stub_storage_commands
 }
 
 teardown() {
+	PATH="${PATH#"$STUB_DIR:"}"
 	rm -rf "$TEST_ROOT"
 }
 
@@ -50,6 +52,22 @@ if [ "${RRRR_TEST_RSYNC_FAIL:-0}" = "1" ]; then
 fi
 EOF
 	chmod +x "$STUB_DIR/rsync"
+}
+
+_create_stub_rm() {
+	cat << 'EOF' > "$STUB_DIR/rm"
+#!/usr/bin/env bash
+set -euo pipefail
+
+for arg in "$@"; do
+	if [ "${RRRR_TEST_RM_FAIL:-0}" = "1" ] && [[ "$arg" == *.incomplete.* ]]; then
+		exit 1
+	fi
+done
+
+exec /bin/rm "$@"
+EOF
+	chmod +x "$STUB_DIR/rm"
 }
 
 _create_stub_storage_commands() {
@@ -456,6 +474,31 @@ EOF
 	run env RRRR_TEST_RSYNC_FAIL=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 12 ]
+	[ "$(cat "$hooks_log")" = $'mount\nunmount' ]
+}
+
+@test "runs the unmount hook when incomplete snapshot cleanup fails" {
+	local host="failed-cleanup"
+	_write_basic_config "$host"
+
+	local storage_root="$TEST_ROOT/failed-cleanup-storage"
+	local hooks_log="$TEST_ROOT/failed-cleanup-storage-hooks.log"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+rrrr_storage_mount() {
+	mkdir -p "${storage_root}"
+	BACKUP_ROOT="${storage_root}"
+	printf 'mount\\n' >> "${hooks_log}"
+}
+
+rrrr_storage_unmount() {
+	printf 'unmount\\n' >> "${hooks_log}"
+}
+EOF
+
+	run env RRRR_TEST_RM_FAIL=1 RRRR_TEST_RSYNC_FAIL=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 12 ]
+	[[ "$output" == *"could not remove incomplete snapshot"* ]]
 	[ "$(cat "$hooks_log")" = $'mount\nunmount' ]
 }
 

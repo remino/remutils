@@ -60,7 +60,9 @@ rrrr_cleanup() {
 
 	if [ -n "${SNAP_TMP_DIR:-}" ] && [ -d "${SNAP_TMP_DIR}" ]; then
 		chmod -R u+w "${SNAP_TMP_DIR}" 2> /dev/null || true
-		rm -rf -- "${SNAP_TMP_DIR}"
+		if ! rm -rf -- "${SNAP_TMP_DIR}"; then
+			printf "%s\n" "rrrr: ERROR: could not remove incomplete snapshot: ${SNAP_TMP_DIR}" >&2
+		fi
 	fi
 
 	if [ "${STORAGE_HOOK_ACTIVE:-0}" -eq 1 ]; then
