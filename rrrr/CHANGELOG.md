@@ -2,12 +2,12 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.1.0](#v110)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.1.0
 
 - Add a built-in ext4 image storage provider for Linux and QNAP NAS systems.
 - Support Bash 3 so rrrr can run on QNAP's bundled shell.
