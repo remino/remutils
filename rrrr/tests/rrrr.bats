@@ -16,6 +16,8 @@ setup() {
 	export RRRR_TEST_BACKUP_ROOT="$TEST_ROOT/backups"
 	export RRRR_TEST_RSYNC_LOG="$TEST_ROOT/rsync.log"
 	export RRRR_TEST_STORAGE_LOG="$TEST_ROOT/storage.log"
+	export TMPDIR="$TEST_ROOT/tmp"
+	mkdir -p "$TMPDIR"
 	: > "$RRRR_TEST_RSYNC_LOG"
 	: > "$RRRR_TEST_STORAGE_LOG"
 
@@ -107,6 +109,11 @@ case "$1" in
 			fi
 		done
 		;;
+	detach)
+		if [ "${RRRR_TEST_REMOVE_MOUNTPOINT:-0}" = "1" ]; then
+			rm -rf "$2"
+		fi
+		;;
 esac
 EOF
 
@@ -160,15 +167,18 @@ EOF
 }
 
 @test "prints version with -v and accepts -V for compatibility" {
+	local expected_version
+	expected_version="$(sed -nE 's/^VERSION="([^"]+)"/rrrr \1/p' "$BATS_TEST_DIRNAME/../rrrr")"
+
 	run "$BATS_TEST_DIRNAME/../rrrr" -v
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "rrrr 1.1.0" ]
+	[ "$output" = "$expected_version" ]
 
 	run "$BATS_TEST_DIRNAME/../rrrr" -V
 
 	[ "$status" -eq 0 ]
-	[ "$output" = "rrrr 1.1.0" ]
+	[ "$output" = "$expected_version" ]
 }
 
 @test "rejects an unsafe hostname" {
@@ -291,6 +301,24 @@ EOF
 	grep -Fx -- "hdiutil create -size 16g -type SPARSEBUNDLE -fs APFS -volname rrrr-$host $image" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
+}
+
+@test "uses a private temporary mountpoint for an APFS sparse bundle by default" {
+	local host="default-mac-image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.sparsebundle"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="apfs-sparsebundle"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE="16g"
+EOF
+
+	run env RRRR_TEST_REMOVE_MOUNTPOINT=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -E -- "^hdiutil attach ${image} -nobrowse -mountpoint ${TMPDIR}/rrrr-${host}-[0-9]+$" "$RRRR_TEST_STORAGE_LOG"
+	grep -E -- "^hdiutil detach ${TMPDIR}/rrrr-${host}-[0-9]+$" "$RRRR_TEST_STORAGE_LOG"
 }
 
 @test "runs storage hooks around a backup" {

@@ -13,6 +13,7 @@
 - Add a built-in APFS sparse bundle storage provider for macOS.
 - Add `-v` as the documented version flag and retain `-V` as a compatibility
   alias.
+- Use a writable temporary mountpoint by default for APFS sparse bundles.
 
 ## v1.1.0
 

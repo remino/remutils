@@ -89,7 +89,7 @@ space only as backup data is stored.
 .PP
 rrrr mounts the sparse bundle for the backup and detaches it when rrrr exits,
 including after a failed run. \fBSTORAGE_MOUNTPOINT\fR is optional and defaults
-to \fB/Volumes/rrrr-<hostname>\fR. Set \fBSTORAGE_VOLUME_NAME\fR to change the
+to a private temporary directory. Set \fBSTORAGE_VOLUME_NAME\fR to change the
 APFS volume label; it defaults to \fBrrrr-<hostname>\fR. The provider requires
 macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
 .SS Built-in ext4 image storage

@@ -493,7 +493,7 @@ rrrr_apfs_sparsebundle_mount() {
 	fi
 
 	if [ -z "${STORAGE_MOUNTPOINT}" ]; then
-		STORAGE_MOUNTPOINT="/Volumes/rrrr-${HOST_ARG}"
+		STORAGE_MOUNTPOINT="${TMPDIR:-/tmp}/rrrr-${HOST_ARG}-$$"
 		STORAGE_MOUNTPOINT_CREATED=1
 	fi
 	mkdir -p "${STORAGE_MOUNTPOINT}"
