@@ -75,6 +75,8 @@ Common optional variables:
   argument).
 - `REMOTE_SSH_PORT` – SSH port (defaults to `22`).
 - `REMOTE_ROOT` – remote path to sync (defaults to `/`).
+- `RSYNC_VERBOSE` – rsync output level: `0` (default), `1` (`-v`), `2` (`-vv`),
+  or `3` (`-vvv`).
 - `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention counts.
 - `FILTERS_FILE` – alternate path to an rsync filter file (if not using the
   host-local `filters` file).

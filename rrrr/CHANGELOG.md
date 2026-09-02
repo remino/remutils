@@ -2,11 +2,16 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v1.2.0](#v120)
 - [v1.1.0](#v110)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Add configurable rsync verbosity.
 
 ## v1.2.0
 

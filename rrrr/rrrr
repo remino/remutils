@@ -42,11 +42,13 @@ REMOTE_SSH_PORT="22"
 SSH_KEY=""
 BACKUP_ROOT=""
 REMOTE_ROOT="/"
+RSYNC_VERBOSE="0"
 KEEP_DAILY=7
 KEEP_WEEKLY=4
 KEEP_MONTHLY=6
 
 declare -a RSYNC_FILTER_ARGS=()
+declare -a RSYNC_VERBOSE_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 rrrr_cleanup() {
@@ -170,6 +172,7 @@ rrrr_reset_config_to_defaults() {
 	SSH_KEY=""
 	BACKUP_ROOT=""
 	REMOTE_ROOT="/"
+	RSYNC_VERBOSE="0"
 	KEEP_DAILY=7
 	KEEP_WEEKLY=4
 	KEEP_MONTHLY=6
@@ -531,6 +534,7 @@ rrrr_run_backup() {
 	rrrr_prepare_snapshot_dir
 	rrrr_build_link_dest_args
 	rrrr_build_filter_args
+	rrrr_build_rsync_verbose_args
 	rrrr_build_ssh_command
 
 	rrrr_run_rsync
@@ -605,6 +609,18 @@ rrrr_build_filter_args() {
 	fi
 }
 
+rrrr_build_rsync_verbose_args() {
+	RSYNC_VERBOSE_ARGS=()
+
+	case "${RSYNC_VERBOSE}" in
+		"" | 0) ;;
+		1) RSYNC_VERBOSE_ARGS=(-v) ;;
+		2) RSYNC_VERBOSE_ARGS=(-vv) ;;
+		3) RSYNC_VERBOSE_ARGS=(-vvv) ;;
+		*) die "RSYNC_VERBOSE must be 0, 1, 2, or 3" ;;
+	esac
+}
+
 rrrr_build_ssh_command() {
 	SSH_CMD="ssh -p ${REMOTE_SSH_PORT} -i ${SSH_KEY} -o BatchMode=no -o StrictHostKeyChecking=accept-new"
 }
@@ -614,7 +630,7 @@ rrrr_run_rsync() {
 	log "Remote: ${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}"
 	log "Log: ${LOG_FILE}"
 
-	rsync -aHAX --numeric-ids --delete \
+	rsync -aHAX "${RSYNC_VERBOSE_ARGS[@]}" --numeric-ids --delete \
 		--info=stats2,progress2 \
 		"${RSYNC_FILTER_ARGS[@]}" \
 		"${LINK_DEST_ARGS[@]}" \

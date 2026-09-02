@@ -262,6 +262,19 @@ EOF
 	grep -Fx -- "ssh -p 22 -i $TEST_ROOT/id_rrrr -o BatchMode=no -o StrictHostKeyChecking=accept-new" "$RRRR_TEST_RSYNC_LOG"
 }
 
+@test "supports configurable rsync verbosity" {
+	local host="verbose"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_VERBOSE=2
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "-vv" "$RRRR_TEST_RSYNC_LOG"
+}
+
 @test "creates, mounts, and unmounts an ext4 image" {
 	local host="image"
 	_write_basic_config "$host"
