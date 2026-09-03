@@ -30,6 +30,10 @@ rrrr_cleanup() {
 		STORAGE_HOOK_ACTIVE=0
 	fi
 
+	if [ "${LOCK_ACTIVE:-0}" -eq 1 ]; then
+		rrrr_release_host_lock || printf "%s\n" "rrrr: ERROR: could not release backup lock" >&2
+	fi
+
 	for tmp_file in "${RETENTION_ALL_FILE}" "${RETENTION_KEEP_FILE}"; do
 		if [ -n "${tmp_file}" ] && [ -f "${tmp_file}" ]; then
 			rm -f "${tmp_file}"
@@ -190,6 +194,7 @@ rrrr_reset_state() {
 	HOST_CONFIG_DIR=""
 	HOST_FILTER_FILE=""
 	DATE_TODAY=""
+	SNAPSHOT_NAME=""
 	SNAP_DIR=""
 	SNAP_TMP_DIR=""
 	SNAPS_DIR=""
@@ -210,6 +215,9 @@ rrrr_reset_state() {
 	STORAGE_APFS_ATTACHED=0
 	STORAGE_ELEVATE_USER=""
 	STORAGE_STATE_FILE=""
+	STATE_DIR=""
+	LOCK_DIR=""
+	LOCK_ACTIVE=0
 	RETENTION_ALL_FILE=""
 	RETENTION_KEEP_FILE=""
 	DEFAULT_FILTERS_FILE=""
@@ -229,6 +237,7 @@ rrrr_reset_config() {
 	RSYNC_PRESERVE_ACLS="1"
 	RSYNC_KEEP_PARTIAL="0"
 	RSYNC_ACCEPT_PARTIAL="0"
+	KEEP_HOURLY=24
 	KEEP_DAILY=7
 	KEEP_WEEKLY=4
 	KEEP_MONTHLY=6
@@ -326,6 +335,7 @@ rrrr_load_host_config() {
 	rrrr_source_host_config "${HOST_CONFIG_DIR}"
 	rrrr_set_derived_defaults
 	rrrr_prepare_storage_state
+	rrrr_acquire_host_lock
 }
 
 rrrr_prepare_filters() {
@@ -411,7 +421,39 @@ rrrr_prepare_storage_state() {
 	local state_home
 
 	state_home="${XDG_STATE_HOME:-${HOME}/.local/state}"
-	STORAGE_STATE_FILE="${state_home}/rrrr/${HOST_ARG}.storage"
+	STATE_DIR="${state_home}/rrrr"
+	mkdir -p "${STATE_DIR}"
+	chmod 700 "${STATE_DIR}"
+	STORAGE_STATE_FILE="${STATE_DIR}/${HOST_ARG}.storage"
+	LOCK_DIR="${STATE_DIR}/${HOST_ARG}.lock"
+}
+
+rrrr_acquire_host_lock() {
+	local lock_pid=""
+
+	if mkdir "${LOCK_DIR}" 2> /dev/null; then
+		printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+		LOCK_ACTIVE=1
+		return 0
+	fi
+
+	if [ -f "${LOCK_DIR}/pid" ]; then
+		read -r lock_pid < "${LOCK_DIR}/pid" || true
+	fi
+	if [[ "${lock_pid}" =~ ^[0-9]+$ ]] && ! kill -0 "${lock_pid}" 2> /dev/null; then
+		rm -f "${LOCK_DIR}/pid"
+		rmdir "${LOCK_DIR}" 2> /dev/null || die "Another rrrr process is using ${HOST_ARG}"
+		rrrr_acquire_host_lock
+		return
+	fi
+
+	die "Another rrrr process is using ${HOST_ARG}"
+}
+
+rrrr_release_host_lock() {
+	rm -f "${LOCK_DIR}/pid" || return 1
+	rmdir "${LOCK_DIR}" || return 1
+	LOCK_ACTIVE=0
 }
 
 rrrr_has_managed_storage() {
@@ -479,9 +521,10 @@ rrrr_validate_storage() {
 
 rrrr_prepare_runtime() {
 	DATE_TODAY="$(date +%F)"
+	SNAPSHOT_NAME="$(date '+%Y-%m-%dT%H%M%S%z')"
 	SNAPS_DIR="${SNAPS_DIR:-${BACKUP_ROOT}/snapshots}"
 	PARTIALS_DIR="${PARTIALS_DIR:-${BACKUP_ROOT}/partials}"
-	SNAP_DIR="${SNAPS_DIR}/${DATE_TODAY}"
+	SNAP_DIR="${SNAPS_DIR}/${SNAPSHOT_NAME}"
 	LATEST_LINK="${LATEST_LINK:-${BACKUP_ROOT}/latest}"
 	LOG_DIR="${LOG_DIR:-${BACKUP_ROOT}/logs}"
 	LOG_FILE="${LOG_FILE:-${LOG_DIR}/${DATE_TODAY}.log}"
@@ -689,11 +732,17 @@ rrrr_run_backup() {
 }
 
 rrrr_prepare_snapshot_dir() {
+	local suffix=1
+
 	if [ -e "${SNAP_DIR}" ]; then
-		die "Snapshot already exists for today: ${SNAP_DIR}"
+		while [ -e "${SNAPS_DIR}/${SNAPSHOT_NAME}-${suffix}" ]; do
+			suffix=$((suffix + 1))
+		done
+		SNAPSHOT_NAME="${SNAPSHOT_NAME}-${suffix}"
+		SNAP_DIR="${SNAPS_DIR}/${SNAPSHOT_NAME}"
 	fi
 
-	SNAP_TMP_DIR="${SNAPS_DIR}/.${DATE_TODAY}.incomplete.$$"
+	SNAP_TMP_DIR="${SNAPS_DIR}/.${SNAPSHOT_NAME}.incomplete.$$"
 	if [ -e "${SNAP_TMP_DIR}" ]; then
 		die "Temporary snapshot directory already exists: ${SNAP_TMP_DIR}"
 	fi
@@ -853,7 +902,7 @@ rrrr_publish_snapshot() {
 }
 
 rrrr_publish_partial_snapshot() {
-	local partial_dir="${PARTIALS_DIR}/${DATE_TODAY}.partial.$$"
+	local partial_dir="${PARTIALS_DIR}/${SNAPSHOT_NAME}.partial.$$"
 
 	mv "${SNAP_TMP_DIR}" "${partial_dir}"
 	SNAP_TMP_DIR=""
@@ -873,7 +922,7 @@ rrrr_update_latest() {
 }
 
 rrrr_apply_retention() {
-	log "Applying retention: daily=${KEEP_DAILY}, weekly=${KEEP_WEEKLY}, monthly=${KEEP_MONTHLY}"
+	log "Applying retention: hourly=${KEEP_HOURLY}, daily=${KEEP_DAILY}, weekly=${KEEP_WEEKLY}, monthly=${KEEP_MONTHLY}"
 
 	local snapshot_path d deleted=0
 	RETENTION_ALL_FILE="$(mktemp)"
@@ -891,21 +940,11 @@ rrrr_apply_retention() {
 		return
 	fi
 
-	if [ "${KEEP_DAILY}" -gt 0 ]; then
-		tail -n "${KEEP_DAILY}" "${RETENTION_ALL_FILE}" >> "${RETENTION_KEEP_FILE}"
-	fi
-
-	if [ "${KEEP_WEEKLY}" -gt 0 ]; then
-		while IFS= read -r d; do
-			if [ "$(rrrr_weekday "${d}" 2> /dev/null || echo "0")" = "7" ]; then
-				printf "%s\n" "${d}"
-			fi
-		done < "${RETENTION_ALL_FILE}" | tail -n "${KEEP_WEEKLY}" >> "${RETENTION_KEEP_FILE}"
-	fi
-
-	if [ "${KEEP_MONTHLY}" -gt 0 ]; then
-		awk -F- '$3=="01"{print $0}' "${RETENTION_ALL_FILE}" | tail -n "${KEEP_MONTHLY}" >> "${RETENTION_KEEP_FILE}"
-	fi
+	basename "${SNAP_DIR}" >> "${RETENTION_KEEP_FILE}"
+	rrrr_keep_newest_buckets "${KEEP_HOURLY}" hour
+	rrrr_keep_newest_buckets "${KEEP_DAILY}" day
+	rrrr_keep_newest_buckets "${KEEP_WEEKLY}" week
+	rrrr_keep_newest_buckets "${KEEP_MONTHLY}" month
 
 	sort -u "${RETENTION_KEEP_FILE}" -o "${RETENTION_KEEP_FILE}"
 	while IFS= read -r d; do
@@ -923,6 +962,54 @@ rrrr_apply_retention() {
 	RETENTION_KEEP_FILE=""
 
 	log "Retention done. Deleted ${deleted} snapshots."
+}
+
+rrrr_keep_newest_buckets() {
+	local count="$1"
+	local bucket="$2"
+	local snapshot key bucket_file
+
+	case "${count}" in
+		*[!0-9]* | "") die "Retention counts must be non-negative integers" ;;
+	esac
+	[ "${count}" -gt 0 ] || return 0
+
+	bucket_file="$(mktemp)"
+	while IFS= read -r snapshot; do
+		key="$(rrrr_snapshot_bucket "${bucket}" "${snapshot}")" || {
+			rm -f "${bucket_file}"
+			return 1
+		}
+		printf '%s\t%s\n' "${key}" "${snapshot}" >> "${bucket_file}"
+	done < "${RETENTION_ALL_FILE}"
+
+	sort -r "${bucket_file}" | awk -F '\t' -v limit="${count}" '!seen[$1]++ && kept < limit { print $2; kept++ }' >> "${RETENTION_KEEP_FILE}"
+	rm -f "${bucket_file}"
+}
+
+rrrr_snapshot_bucket() {
+	local bucket="$1"
+	local snapshot="$2"
+	local snapshot_date="${snapshot:0:10}"
+
+	case "${bucket}" in
+		hour) printf '%s\n' "${snapshot:0:13}" ;;
+		day) printf '%s\n' "${snapshot_date}" ;;
+		week) rrrr_week_key "${snapshot_date}" ;;
+		month) printf '%s\n' "${snapshot:0:7}" ;;
+		*) return 1 ;;
+	esac
+}
+
+rrrr_week_key() {
+	local snapshot_date="$1"
+
+	if date -d "${snapshot_date}" +%G-%V > /dev/null 2>&1; then
+		date -d "${snapshot_date}" +%G-%V
+		return 0
+	fi
+
+	date -j -f "%F" "${snapshot_date}" +%G-%V
 }
 
 rrrr_main "$@"

@@ -107,8 +107,8 @@ are never made \fBlatest\fR and rrrr keeps exit status 23.
 Publish rsync exit-23 results as the current snapshot and update
 \fBlatest\fR (\fB1\fR); disabled by default.
 .TP
-\fBKEEP_DAILY\fR, \fBKEEP_WEEKLY\fR, \fBKEEP_MONTHLY\fR
-Retention counts (defaults: 7, 4, 6).
+\fBKEEP_HOURLY\fR, \fBKEEP_DAILY\fR, \fBKEEP_WEEKLY\fR, \fBKEEP_MONTHLY\fR
+Retention bucket counts (defaults: 24, 7, 4, 6).
 .TP
 \fBFILTERS_FILE\fR
 Path to a custom rsync filter file (used when a host-local \fBfilters\fR file is
@@ -180,7 +180,7 @@ The workflow is:
 Mount optional backup storage, validate required commands, and confirm the SSH
 key/filter file exist.
 .IP "2." 4
-Create \fBsnapshots/YYYY\-MM\-DD\fR and compute a prior snapshot for
+Create a timestamped \fBsnapshots/YYYY\-MM\-DDTHHMMSS+ZZZZ\fR directory and compute a prior snapshot for
 \fB\-\-link\-dest\fR when the \fBlatest\fR symlink points to a valid directory.
 .IP "3." 4
 Run \fBrsync -aHAX --numeric-ids --delete\fR with the configured filter file.
@@ -190,15 +190,17 @@ Output is mirrored to
 Publish the completed temporary snapshot, update \fBlatest\fR, and prune old
 snapshots based on the retention policy. If rsync fails, the temporary
 snapshot is removed and \fBlatest\fR is unchanged, so the backup can be
-retried on the same day:
+retried safely:
 .PD 0
 .RS
 .IP \- 4
-Keep the newest \fBKEEP_DAILY\fR snapshots.
+Keep the newest snapshot from each of the \fBKEEP_HOURLY\fR hourly buckets.
 .IP \- 4
-Keep the newest \fBKEEP_WEEKLY\fR whose date is a Sunday.
+Keep the newest snapshot from each of the \fBKEEP_DAILY\fR daily buckets.
 .IP \- 4
-Keep the newest \fBKEEP_MONTHLY\fR whose day is 01.
+Keep the newest snapshot from each of the \fBKEEP_WEEKLY\fR ISO-week buckets.
+.IP \- 4
+Keep the newest snapshot from each of the \fBKEEP_MONTHLY\fR monthly buckets.
 .RE
 .PD
 .SH FILES
@@ -207,7 +209,7 @@ Keep the newest \fBKEEP_MONTHLY\fR whose day is 01.
 Host configuration directories.
 .TP
 \fBBACKUP_ROOT/snapshots\fR
-Daily snapshot directories (\fBYYYY\-MM\-DD\fR).
+Timestamped snapshot directories.
 .TP
 \fBBACKUP_ROOT/latest\fR
 Relative symlink to the most recent snapshot.

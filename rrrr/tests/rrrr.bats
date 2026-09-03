@@ -8,6 +8,10 @@ print(os.path.realpath(sys.argv[1]))
 PY
 }
 
+_newest_snapshot_path() {
+	find "$1/snapshots" -mindepth 1 -maxdepth 1 -type d -name '20*' | sort | tail -n 1
+}
+
 setup() {
 	TEST_ROOT="$(mktemp -d)"
 	export XDG_CONFIG_HOME="$TEST_ROOT/config"
@@ -177,6 +181,7 @@ REMOTE_USER="backup"
 REMOTE_SSH_HOST="${host}.example"
 SSH_KEY="${ssh_key}"
 BACKUP_ROOT="${RRRR_TEST_BACKUP_ROOT}/${host}"
+KEEP_HOURLY=0
 KEEP_DAILY=1
 KEEP_WEEKLY=0
 KEEP_MONTHLY=0
@@ -229,6 +234,20 @@ EOF
 	[[ "$output" == *"Hostname must be a single safe path component"* ]]
 }
 
+@test "prevents concurrent operations for the same host" {
+	local host="locked"
+	_write_basic_config "$host"
+
+	local lock_dir="$XDG_STATE_HOME/rrrr/$host.lock"
+	mkdir -p "$lock_dir"
+	printf '%s\n' "$$" > "$lock_dir/pid"
+
+	run "$BATS_TEST_DIRNAME/../rrrr" backup "$host"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"Another rrrr process is using $host"* ]]
+}
+
 @test "runs backup using host config and applies filter file" {
 	local host="webhost"
 	_write_basic_config "$host"
@@ -241,15 +260,14 @@ EOF
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"Backup complete"* ]]
 
-	local today snapshot_dir latest_link old_snapshot
-	today="$(date +%F)"
-	snapshot_dir="$host_root/snapshots/$today"
+	local snapshot_dir latest_link old_snapshot
+	snapshot_dir="$(_newest_snapshot_path "$host_root")"
 	latest_link="$host_root/latest"
 	old_snapshot="$host_root/snapshots/2000-01-01"
 
 	[ -d "$snapshot_dir" ]
 	[ -L "$latest_link" ]
-	[ "$(readlink "$latest_link")" = "snapshots/$today" ]
+	[ "$(readlink "$latest_link")" = "snapshots/$(basename "$snapshot_dir")" ]
 	[ ! -d "$old_snapshot" ]
 
 	local filter_arg used_path expected_path
@@ -358,7 +376,7 @@ EOF
 
 	local partials=()
 	shopt -s nullglob
-	partials=("$RRRR_TEST_BACKUP_ROOT/$host/partials/$(date +%F).partial."*)
+	partials=("$RRRR_TEST_BACKUP_ROOT/$host/partials/20"*.partial.*)
 	[ "${#partials[@]}" -eq 1 ]
 }
 
@@ -372,7 +390,7 @@ EOF
 	run env RRRR_TEST_RSYNC_STATUS=23 "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
-	[ -d "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+	[ -n "$(_newest_snapshot_path "$RRRR_TEST_BACKUP_ROOT/$host")" ]
 	[ -L "$RRRR_TEST_BACKUP_ROOT/$host/latest" ]
 	[ ! -d "$RRRR_TEST_BACKUP_ROOT/$host/partials" ] || [ -z "$(find "$RRRR_TEST_BACKUP_ROOT/$host/partials" -mindepth 1 -print -quit)" ]
 }
@@ -395,7 +413,7 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[ -f "$image" ]
-	[ -d "$RRRR_TEST_MOUNTPOINT/snapshots/$(date +%F)" ]
+	[ -n "$(_newest_snapshot_path "$RRRR_TEST_MOUNTPOINT")" ]
 	grep -Fx -- "dd if=/dev/zero of=$image bs=1M count=16" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "mkfs.ext4 -F -O ^metadata_csum_seed $image" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "sudo -n -u admin losetup -f" "$RRRR_TEST_STORAGE_LOG"
@@ -422,7 +440,7 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[ -d "$image" ]
-	[ -d "$mountpoint/snapshots/$(date +%F)" ]
+	[ -n "$(_newest_snapshot_path "$mountpoint")" ]
 	grep -Fx -- "hdiutil create -size 16g -type SPARSEBUNDLE -fs APFS -volname rrrr-$host $image" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
@@ -501,7 +519,7 @@ EOF
 	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
-	[ -d "$storage_root/snapshots/$(date +%F)" ]
+	[ -n "$(_newest_snapshot_path "$storage_root")" ]
 	[ "$(cat "$hooks_log")" = $'mount\nunmount' ]
 }
 
@@ -588,7 +606,7 @@ EOF
 	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
-	[ -d "$RRRR_TEST_BACKUP_ROOT/$host/snapshots/$(date +%F)" ]
+	[ -n "$(_newest_snapshot_path "$RRRR_TEST_BACKUP_ROOT/$host")" ]
 }
 
 @test "uses latest snapshot as link-dest" {
@@ -620,12 +638,35 @@ EOF
 KEEP_DAILY=1
 KEEP_WEEKLY=1
 KEEP_MONTHLY=2
+KEEP_HOURLY=0
 EOF
 
 	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
 	[ ! -d "$host_root/snapshots/1999-12-31" ]
-	[ -d "$host_root/snapshots/2000-01-01" ]
 	[ -d "$host_root/snapshots/2000-01-02" ]
+}
+
+@test "keeps the newest snapshot from each hourly bucket" {
+	local host="hourly-retention"
+	_write_basic_config "$host"
+
+	local host_root="$RRRR_TEST_BACKUP_ROOT/$host"
+	mkdir -p "$host_root/snapshots/2099-01-01T010000+0000"
+	mkdir -p "$host_root/snapshots/2099-01-01T013000+0000"
+	mkdir -p "$host_root/snapshots/2099-01-01T020000+0000"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+KEEP_HOURLY=2
+KEEP_DAILY=0
+KEEP_WEEKLY=0
+KEEP_MONTHLY=0
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	[ ! -d "$host_root/snapshots/2099-01-01T010000+0000" ]
+	[ -d "$host_root/snapshots/2099-01-01T013000+0000" ]
+	[ -d "$host_root/snapshots/2099-01-01T020000+0000" ]
 }

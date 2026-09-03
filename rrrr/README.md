@@ -84,7 +84,8 @@ Common optional variables:
   instead of deleting the temporary snapshot (`0`, default).
 - `RSYNC_ACCEPT_PARTIAL` – publish rsync exit-23 results as the current snapshot
   and update `latest` (`1`); disabled by default.
-- `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention counts.
+- `KEEP_HOURLY`, `KEEP_DAILY`, `KEEP_WEEKLY`, `KEEP_MONTHLY` – retention bucket
+  counts (defaults: `24`, `7`, `4`, `6`).
 - `FILTERS_FILE` – alternate path to an rsync filter file (if not using the
   host-local `filters` file).
 - `SNAPS_DIR`, `LOG_DIR`, `LATEST_LINK` – override default paths inside
@@ -191,6 +192,7 @@ REMOTE_USER="webbackup"
 REMOTE_SSH_HOST="webhost"
 SSH_KEY="/share/homes/admin/.ssh/webhost_backup_ed25519"
 BACKUP_ROOT="/share/external/usb/Backups/webhost"
+KEEP_HOURLY=24
 KEEP_DAILY=7
 KEEP_WEEKLY=4
 KEEP_MONTHLY=6
@@ -231,9 +233,10 @@ rrrr backup webhost
 rrrr unmount webhost
 ```
 
-The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log`, updates `latest`
-as a relative symlink to the published snapshot, and mirrors output to
-stdout/stderr. Each run performs:
+The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log`, publishes a
+timestamped snapshot such as `snapshots/2026-09-03T224501+0900`, updates
+`latest` as a relative symlink, and mirrors output to stdout/stderr. Each run
+performs:
 
 1. Validation of required commands and SSH key.
 2. A temporary snapshot directory creation and optional `--link-dest` reuse.
@@ -241,7 +244,13 @@ stdout/stderr. Each run performs:
 4. Publishing the completed snapshot, `latest` symlink update, and retention
    pruning.
 
+Runs are protected by a per-host lock under
+`${XDG_STATE_HOME:-$HOME/.local/state}/rrrr`, so a second backup cannot attach
+or write to the same storage concurrently. Retention keeps the newest snapshot
+from each of the configured hourly, daily, weekly, and monthly buckets; this
+makes additional manual runs safe without retaining every run indefinitely.
+
 If rsync fails, rrrr removes the temporary snapshot and leaves `latest`
-unchanged, so the backup can be retried on the same day.
+unchanged, so the backup can be retried safely.
 
 See `man rrrr` for the full reference.
