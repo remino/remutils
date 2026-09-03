@@ -1,5 +1,6 @@
 # rrrr
 
+Reliable Recursive Redundant RSync:  
 Create snapshot-style rsync backups over SSH.
 
 ⚠️ **Experimental**: Use at your own risk.
