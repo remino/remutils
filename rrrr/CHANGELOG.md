@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.0.0](#v200)
 - [v1.3.0](#v130)
 - [v1.2.0](#v120)
 - [v1.1.0](#v110)
@@ -10,7 +10,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.0.0
 
 - Add `backup`, `mount`, `unmount`, `help`, and `version` subcommands.
 - Retain `rrrr <hostname>` as a compatibility alias for
