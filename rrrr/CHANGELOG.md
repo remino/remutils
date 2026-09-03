@@ -2,14 +2,14 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v1.3.0](#v130)
 - [v1.2.0](#v120)
 - [v1.1.0](#v110)
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v1.3.0
 
 - Add configurable rsync verbosity.
 - Respect SSH configuration when no port override is set.
