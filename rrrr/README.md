@@ -231,8 +231,9 @@ rrrr backup webhost
 rrrr unmount webhost
 ```
 
-The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log` and mirrors the
-output to stdout/stderr. Each run performs:
+The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log`, updates `latest`
+as a relative symlink to the published snapshot, and mirrors output to
+stdout/stderr. Each run performs:
 
 1. Validation of required commands and SSH key.
 2. A temporary snapshot directory creation and optional `--link-dest` reuse.

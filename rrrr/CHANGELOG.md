@@ -16,6 +16,7 @@
 - Retain `rrrr <hostname>` as a compatibility alias for
   `rrrr backup <hostname>`.
 - Mount APFS sparse bundles at their macOS `/Volumes` location by default.
+- Make the `latest` snapshot symlink relative to its parent directory.
 
 ## v1.3.0
 

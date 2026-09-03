@@ -734,6 +734,36 @@ rrrr_resolve_link_target() {
 	fi
 }
 
+rrrr_relative_path() {
+	local from_dir="$1"
+	local target_path="$2"
+	local from_abs target_abs relative=""
+	local common=0 i
+	local -a from_parts=()
+	local -a target_parts=()
+	local IFS='/'
+
+	from_abs="$(rrrr_abspath "${from_dir}")" || return 1
+	target_abs="$(rrrr_abspath "${target_path}")" || return 1
+	read -r -a from_parts <<< "${from_abs#/}"
+	read -r -a target_parts <<< "${target_abs#/}"
+
+	while [ "${common}" -lt "${#from_parts[@]}" ] && [ "${common}" -lt "${#target_parts[@]}" ] && [ "${from_parts[common]}" = "${target_parts[common]}" ]; do
+		common=$((common + 1))
+	done
+
+	for ((i = common; i < ${#from_parts[@]}; i += 1)); do
+		relative="${relative}../"
+	done
+
+	for ((i = common; i < ${#target_parts[@]}; i += 1)); do
+		relative="${relative}${target_parts[i]}/"
+	done
+
+	relative="${relative%/}"
+	printf '%s\n' "${relative:-.}"
+}
+
 rrrr_weekday() {
 	local snapshot_date="$1"
 
@@ -831,9 +861,15 @@ rrrr_publish_partial_snapshot() {
 }
 
 rrrr_update_latest() {
+	local latest_dir relative_snapshot
+
+	latest_dir="${LATEST_LINK%/*}"
+	[ "${latest_dir}" != "${LATEST_LINK}" ] || latest_dir="."
+	relative_snapshot="$(rrrr_relative_path "${latest_dir}" "${SNAP_DIR}")" || die "Could not calculate relative latest target"
+
 	rm -f "${LATEST_LINK}"
-	ln -s "${SNAP_DIR}" "${LATEST_LINK}"
-	log "Updated latest -> ${SNAP_DIR}"
+	ln -s "${relative_snapshot}" "${LATEST_LINK}"
+	log "Updated latest -> ${relative_snapshot}"
 }
 
 rrrr_apply_retention() {

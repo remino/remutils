@@ -249,7 +249,7 @@ EOF
 
 	[ -d "$snapshot_dir" ]
 	[ -L "$latest_link" ]
-	[ "$(readlink "$latest_link")" = "$snapshot_dir" ]
+	[ "$(readlink "$latest_link")" = "snapshots/$today" ]
 	[ ! -d "$old_snapshot" ]
 
 	local filter_arg used_path expected_path
