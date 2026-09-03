@@ -67,57 +67,101 @@ require_cmd() {
 }
 
 rrrr_main() {
-	local opt host
-
 	set -euo pipefail
 	rrrr_reset_state
 	trap rrrr_cleanup EXIT
 
-	OPTIND=1
-	while getopts ":hVv" opt; do
-		case "${opt}" in
-			h)
-				rrrr_usage
-				return 0
-				;;
-			v | V)
-				printf "rrrr %s\n" "${VERSION}"
-				return 0
-				;;
-			\?) die "Unknown option: -${OPTARG}" ;;
-		esac
-	done
-	shift $((OPTIND - 1))
+	case "${1:-}" in
+		backup)
+			shift
+			rrrr_backup "$@"
+			;;
+		mount)
+			shift
+			rrrr_mount "$@"
+			;;
+		unmount)
+			shift
+			rrrr_unmount "$@"
+			;;
+		help)
+			rrrr_usage
+			;;
+		version)
+			rrrr_print_version
+			;;
+		-h)
+			rrrr_usage
+			;;
+		-v | -V)
+			rrrr_print_version
+			;;
+		"")
+			rrrr_usage >&2
+			return 1
+			;;
+		*)
+			# Compatibility with the original `rrrr <hostname>` invocation.
+			rrrr_backup "$@"
+			;;
+	esac
+}
 
-	if [ "$#" -lt 1 ]; then
-		rrrr_usage >&2
-		return 1
-	fi
-
-	host="$1"
-	HOST_ARG="${host}"
-	[[ "${host}" =~ ^[[:alnum:]][[:alnum:]._-]*$ ]] || die "Hostname must be a single safe path component: ${host}"
-
-	HOST_CONFIG_DIR="$(rrrr_find_host_config_dir "${host}")" || die "No host config directory found for ${host}"
-
-	rrrr_reset_config
-	rrrr_source_host_config "${HOST_CONFIG_DIR}"
+rrrr_backup() {
+	rrrr_load_host_config "$@"
 	rrrr_prepare_filters "${HOST_CONFIG_DIR}"
-	rrrr_set_derived_defaults
 	rrrr_validate_config
 	rrrr_check_requirements
-	rrrr_prepare_storage
+	rrrr_prepare_storage_for_backup
 	rrrr_validate_storage
 	rrrr_prepare_runtime
 
 	rrrr_run_backup
 }
 
+rrrr_mount() {
+	rrrr_load_host_config "$@"
+	rrrr_has_managed_storage || die "No managed storage is configured for ${HOST_ARG}"
+
+	if [ -f "${STORAGE_STATE_FILE}" ]; then
+		rrrr_load_storage_state
+		rrrr_storage_is_mounted || die "Recorded storage mount is no longer mounted: ${STORAGE_MOUNTPOINT}"
+		log "Storage is already mounted: ${STORAGE_MOUNTPOINT}"
+		return 0
+	fi
+
+	rrrr_prepare_storage
+	rrrr_validate_storage
+	[ -n "${STORAGE_MOUNTPOINT}" ] || die "STORAGE_MOUNTPOINT must be set to retain storage across commands"
+	rrrr_write_storage_state
+	STORAGE_HOOK_ACTIVE=0
+	log "Storage mounted: ${STORAGE_MOUNTPOINT}"
+}
+
+rrrr_unmount() {
+	rrrr_load_host_config "$@"
+	[ -f "${STORAGE_STATE_FILE}" ] || die "No recorded storage mount for ${HOST_ARG}"
+
+	rrrr_load_storage_state
+	if ! rrrr_release_storage; then
+		die "Could not unmount storage: ${STORAGE_MOUNTPOINT}"
+	fi
+	rm -f "${STORAGE_STATE_FILE}"
+	log "Storage unmounted: ${STORAGE_MOUNTPOINT}"
+}
+
 rrrr_usage() {
 	cat << 'USAGE'
-Usage: rrrr [-hv] <hostname>
+Usage: rrrr <command> [arguments]
 
 Reliable Recursive Redundant RSync backup runner.
+
+Commands:
+  backup <hostname>  Back up a configured host.
+  mount <hostname>   Mount managed backup storage.
+  unmount <hostname> Unmount storage mounted by rrrr.
+  help               Show this help text.
+  version            Print version.
 
 <hostname> corresponds to a host-specific directory that lives in one of:
   $XDG_CONFIG_HOME/rrrr/<hostname>
@@ -129,10 +173,14 @@ to reach the host (user, SSH key, backup root, etc). If a "filters" file is
 present (or FILTERS_FILE points elsewhere) it will be merged into rsync using
 --filter.
 
-Options:
-  -h    Show this help text.
+Compatibility aliases:
+  -h    Show help text.
   -v    Print version.
 USAGE
+}
+
+rrrr_print_version() {
+	printf "rrrr %s\n" "${VERSION}"
 }
 
 # Per-run state --------------------------------------------------------------
@@ -161,6 +209,7 @@ rrrr_reset_state() {
 	STORAGE_LOOP_DEVICE=""
 	STORAGE_APFS_ATTACHED=0
 	STORAGE_ELEVATE_USER=""
+	STORAGE_STATE_FILE=""
 	RETENTION_ALL_FILE=""
 	RETENTION_KEEP_FILE=""
 	DEFAULT_FILTERS_FILE=""
@@ -259,6 +308,26 @@ rrrr_source_host_config() {
 	source "${config_file}"
 }
 
+rrrr_load_host_config() {
+	local host
+
+	if [ "$#" -lt 1 ]; then
+		rrrr_usage >&2
+		return 1
+	fi
+
+	host="$1"
+	HOST_ARG="${host}"
+	[[ "${host}" =~ ^[[:alnum:]][[:alnum:]._-]*$ ]] || die "Hostname must be a single safe path component: ${host}"
+
+	HOST_CONFIG_DIR="$(rrrr_find_host_config_dir "${host}")" || die "No host config directory found for ${host}"
+
+	rrrr_reset_config
+	rrrr_source_host_config "${HOST_CONFIG_DIR}"
+	rrrr_set_derived_defaults
+	rrrr_prepare_storage_state
+}
+
 rrrr_prepare_filters() {
 	local dir="$1"
 	local candidate=""
@@ -337,6 +406,59 @@ rrrr_prepare_storage() {
 }
 
 # Storage providers ---------------------------------------------------------
+
+rrrr_prepare_storage_state() {
+	local state_home
+
+	state_home="${XDG_STATE_HOME:-${HOME}/.local/state}"
+	STORAGE_STATE_FILE="${state_home}/rrrr/${HOST_ARG}.storage"
+}
+
+rrrr_has_managed_storage() {
+	[ -n "${STORAGE_PROVIDER}" ] || declare -F rrrr_storage_mount > /dev/null
+}
+
+rrrr_prepare_storage_for_backup() {
+	if [ -f "${STORAGE_STATE_FILE}" ]; then
+		rrrr_load_storage_state
+		rrrr_storage_is_mounted || die "Recorded storage mount is no longer mounted: ${STORAGE_MOUNTPOINT}"
+		log "Using manually mounted storage: ${STORAGE_MOUNTPOINT}"
+		return 0
+	fi
+
+	rrrr_prepare_storage
+}
+
+rrrr_write_storage_state() {
+	local state_dir state_tmp
+
+	state_dir="$(dirname "${STORAGE_STATE_FILE}")"
+	mkdir -p "${state_dir}"
+	chmod 700 "${state_dir}"
+	state_tmp="${STORAGE_STATE_FILE}.tmp.$$"
+
+	(
+		umask 077
+		printf 'STORAGE_STATE_VERSION=%q\n' "1"
+		printf 'STORAGE_STATE_PROVIDER=%q\n' "${STORAGE_PROVIDER}"
+		printf 'BACKUP_ROOT=%q\n' "${BACKUP_ROOT}"
+		printf 'STORAGE_MOUNTPOINT=%q\n' "${STORAGE_MOUNTPOINT}"
+		printf 'STORAGE_MOUNTPOINT_CREATED=%q\n' "${STORAGE_MOUNTPOINT_CREATED}"
+		printf 'STORAGE_LOOP_DEVICE=%q\n' "${STORAGE_LOOP_DEVICE}"
+		printf 'STORAGE_APFS_ATTACHED=%q\n' "${STORAGE_APFS_ATTACHED}"
+	) > "${state_tmp}"
+	mv "${state_tmp}" "${STORAGE_STATE_FILE}"
+}
+
+rrrr_load_storage_state() {
+	local expected_provider="${STORAGE_PROVIDER}"
+
+	# shellcheck source=/dev/null
+	source "${STORAGE_STATE_FILE}"
+	[ "${STORAGE_STATE_VERSION:-}" = "1" ] || die "Unsupported storage state file: ${STORAGE_STATE_FILE}"
+	[ "${STORAGE_STATE_PROVIDER:-}" = "${expected_provider}" ] || die "Storage state does not match the configured provider"
+	STORAGE_PROVIDER="${expected_provider}"
+}
 
 rrrr_release_storage() {
 	case "${STORAGE_PROVIDER}" in

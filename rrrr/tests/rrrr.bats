@@ -11,6 +11,7 @@ PY
 setup() {
 	TEST_ROOT="$(mktemp -d)"
 	export XDG_CONFIG_HOME="$TEST_ROOT/config"
+	export XDG_STATE_HOME="$TEST_ROOT/state"
 	mkdir -p "$XDG_CONFIG_HOME/rrrr"
 
 	export RRRR_TEST_BACKUP_ROOT="$TEST_ROOT/backups"
@@ -181,16 +182,21 @@ EOF
 EOF
 }
 
-@test "fails when hostname argument missing" {
-	run "$BATS_TEST_DIRNAME/../rrrr"
+@test "fails when backup hostname argument is missing" {
+	run "$BATS_TEST_DIRNAME/../rrrr" backup
 
 	[ "$status" -eq 1 ]
 	[[ "$output" == *"Usage: rrrr"* ]]
 }
 
-@test "prints version with -v and accepts -V for compatibility" {
+@test "supports version subcommand and version flag compatibility" {
 	local expected_version
 	expected_version="$(sed -nE 's/^VERSION="([^"]+)"/rrrr \1/p' "$BATS_TEST_DIRNAME/../rrrr")"
+
+	run "$BATS_TEST_DIRNAME/../rrrr" version
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "$expected_version" ]
 
 	run "$BATS_TEST_DIRNAME/../rrrr" -v
 
@@ -201,6 +207,13 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[ "$output" = "$expected_version" ]
+}
+
+@test "shows command help" {
+	run "$BATS_TEST_DIRNAME/../rrrr" help
+
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"backup <hostname>"* ]]
 }
 
 @test "rejects an unsafe hostname" {
@@ -217,7 +230,7 @@ EOF
 	local host_root="$RRRR_TEST_BACKUP_ROOT/$host"
 	mkdir -p "$host_root/snapshots/2000-01-01"
 
-	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+	run "$BATS_TEST_DIRNAME/../rrrr" backup "$host"
 
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"Backup complete"* ]]
@@ -406,6 +419,39 @@ EOF
 	[ -d "$mountpoint/snapshots/$(date +%F)" ]
 	grep -Fx -- "hdiutil create -size 16g -type SPARSEBUNDLE -fs APFS -volname rrrr-$host $image" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
+}
+
+@test "reuses storage mounted by the mount command until unmount" {
+	local host="manual-mac-image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.sparsebundle"
+	local mountpoint="$TEST_ROOT/mounts/$host"
+	local state_file="$XDG_STATE_HOME/rrrr/$host.storage"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="apfs-sparsebundle"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE="16g"
+STORAGE_MOUNTPOINT="${mountpoint}"
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" mount "$host"
+
+	[ "$status" -eq 0 ]
+	[ -f "$state_file" ]
+	grep -Fx -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG"
+
+	run env RRRR_TEST_MOUNTPOINT="$mountpoint" "$BATS_TEST_DIRNAME/../rrrr" backup "$host"
+
+	[ "$status" -eq 0 ]
+	[ -f "$state_file" ]
+	[ "$(grep -Fc -- "hdiutil attach $image -nobrowse -mountpoint $mountpoint" "$RRRR_TEST_STORAGE_LOG")" -eq 1 ]
+
+	run env RRRR_TEST_REMOVE_MOUNTPOINT=1 "$BATS_TEST_DIRNAME/../rrrr" unmount "$host"
+
+	[ "$status" -eq 0 ]
+	[ ! -e "$state_file" ]
 	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 }
 

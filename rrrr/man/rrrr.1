@@ -3,7 +3,17 @@
 rrrr \- Reliable Recursive Redundant RSync
 .SH SYNOPSIS
 .B rrrr
-.RB [ \-hv ]
+.B backup
+.I hostname
+.br
+.B rrrr help
+.br
+.B rrrr version
+.br
+.B rrrr mount
+.I hostname
+.br
+.B rrrr unmount
 .I hostname
 .SH DESCRIPTION
 \fBrrrr\fR orchestrates snapshot-style backups via \fBrsync\fR over SSH.
@@ -11,9 +21,25 @@ Each run pulls a fresh copy of a remote filesystem, reuses unchanged data with
 \fB\-\-link\-dest\fR, updates a \fBlatest\fR symlink, and prunes snapshots based
 on daily/weekly/monthly retention counts.
 .PP
-The tool is host-driven: the \fIhostname\fR argument selects a directory that
+The tool is host-driven: the \fBbackup\fR command's \fIhostname\fR argument selects a directory that
 describes how to reach the remote server and where to store the snapshots.
-.SH OPTIONS
+.SH COMMANDS
+.TP
+.B backup \fIhostname\fR
+Back up the configured host.
+.TP
+.B mount \fIhostname\fR
+Mount managed backup storage and retain it for later commands.
+.TP
+.B unmount \fIhostname\fR
+Unmount storage previously mounted by \fBrrrr mount\fR.
+.TP
+.B help
+Show help text.
+.TP
+.B version
+Print the rrrr version.
+.SH COMPATIBILITY OPTIONS
 .TP
 .B \-h
 Show help text.
@@ -98,6 +124,14 @@ The mount hook must set \fBBACKUP_ROOT\fR to an existing writable directory.
 rrrr calls the mount hook before preparing backup paths and calls the unmount
 hook whenever it exits, including after rsync fails or is interrupted. This
 keeps the storage backend platform-specific while rrrr remains portable.
+.PP
+Use \fBrrrr mount \fIhostname\fR\fR to retain managed storage across commands.
+rrrr stores its state in
+\fB${XDG_STATE_HOME:-$HOME/.local/state}/rrrr/\fIhostname\fB.storage\fR.
+A later \fBrrrr backup\fR reuses that mount and leaves it attached; use
+\fBrrrr unmount \fIhostname\fR\fR to detach it and remove the state file.
+Custom storage hooks must set \fBSTORAGE_MOUNTPOINT\fR when used with these
+commands so rrrr can verify the recorded mount before a later backup.
 .SS Built-in APFS sparse bundle storage
 On macOS, set \fBSTORAGE_PROVIDER=apfs-sparsebundle\fR to store a host's
 snapshots in one APFS sparse bundle. Set \fBSTORAGE_IMAGE\fR to the sparse
@@ -186,6 +220,10 @@ Primary location for per-user configuration (defaults to \fB~/.config\fR).
 \fB$XDG_CONFIG_DIRS\fR
 Colon-separated list of additional configuration roots (defaults to
 \fB/etc/xdg\fR).
+.TP
+\fB$XDG_STATE_HOME\fR
+Location for manually mounted storage state (defaults to
+\fB~/.local/state\fR).
 .SH REQUIREMENTS
 rrrr requires Bash 3 or newer, \fBrsync\fR, and OpenSSH. The built-in ext4
 image provider additionally requires \fBlosetup\fR, \fBmount\fR,

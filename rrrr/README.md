@@ -37,8 +37,8 @@ cd remutils/rrrr
 ## Configuration
 
 `rrrr` requires Bash 3 or newer, `rsync`, and OpenSSH. It is configured per
-host, so the same runner can back up multiple servers. `rrrr <hostname>` looks
-for host-specific configuration in this order:
+host, so the same runner can back up multiple servers. `rrrr backup <hostname>`
+looks for host-specific configuration in this order:
 
 1. `$XDG_CONFIG_HOME/rrrr/<hostname>`
 2. Each directory in `$XDG_CONFIG_DIRS` (default: `/etc/xdg`), under
@@ -104,6 +104,15 @@ these functions:
 unmount hook when it exits, including after an rsync failure or interruption.
 The functions make the storage backend platform-specific while the backup runner
 remains portable.
+
+To keep managed storage mounted across commands, use `rrrr mount <hostname>`. It
+records the mounted storage in
+`${XDG_STATE_HOME:-$HOME/.local/state}/rrrr/<hostname>.storage`; the state
+directory and record are private to the current user. A subsequent
+`rrrr backup <hostname>` reuses that mount and leaves it attached. Run
+`rrrr unmount <hostname>` to detach it and remove the state record. Custom
+storage hooks must also set `STORAGE_MOUNTPOINT` when used with these commands
+so `rrrr` can verify the recorded mount before a later backup.
 
 ### Built-in APFS sparse bundle storage
 
@@ -210,7 +219,15 @@ Example `filters` file:
 ## Usage
 
 ```bash
-rrrr webhost
+rrrr backup webhost
+```
+
+For managed storage, these commands can be used independently:
+
+```bash
+rrrr mount webhost
+rrrr backup webhost
+rrrr unmount webhost
 ```
 
 The script writes logs to `<backup_root>/logs/YYYY-MM-DD.log` and mirrors the
