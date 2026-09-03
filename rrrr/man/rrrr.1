@@ -191,6 +191,8 @@ Publish the completed temporary snapshot, update \fBlatest\fR, and prune old
 snapshots based on the retention policy. If rsync fails, the temporary
 snapshot is removed and \fBlatest\fR is unchanged, so the backup can be
 retried safely:
+.PP
+The final completion log line reports the elapsed backup duration.
 .PD 0
 .RS
 .IP \- 4

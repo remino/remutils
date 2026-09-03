@@ -259,6 +259,7 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[[ "$output" == *"Backup complete"* ]]
+	[[ "$output" == *"duration: 00:00:"* ]]
 
 	local snapshot_dir latest_link old_snapshot
 	snapshot_dir="$(_newest_snapshot_path "$host_root")"

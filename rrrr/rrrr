@@ -195,6 +195,7 @@ rrrr_reset_state() {
 	HOST_FILTER_FILE=""
 	DATE_TODAY=""
 	SNAPSHOT_NAME=""
+	BACKUP_STARTED_AT=""
 	SNAP_DIR=""
 	SNAP_TMP_DIR=""
 	SNAPS_DIR=""
@@ -696,6 +697,7 @@ rrrr_storage_is_mounted() {
 # Backup pipeline -----------------------------------------------------------
 
 rrrr_run_backup() {
+	BACKUP_STARTED_AT="$(date +%s)"
 	log "=== Backup start (${HOSTNAME_REMOTE}) ==="
 	log "Backup root: ${BACKUP_ROOT}"
 	log "Snapshot dir: ${SNAP_DIR}"
@@ -714,7 +716,7 @@ rrrr_run_backup() {
 		rrrr_publish_snapshot
 		rrrr_update_latest
 		rrrr_apply_retention
-		log "=== Backup complete with unreadable paths (${HOSTNAME_REMOTE}) ==="
+		rrrr_log_backup_completion "Backup complete with unreadable paths"
 		return 0
 	fi
 	if [ "${rsync_status}" -eq 23 ] && [ "${RSYNC_KEEP_PARTIAL}" = "1" ]; then
@@ -728,7 +730,18 @@ rrrr_run_backup() {
 	rrrr_update_latest
 	rrrr_apply_retention
 
-	log "=== Backup complete (${HOSTNAME_REMOTE}) ==="
+	rrrr_log_backup_completion "Backup complete"
+}
+
+rrrr_log_backup_completion() {
+	local description="$1"
+	local elapsed_hours elapsed_minutes elapsed_seconds elapsed
+
+	elapsed=$(($(date +%s) - BACKUP_STARTED_AT))
+	elapsed_hours=$((elapsed / 3600))
+	elapsed_minutes=$(((elapsed % 3600) / 60))
+	elapsed_seconds=$((elapsed % 60))
+	log "=== ${description} (${HOSTNAME_REMOTE}); duration: $(printf '%02d:%02d:%02d' "${elapsed_hours}" "${elapsed_minutes}" "${elapsed_seconds}") ==="
 }
 
 rrrr_prepare_snapshot_dir() {

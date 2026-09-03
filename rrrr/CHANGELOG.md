@@ -20,6 +20,7 @@
 - Publish timestamped snapshots with hourly, daily, weekly, and monthly
   retention buckets.
 - Prevent concurrent operations on a host with an XDG-state lock.
+- Report completed backup duration in the final log line.
 
 ## v1.3.0
 

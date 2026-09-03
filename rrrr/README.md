@@ -245,6 +245,8 @@ performs:
 4. Publishing the completed snapshot, `latest` symlink update, and retention
    pruning.
 
+The final completion log line includes the elapsed backup duration.
+
 Runs are protected by a per-host lock under
 `${XDG_STATE_HOME:-$HOME/.local/state}/rrrr`, so a second backup cannot attach
 or write to the same storage concurrently. Retention keeps the newest snapshot
