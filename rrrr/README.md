@@ -128,9 +128,10 @@ STORAGE_IMAGE_SIZE="500g"
 
 `STORAGE_IMAGE_SIZE` is required only when creating the bundle. It is the
 maximum virtual capacity; a sparse bundle consumes host filesystem space only as
-backup data is stored. `STORAGE_MOUNTPOINT` is optional and defaults to a
-private temporary directory. Set `STORAGE_VOLUME_NAME` to change the APFS volume
-label; it defaults to `rrrr-<hostname>`.
+backup data is stored. When `STORAGE_MOUNTPOINT` is unset, macOS mounts the
+bundle under `/Volumes/<volume-name>`; the default volume name is
+`rrrr-<hostname>`. Set `STORAGE_VOLUME_NAME` to change that name, or set
+`STORAGE_MOUNTPOINT` to use an explicit custom location instead.
 
 The provider requires macOS `hdiutil` and access to both the image location and
 the mountpoint. Do not combine it with custom storage hooks.

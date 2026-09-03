@@ -15,6 +15,7 @@
 - Add `backup`, `mount`, `unmount`, `help`, and `version` subcommands.
 - Retain `rrrr <hostname>` as a compatibility alias for
   `rrrr backup <hostname>`.
+- Mount APFS sparse bundles at their macOS `/Volumes` location by default.
 
 ## v1.3.0
 

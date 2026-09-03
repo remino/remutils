@@ -124,13 +124,19 @@ case "$1" in
 		mkdir -p "${!#}"
 		;;
 	attach)
+		mountpoint=""
 		for ((i = 1; i <= $#; i += 1)); do
 			if [ "${!i}" = "-mountpoint" ]; then
 				j=$((i + 1))
-				mkdir -p "${!j}"
+				mountpoint="${!j}"
 				break
 			fi
 		done
+		if [ -z "$mountpoint" ]; then
+			mountpoint="${RRRR_TEST_AUTO_MOUNTPOINT:?}"
+		fi
+		mkdir -p "$mountpoint"
+		printf '/dev/disk-test\tApple_APFS\t%s\n' "$mountpoint"
 		;;
 	detach)
 		if [ "${RRRR_TEST_REMOVE_MOUNTPOINT:-0}" = "1" ]; then
@@ -455,22 +461,23 @@ EOF
 	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 }
 
-@test "uses a private temporary mountpoint for an APFS sparse bundle by default" {
+@test "uses the macOS-selected mountpoint for an APFS sparse bundle by default" {
 	local host="default-mac-image"
 	_write_basic_config "$host"
 
 	local image="$TEST_ROOT/images/$host.sparsebundle"
+	local mountpoint="$TEST_ROOT/mounts/$host"
 	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
 STORAGE_PROVIDER="apfs-sparsebundle"
 STORAGE_IMAGE="${image}"
 STORAGE_IMAGE_SIZE="16g"
 EOF
 
-	run env RRRR_TEST_REMOVE_MOUNTPOINT=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
+	run env RRRR_TEST_AUTO_MOUNTPOINT="$mountpoint" RRRR_TEST_REMOVE_MOUNTPOINT=1 "$BATS_TEST_DIRNAME/../rrrr" "$host"
 
 	[ "$status" -eq 0 ]
-	grep -E -- "^hdiutil attach ${image} -nobrowse -mountpoint ${TMPDIR}/rrrr-${host}-[0-9]+$" "$RRRR_TEST_STORAGE_LOG"
-	grep -E -- "^hdiutil detach ${TMPDIR}/rrrr-${host}-[0-9]+$" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "hdiutil attach $image -nobrowse" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "hdiutil detach $mountpoint" "$RRRR_TEST_STORAGE_LOG"
 }
 
 @test "runs storage hooks around a backup" {

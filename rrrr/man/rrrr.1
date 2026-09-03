@@ -141,9 +141,11 @@ space only as backup data is stored.
 .PP
 rrrr mounts the sparse bundle for the backup and detaches it when rrrr exits,
 including after a failed run. \fBSTORAGE_MOUNTPOINT\fR is optional and defaults
-to a private temporary directory. Set \fBSTORAGE_VOLUME_NAME\fR to change the
-APFS volume label; it defaults to \fBrrrr-<hostname>\fR. The provider requires
-macOS \fBhdiutil\fR and must not be combined with custom storage hooks.
+to \fB/Volumes/<volume-name>\fR. Set \fBSTORAGE_VOLUME_NAME\fR to change the
+APFS volume label; it defaults to \fBrrrr-<hostname>\fR. Set
+\fBSTORAGE_MOUNTPOINT\fR to use an explicit custom location instead. The
+provider requires macOS \fBhdiutil\fR and must not be combined with custom
+storage hooks.
 .PP
 For a Linux source backed up to macOS, set \fBRSYNC_PRESERVE_ACLS=0\fR because
 Linux ACLs cannot be represented as macOS ACLs.
