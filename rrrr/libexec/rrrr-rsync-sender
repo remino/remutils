@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+set -f
+set -- ${SSH_ORIGINAL_COMMAND:-}
+[ "$#" -ge 3 ] && [ "$1" = rsync ] && [ "$2" = --server ] || exit 126
+sender=0
+for arg in "$@"; do [ "$arg" != --sender ] || sender=1; done
+[ "$sender" -eq 1 ] || exit 126
+shift
+exec /usr/bin/sudo -n /usr/bin/rsync "$@"

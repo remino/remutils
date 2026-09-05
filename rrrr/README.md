@@ -16,6 +16,7 @@ Create snapshot-style rsync backups over SSH.
     - [Storage hooks](#storage-hooks)
     - [Built-in APFS sparse bundle storage](#built-in-apfs-sparse-bundle-storage)
     - [Built-in ext4 image storage](#built-in-ext4-image-storage)
+    - [Restricted root-level remote backups](#restricted-root-level-remote-backups)
     - [`filters` (optional)](#filters-optional)
 - [Usage](#usage)
 
@@ -218,6 +219,22 @@ Example `filters` file:
 - /var/cache/**
 + /var/www/**
 - *
+```
+
+### Restricted root-level remote backups
+
+For a complete Linux root backup, restrict the remote SSH key rather than
+granting it an interactive root shell. Install
+[`libexec/rrrr-rsync-sender`](libexec/rrrr-rsync-sender) as a root-owned script
+on the source, permit only `/usr/bin/rsync` through passwordless sudo, and force
+the backup key through that helper in `authorized_keys`. It accepts only rsync's
+read-only `--server --sender` mode.
+
+Add host-local filters for mounts outside rrrr's default `/mnt/**` and
+`/media/**` exclusions; Docker overlay mount views are a common example:
+
+```
+- /var/lib/docker/overlay2/*/merged/**
 ```
 
 ## Usage

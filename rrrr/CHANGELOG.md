@@ -15,6 +15,7 @@
 
 - Fix QNAP's Bash 3.2 compatibility when optional rsync argument lists are
   empty.
+- Document restricted root-level remote backups.
 
 ## v2.0.0
 
