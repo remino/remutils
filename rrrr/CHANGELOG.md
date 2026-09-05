@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.0.0](#v200)
 - [v1.3.0](#v130)
 - [v1.2.0](#v120)
@@ -9,6 +10,11 @@
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Fix QNAP's Bash 3.2 compatibility when optional rsync argument lists are
+  empty.
 
 ## v2.0.0
 

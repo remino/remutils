@@ -885,11 +885,18 @@ rrrr_build_ssh_command() {
 }
 
 rrrr_run_rsync() {
-	local status=0
+	local status=0 nounset_enabled=0
 
 	log "Running rsync..."
 	log "Remote: ${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}"
 	log "Log: ${LOG_FILE}"
+
+	case "$-" in
+		*u*)
+			nounset_enabled=1
+			set +u
+			;;
+	esac
 
 	if rsync -aHX "${RSYNC_ACL_ARGS[@]}" "${RSYNC_VERBOSE_ARGS[@]}" --numeric-ids --delete \
 		--info=stats2,progress2 \
@@ -899,11 +906,13 @@ rrrr_run_rsync() {
 		"${REMOTE_USER}@${REMOTE_SSH_HOST}:${REMOTE_ROOT}" \
 		"${SNAP_TMP_DIR}/" \
 		2>&1 | tee -a "${LOG_FILE}"; then
-		log "rsync finished."
-		return 0
+		status=0
 	else
 		status=$?
 	fi
+
+	[ "${nounset_enabled}" -eq 0 ] || set -u
+	[ "${status}" -ne 0 ] || log "rsync finished."
 
 	return "${status}"
 }
