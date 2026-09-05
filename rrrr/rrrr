@@ -2,7 +2,7 @@
 #
 # rrrr - Reliable Recursive Redundant RSync
 #
-VERSION="2.0.0"
+VERSION="2.0.1"
 
 DEFAULT_FILTERS_CONTENT=$'- /dev/**\n- /proc/**\n- /sys/**\n- /run/**\n- /tmp/**\n- /mnt/**\n- /media/**\n- /lost+found\n- /swapfile'
 
