@@ -223,15 +223,16 @@ Example `filters` file:
 
 ### Restricted root-level remote backups
 
-For a complete Linux root backup, restrict the remote SSH key rather than
-granting it an interactive root shell. Install
-[`libexec/rrrr-rsync-sender`](libexec/rrrr-rsync-sender) as a root-owned script
-on the source, permit only `/usr/bin/rsync` through passwordless sudo, and force
-the backup key through that helper in `authorized_keys`. It accepts only rsync's
-read-only `--server --sender` mode.
+For a complete Linux root backup, use the following restrictions rather than
+granting the remote SSH key an interactive root shell:
 
-Add host-local filters for mounts outside rrrr's default `/mnt/**` and
-`/media/**` exclusions; Docker overlay mount views are a common example:
+- Install [`libexec/rrrr-rsync-sender`](libexec/rrrr-rsync-sender) as a
+  root-owned script on the source.
+- Permit only `/usr/bin/rsync` through passwordless sudo.
+- Force the backup key through that helper in `authorized_keys`; it accepts only
+  rsync's read-only `--server --sender` mode.
+- Add host-local filters for mounts outside rrrr's default `/mnt/**` and
+  `/media/**` exclusions. Docker overlay mount views are a common example:
 
 ```
 - /var/lib/docker/overlay2/*/merged/**
