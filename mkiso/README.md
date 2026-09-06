@@ -4,6 +4,9 @@ Create ISO files from directories.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/mkiso/>
+- [Source code](https://github.com/remino/remutils/tree/main/mkiso)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

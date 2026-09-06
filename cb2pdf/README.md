@@ -4,6 +4,9 @@ Convert `.cbz` and `.cbr` comic book archives into PDF files.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/cb2pdf/>
+- [Source code](https://github.com/remino/remutils/tree/main/cb2pdf)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

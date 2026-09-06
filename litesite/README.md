@@ -4,6 +4,9 @@ Create and publish tiny static sites.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/litesite/>
+- [Source code](https://github.com/remino/remutils/tree/main/litesite)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

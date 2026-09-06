@@ -5,6 +5,9 @@ Create and import prose content entries.
 `comprose` creates Markdown entries for prose-oriented static sites. It can use
 built-in or custom Mustache templates to support different site layouts.
 
+- <https://remino.net/comprose/>
+- [Source code](https://github.com/remino/remutils/tree/main/comprose)
+
 ## Install
 
 ```sh

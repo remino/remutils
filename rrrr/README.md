@@ -7,6 +7,9 @@ Create snapshot-style rsync backups over SSH.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/rrrr/>
+- [Source code](https://github.com/remino/remutils/tree/main/rrrr)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

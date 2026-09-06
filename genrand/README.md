@@ -4,6 +4,9 @@ Generate cryptographically random strings.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/genrand/>
+- [Source code](https://github.com/remino/remutils/tree/main/genrand)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

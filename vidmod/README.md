@@ -4,6 +4,9 @@ Video modification helpers.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/vidmod/>
+- [Source code](https://github.com/remino/remutils/tree/main/vidmod)
+
 ## Usage
 
 Run `vidmod` without arguments to see how to use it.

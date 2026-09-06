@@ -4,6 +4,9 @@ Display the RÉMINO logo in ASCII art and ANSI colours.
 
 2022-2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/rmnlogo/>
+- [Source code](https://github.com/remino/remutils/tree/main/rmnlogo)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

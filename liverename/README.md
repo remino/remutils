@@ -4,6 +4,9 @@ Rename new files with a timestamp.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/liverename/>
+- [Source code](https://github.com/remino/remutils/tree/main/liverename)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

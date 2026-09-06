@@ -4,6 +4,9 @@ Deploy directory to remote server by using rsync.
 
 2022 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/rsdeploy/>
+- [Source code](https://github.com/remino/remutils/tree/main/rsdeploy)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)

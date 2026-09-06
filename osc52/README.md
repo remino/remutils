@@ -5,6 +5,9 @@ sequence.
 
 2026 Rémino Rem <https://remino.net/>
 
+- <https://remino.net/osc52/>
+- [Source code](https://github.com/remino/remutils/tree/main/osc52)
+
 <!-- mtoc-start -->
 
 - [Installation](#installation)
