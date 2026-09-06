@@ -2,10 +2,12 @@
 
 Convert video files into animated GIFs.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/vid2gif/>
 - [Source code](https://github.com/remino/remutils/tree/main/vid2gif)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

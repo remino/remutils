@@ -2,10 +2,12 @@
 
 Create dated project directories from optional templates.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/mkprj/>
 - [Source code](https://github.com/remino/remutils/tree/main/mkprj)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

@@ -3,10 +3,12 @@
 Copy and paste through a terminal emulator that supports the OSC 52 clipboard
 sequence.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/osc52/>
 - [Source code](https://github.com/remino/remutils/tree/main/osc52)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

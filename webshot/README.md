@@ -2,10 +2,12 @@
 
 Capture a webpage as an image.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/webshot/>
 - [Source code](https://github.com/remino/remutils/tree/main/webshot)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

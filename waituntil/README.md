@@ -2,10 +2,12 @@
 
 Wait until a specified time and optionally execute a command.
 
-2022 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/waituntil/>
 - [Source code](https://github.com/remino/remutils/tree/main/waituntil)
+
+2022 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

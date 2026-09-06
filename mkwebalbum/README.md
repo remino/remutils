@@ -2,10 +2,12 @@
 
 Generate a responsive HTML photo album from a directory.
 
-2022-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/mkwebalbum/>
 - [Source code](https://github.com/remino/remutils/tree/main/mkwebalbum)
+
+2022-2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

@@ -2,10 +2,12 @@
 
 Compatibility command for adding an image watermark.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/addwatermark/>
 - [Source code](https://github.com/remino/remutils/tree/main/addwatermark)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

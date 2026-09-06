@@ -5,10 +5,12 @@ Create snapshot-style rsync backups over SSH.
 
 ⚠️ **Experimental**: Use at your own risk.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/rrrr/>
 - [Source code](https://github.com/remino/remutils/tree/main/rrrr)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

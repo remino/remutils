@@ -2,10 +2,12 @@
 
 Make new executable shell script file from template.
 
-2022 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/mkx/>
 - [Source code](https://github.com/remino/remutils/tree/main/mkx)
+
+2022 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

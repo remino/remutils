@@ -2,10 +2,12 @@
 
 Image modification helpers.
 
-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/imgmod/>
 - [Source code](https://github.com/remino/remutils/tree/main/imgmod)
+
+2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 

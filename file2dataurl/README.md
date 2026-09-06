@@ -2,10 +2,12 @@
 
 Convert file to base64 data URL.
 
-2022-2026 Rémino Rem <https://remino.net/>
-
 - <https://remino.net/file2dataurl/>
 - [Source code](https://github.com/remino/remutils/tree/main/file2dataurl)
+
+2022-2026 Rémino Rem <https://remino.net/>
+
+---
 
 <!-- mtoc-start -->
 
