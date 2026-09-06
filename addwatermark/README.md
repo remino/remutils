@@ -2,8 +2,18 @@
 
 Compatibility command for adding an image watermark.
 
+2026 Rémino Rem <https://remino.net/>
+
 - <https://remino.net/addwatermark/>
 - [Source code](https://github.com/remino/remutils/tree/main/addwatermark)
+
+<!-- mtoc-start -->
+
+- [Usage](#usage)
+
+<!-- mtoc-end -->
+
+## Usage
 
 `addwatermark` has merged into the [`imgmod`](../imgmod/README.md) `watermark`
 plugin. Install `imgmod` for new setups:
