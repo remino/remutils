@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config'
-import nginxConfig from '@remino/astro-nginx-config'
+import podFiles from '@remino/astro-pod-files'
 import compressor from 'astro-compressor'
 import minifyHtml from 'astro-minify-html'
 import { getTools } from './src/lib/tools'
@@ -24,11 +24,7 @@ export default defineConfig({
 			fileExtensions: ['.css', '.js', '.html', '.xml', '.cjs', '.mjs', '.svg'],
 			zstd: false,
 		}),
-		nginxConfig({
-			template: 'src/nginx/remutils.conf.ejs',
-			output: 'nginx/remutils.conf',
-			variables: { tools },
-		}),
+		podFiles({ variables: { tools } }),
 	],
 	build: {
 		assets: 'remutils',

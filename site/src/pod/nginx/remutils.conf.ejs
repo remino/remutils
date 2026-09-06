@@ -1,4 +1,4 @@
-<% for (const tool of config.tools) { -%>
+<% for (const tool of tools) { -%>
 location = /remutils/<%= tool.name %> {
 	return 301 /<%= tool.name %>/$is_args$args;
 }
