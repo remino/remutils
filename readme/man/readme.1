@@ -1,0 +1,58 @@
+.TH README 1 "September 2026" "readme 0.1.0"
+.SH NAME
+readme \- open the nearest README file
+.SH SYNOPSIS
+.B readme
+[\fB-hlv\fR] [\fIfilename\fR]
+.SH DESCRIPTION
+.B readme
+looks for files named
+.B README
+or beginning with
+.B README.
+in the current directory. If none are found, it searches immediate child
+directories. Matches are sorted without regard to case.
+.PP
+Without options, the first match opens with
+.BR glow (1)
+when available, or with
+.BR less (1)
+otherwise.
+.PP
+When supplied,
+.I filename
+restricts the search to that filename or pattern.
+.SH ARGUMENTS
+.TP
+.I filename
+A README filename or pattern to search for in the current directory and its
+immediate child directories.
+.SH OPTIONS
+.TP
+.B -h
+Show the help screen.
+.TP
+.B -l
+List matching README files instead of opening one.
+.TP
+.B -v
+Show the version number.
+.SH EXAMPLES
+.TP
+Open the current directory's README.md, or one in an immediate child directory:
+.nf
+.B readme README.md
+.fi
+.TP
+List all Markdown README files:
+.nf
+.B readme -l 'README.*'
+.fi
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>
+.SH ISSUES
+GitHub: <https://github.com/remino/remutils>
+.SH COPYRIGHT
+Copyright © 2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

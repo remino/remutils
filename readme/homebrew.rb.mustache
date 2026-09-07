@@ -1,0 +1,25 @@
+# vim: set ft=ruby :
+class {{formula_class}} < Formula
+  desc "Open the nearest README file"
+  version "{{version}}"
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
+  sha256 "{{sha256}}"
+  license "ISC"
+  homepage "https://remino.net/readme/"
+  {{#revision}}
+  revision {{revision}}
+  {{/revision}}
+
+  depends_on "bash"
+  depends_on "glow" => :optional
+
+  def install
+    bin.install "{{name}}"
+    man1.install "man/{{name}}.1"
+  end
+
+  test do
+    (testpath/"README.md").write "# Test\n"
+    assert_match "README.md", shell_output("#{bin}/{{name}} -l")
+  end
+end

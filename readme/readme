@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Open or list README files near the current directory.
+
+set -euo pipefail
+
+VERSION=0.1.0
+
+usage() {
+	printf '%s\n' \
+		"readme $VERSION" \
+		'' \
+		'USAGE: readme [-hlv] [<filename>]' \
+		'' \
+		'Open the nearest README file in the current directory or its immediate child' \
+		'directories.' \
+		'' \
+		'OPTIONS:' \
+		'  -h    Show this help screen.' \
+		'  -l    List matching README files instead of opening one.' \
+		'  -v    Show the version number.' \
+		'' \
+		'ARGUMENTS:' \
+		'  filename    Restrict the search to a README filename or pattern.'
+}
+
+version() {
+	printf 'readme %s\n' "$VERSION"
+}
+
+error() {
+	printf 'readme: %s\n' "$*" >&2
+}
+
+find_readmes() {
+	local filename="${1:-}"
+	local -a find_args
+
+	if [[ -n "$filename" ]]; then
+		find_args=(-type f -iname "$filename")
+	else
+		find_args=(-type f \( -iname 'readme' -o -iname 'readme.*' \))
+	fi
+
+	# Prefer this directory's README, then list immediate child directories.
+	find . -maxdepth 1 "${find_args[@]}" -print | sort -f
+	find . -mindepth 2 -maxdepth 2 "${find_args[@]}" -print | sort -f
+}
+
+main() {
+	local list=false filename='' readmefile readmes
+
+	while getopts ':hlv' option; do
+		case "$option" in
+			h)
+				usage
+				return
+				;;
+			l) list=true ;;
+			v)
+				version
+				return
+				;;
+			:)
+				error "option -$OPTARG requires an argument"
+				usage >&2
+				return 16
+				;;
+			?)
+				error "invalid option: -$OPTARG"
+				usage >&2
+				return 16
+				;;
+		esac
+	done
+	shift "$((OPTIND - 1))"
+
+	if (($# > 1)); then
+		error 'accepts at most one filename'
+		usage >&2
+		return 16
+	fi
+	(($#)) && filename="$1"
+
+	if "$list"; then
+		find_readmes "$filename"
+		return
+	fi
+
+	readmes="$(find_readmes "$filename")"
+	readmefile="${readmes%%$'\n'*}"
+	if [[ -z "$readmefile" ]]; then
+		error 'no matching README file found'
+		return 1
+	fi
+
+	if command -v glow > /dev/null 2>&1; then
+		glow -p "$readmefile"
+	else
+		less "$readmefile"
+	fi
+}
+
+main "$@"
