@@ -9,6 +9,7 @@ DEFAULT_FILTERS_CONTENT=$'- /dev/**\n- /proc/**\n- /sys/**\n- /run/**\n- /tmp/**
 declare -a RSYNC_FILTER_ARGS=()
 declare -a RSYNC_VERBOSE_ARGS=()
 declare -a RSYNC_ACL_ARGS=()
+declare -a RSYNC_BWLIMIT_ARGS=()
 declare -a LINK_DEST_ARGS=()
 
 # Cleanup --------------------------------------------------------------------
@@ -235,6 +236,7 @@ rrrr_reset_config() {
 	BACKUP_ROOT=""
 	REMOTE_ROOT="/"
 	RSYNC_VERBOSE="0"
+	RSYNC_BWLIMIT_KIB=""
 	RSYNC_PRESERVE_ACLS="1"
 	RSYNC_KEEP_PARTIAL="0"
 	RSYNC_ACCEPT_PARTIAL="0"
@@ -707,6 +709,7 @@ rrrr_run_backup() {
 	rrrr_build_filter_args
 	rrrr_build_rsync_verbose_args
 	rrrr_build_rsync_acl_args
+	rrrr_build_rsync_bwlimit_args
 	rrrr_build_ssh_command
 
 	local rsync_status=0
@@ -876,6 +879,16 @@ rrrr_build_rsync_acl_args() {
 	esac
 }
 
+rrrr_build_rsync_bwlimit_args() {
+	RSYNC_BWLIMIT_ARGS=()
+
+	case "${RSYNC_BWLIMIT_KIB}" in
+		"") ;;
+		0 | *[!0-9]*) die "RSYNC_BWLIMIT_KIB must be a positive integer when set" ;;
+		*) RSYNC_BWLIMIT_ARGS=("--bwlimit=${RSYNC_BWLIMIT_KIB}") ;;
+	esac
+}
+
 rrrr_build_ssh_command() {
 	SSH_CMD="ssh"
 	if [ -n "${REMOTE_SSH_PORT}" ]; then
@@ -898,7 +911,7 @@ rrrr_run_rsync() {
 			;;
 	esac
 
-	if rsync -aHX "${RSYNC_ACL_ARGS[@]}" "${RSYNC_VERBOSE_ARGS[@]}" --numeric-ids --delete \
+	if rsync -aHX "${RSYNC_ACL_ARGS[@]}" "${RSYNC_VERBOSE_ARGS[@]}" "${RSYNC_BWLIMIT_ARGS[@]}" --numeric-ids --delete \
 		--info=stats2,progress2 \
 		"${RSYNC_FILTER_ARGS[@]}" \
 		"${LINK_DEST_ARGS[@]}" \

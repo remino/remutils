@@ -94,6 +94,10 @@ Remote path to sync (default: \fB/\fR).
 Rsync output level: \fB0\fR (default), \fB1\fR (\fB-v\fR), \fB2\fR
 (\fB-vv\fR), or \fB3\fR (\fB-vvv\fR).
 .TP
+\fBRSYNC_BWLIMIT_KIB\fR
+Optional positive rsync bandwidth limit in KiB/s. When unset (the default),
+rsync is unlimited. Set \fB4096\fR for about 4 MiB/s.
+.TP
 \fBRSYNC_PRESERVE_ACLS\fR
 Preserve ACLs with \fB-A\fR (\fB1\fR, default) or disable it (\fB0\fR)
 when source and destination ACL formats are incompatible.

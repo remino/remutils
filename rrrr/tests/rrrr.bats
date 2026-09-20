@@ -348,6 +348,42 @@ EOF
 	grep -Fx -- "-vv" "$RRRR_TEST_RSYNC_LOG"
 }
 
+@test "supports configurable rsync bandwidth limits" {
+	local host="bandwidth-limit"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_BWLIMIT_KIB=4096
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "--bwlimit=4096" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "leaves rsync bandwidth unlimited by default" {
+	local host="unlimited-bandwidth"
+	_write_basic_config "$host"
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	! grep -q -- "^--bwlimit=" "$RRRR_TEST_RSYNC_LOG"
+}
+
+@test "rejects invalid rsync bandwidth limits" {
+	local host="invalid-bandwidth-limit"
+	_write_basic_config "$host"
+	cat << 'EOF' >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+RSYNC_BWLIMIT_KIB=0
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"RSYNC_BWLIMIT_KIB must be a positive integer when set"* ]]
+}
+
 @test "can disable ACL preservation" {
 	local host="no-acls"
 	_write_basic_config "$host"

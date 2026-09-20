@@ -85,6 +85,8 @@ Common optional variables:
 - `REMOTE_ROOT` – remote path to sync (defaults to `/`).
 - `RSYNC_VERBOSE` – rsync output level: `0` (default), `1` (`-v`), `2` (`-vv`),
   or `3` (`-vvv`).
+- `RSYNC_BWLIMIT_KIB` – optional positive rsync bandwidth limit in KiB/s; when
+  unset (the default), rsync is unlimited. Set `4096` for about 4 MiB/s.
 - `RSYNC_PRESERVE_ACLS` – preserve ACLs with `-A` (`1`, default) or disable it
   (`0`) when source and destination ACL formats are incompatible.
 - `RSYNC_KEEP_PARTIAL` – retain rsync exit-23 results under `partials/` (`1`)

@@ -15,6 +15,7 @@
 ## Unreleased
 
 - Create new ext4 backing images as sparse files.
+- Add an optional per-host rsync bandwidth limit.
 
 ## v2.0.1
 
