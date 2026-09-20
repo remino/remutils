@@ -169,6 +169,10 @@ device for the backup and detaches it when rrrr exits. New images are sparse:
 they have the configured virtual capacity but consume filesystem space only as
 ext4 writes data into them.
 .PP
+Set \fBSTORAGE_IMAGE_SPARSE=0\fR to zero-fill and fully allocate a new image
+instead. The default is \fB1\fR; this setting has no effect once the image
+exists.
+.PP
 \fBSTORAGE_MOUNTPOINT\fR is optional. When unset, rrrr creates and removes a
 private temporary mountpoint. The provider requires permission to use
 \fBlosetup\fR, \fBmount\fR, and \fBumount\fR, plus \fBmkfs.ext4\fR when

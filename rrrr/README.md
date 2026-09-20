@@ -182,6 +182,9 @@ only as ext4 writes data into them. The provider requires permission to use
 `losetup`, `mount`, and `umount`, plus `mkfs.ext4` when creating an image. Set
 `STORAGE_MOUNTPOINT` only if you need a stable mount location.
 
+Set `STORAGE_IMAGE_SPARSE=0` to zero-fill and fully allocate a new image
+instead. The default is `1`; this setting has no effect once the image exists.
+
 Set `STORAGE_ELEVATE_USER` when those operations need a privileged QNAP account.
 rrrr then invokes only the image lifecycle commands with `sudo -n -u` and
 changes the mounted image root back to the backup user. Configure a narrowly

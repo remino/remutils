@@ -209,6 +209,7 @@ rrrr_reset_state() {
 	STORAGE_PROVIDER=""
 	STORAGE_IMAGE=""
 	STORAGE_IMAGE_SIZE_MIB=""
+	STORAGE_IMAGE_SPARSE="1"
 	STORAGE_IMAGE_SIZE=""
 	STORAGE_VOLUME_NAME=""
 	STORAGE_MOUNTPOINT=""
@@ -588,10 +589,18 @@ rrrr_ext4_image_mount() {
 			"" | *[!0-9]*) die "STORAGE_IMAGE_SIZE_MIB must be a positive integer when creating an image" ;;
 		esac
 		[ "${STORAGE_IMAGE_SIZE_MIB}" -gt 0 ] || die "STORAGE_IMAGE_SIZE_MIB must be greater than zero"
+		case "${STORAGE_IMAGE_SPARSE}" in
+			0 | 1) ;;
+			*) die "STORAGE_IMAGE_SPARSE must be 0 or 1" ;;
+		esac
 
 		mkdir -p "$(dirname "${STORAGE_IMAGE}")"
 		log "Creating ext4 image: ${STORAGE_IMAGE} (${STORAGE_IMAGE_SIZE_MIB} MiB)"
-		rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count=0 seek="${STORAGE_IMAGE_SIZE_MIB}"
+		if [ "${STORAGE_IMAGE_SPARSE}" = "1" ]; then
+			rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count=0 seek="${STORAGE_IMAGE_SIZE_MIB}"
+		else
+			rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count="${STORAGE_IMAGE_SIZE_MIB}"
+		fi
 		rrrr_storage_privileged mkfs.ext4 -F -O ^metadata_csum_seed "${STORAGE_IMAGE}"
 	fi
 

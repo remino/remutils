@@ -460,6 +460,44 @@ EOF
 	grep -Fx -- "losetup -d /dev/loop-test" "$RRRR_TEST_STORAGE_LOG"
 }
 
+@test "can fully allocate an ext4 image" {
+	local host="fully-allocated-image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.img"
+	export RRRR_TEST_MOUNTPOINT="$TEST_ROOT/mounts/$host"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="ext4-image"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE_MIB=16
+STORAGE_IMAGE_SPARSE=0
+STORAGE_MOUNTPOINT="${RRRR_TEST_MOUNTPOINT}"
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -eq 0 ]
+	grep -Fx -- "dd if=/dev/zero of=$image bs=1M count=16" "$RRRR_TEST_STORAGE_LOG"
+}
+
+@test "rejects invalid ext4 image sparse settings" {
+	local host="invalid-sparse-image"
+	_write_basic_config "$host"
+
+	local image="$TEST_ROOT/images/$host.img"
+	cat << EOF >> "$XDG_CONFIG_HOME/rrrr/$host/config"
+STORAGE_PROVIDER="ext4-image"
+STORAGE_IMAGE="${image}"
+STORAGE_IMAGE_SIZE_MIB=16
+STORAGE_IMAGE_SPARSE=yes
+EOF
+
+	run "$BATS_TEST_DIRNAME/../rrrr" "$host"
+
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"STORAGE_IMAGE_SPARSE must be 0 or 1"* ]]
+}
+
 @test "creates, mounts, and unmounts an APFS sparse bundle" {
 	local host="mac-image"
 	_write_basic_config "$host"

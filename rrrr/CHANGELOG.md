@@ -15,6 +15,7 @@
 ## Unreleased
 
 - Create new ext4 backing images as sparse files.
+- Allow new ext4 images to be fully allocated with `STORAGE_IMAGE_SPARSE=0`.
 - Add an optional per-host rsync bandwidth limit.
 
 ## v2.0.1
