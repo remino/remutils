@@ -22,6 +22,7 @@ version_release_main() {
 
 	SCRIPT_DIR="$1"
 	[ ! -d "$SCRIPT_DIR" ] && _fatal $E_MISSING_FILE "Missing or not a directory: $SCRIPT_DIR"
+	SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 
 	SCRIPT_NAME="$(basename "$SCRIPT_DIR")"
 	SCRIPT_FILE="$SCRIPT_DIR/$SCRIPT_NAME"

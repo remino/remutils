@@ -62,6 +62,10 @@ EOF
 set -euo pipefail
 
 if [ "$1" = "-m" ] && [ "$2" = "pip" ] && [ "$3" = "wheel" ]; then
+	case "$8" in
+		/*) ;;
+		*) exit 1 ;;
+	esac
 	touch "$7/demo-1.2.3-py3-none-any.whl"
 	exit 0
 fi
@@ -78,7 +82,7 @@ EOF
 	git -C "$WORKDIR" tag "demo@1.2.3"
 
 	pushd "$WORKDIR" > /dev/null
-	GH_CREATE="$WORKDIR/create" GH_UPLOAD="$WORKDIR/upload" PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-release" "$SCRIPT_DIR"
+	GH_CREATE="$WORKDIR/create" GH_UPLOAD="$WORKDIR/upload" PATH="$BIN_DIR:$PATH" run "$BIN_DIR/version-release" demo
 	popd > /dev/null
 
 	[ "$status" -eq 0 ]
