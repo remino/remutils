@@ -75,9 +75,8 @@ Use `just` for common development tasks:
     - Show versions for all tools, or one tool when `name` is provided.
 - `just release <name> <initial|major|minor|patch> [--github]`
     - Create a release commit and tag, optionally publishing to GitHub.
-    - Python package releases additionally build and upload a wheel and source
-      distribution; install the build frontend with
-      `python3 -m pip install build`.
+    - Python package releases additionally build and upload a wheel alongside
+      the existing source archive.
 - `just clean`
     - Remove generated release tarballs and checksum files.
 

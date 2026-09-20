@@ -41,11 +41,10 @@ version_release_main() {
 
 	if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
 		_require python3
-		python3 -m build --version > /dev/null 2>&1 || _fatal $E_MISSING_APP "Required: Python build module (install with: python3 -m pip install build)"
 
 		BUILD_DIR="$(mktemp -d)"
 		trap 'rm -rf "$BUILD_DIR"' EXIT
-		python3 -m build --outdir "$BUILD_DIR" "$SCRIPT_DIR"
+		python3 -m pip wheel --no-deps --no-build-isolation --wheel-dir "$BUILD_DIR" "$SCRIPT_DIR"
 
 		while IFS= read -r artifact; do
 			RELEASE_ASSETS+=("$artifact")

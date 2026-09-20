@@ -61,12 +61,8 @@ EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$1" = "-m" ] && [ "$2" = "build" ] && [ "$3" = "--version" ]; then
-	exit 0
-fi
-
-if [ "$1" = "-m" ] && [ "$2" = "build" ] && [ "$3" = "--outdir" ]; then
-	touch "$4/demo-1.2.3.tar.gz" "$4/demo-1.2.3-py3-none-any.whl"
+if [ "$1" = "-m" ] && [ "$2" = "pip" ] && [ "$3" = "wheel" ]; then
+	touch "$7/demo-1.2.3-py3-none-any.whl"
 	exit 0
 fi
 
@@ -93,6 +89,5 @@ demo@1.2.3
 -" ]
 	UPLOAD="$(cat "$WORKDIR/upload")"
 	[[ "$UPLOAD" == *"demo@1.2.3.tar.gz"* ]]
-	[[ "$UPLOAD" == *"demo-1.2.3.tar.gz"* ]]
 	[[ "$UPLOAD" == *"demo-1.2.3-py3-none-any.whl"* ]]
 }
