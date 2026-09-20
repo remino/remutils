@@ -2,11 +2,11 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v0.2.0](#v020)
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v0.2.0
 
 - Package `timinal` for pipx and Python virtual environments.
 - Install `timinal` with Homebrew's Python virtualenv support.
