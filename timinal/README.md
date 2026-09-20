@@ -22,7 +22,15 @@ Render the current time with any installed FIGlet font.
 brew install remino/remino/timinal
 ```
 
-Or run it directly from a clone:
+For a Python user installation, use [pipx](https://pipx.pypa.io/) from a clone:
+
+```sh
+git clone git@github.com:remino/remutils.git
+cd remutils/timinal
+pipx install .
+```
+
+Or run it directly from the clone:
 
 ```sh
 git clone git@github.com:remino/remutils.git

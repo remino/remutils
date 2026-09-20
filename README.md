@@ -24,8 +24,9 @@ downloading its tarball, or the script itself.
 
 Shell-based utilities also provide `make install` and `make uninstall` from
 their own directories. The default prefix is `/usr/local`; use `PREFIX` for a
-user-local installation or `DESTDIR` when staging a package. The Node and Rust
-utilities use their documented npm and Cargo installation flows instead:
+user-local installation or `DESTDIR` when staging a package. The Node, Python,
+and Rust utilities use their documented npm, pipx, and Cargo installation flows
+instead:
 
 ```sh
 cd remutils/mkx
@@ -74,6 +75,9 @@ Use `just` for common development tasks:
     - Show versions for all tools, or one tool when `name` is provided.
 - `just release <name> <initial|major|minor|patch> [--github]`
     - Create a release commit and tag, optionally publishing to GitHub.
+    - Python package releases additionally build and upload a wheel and source
+      distribution; install the build frontend with
+      `python3 -m pip install build`.
 - `just clean`
     - Remove generated release tarballs and checksum files.
 

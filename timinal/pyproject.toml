@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "timinal"
+version = "0.1.0"
+description = "Render a configurable FIGlet clock"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "ISC"
+authors = [{ name = "Rémino Rem", email = "rem@remino.net" }]
+classifiers = [
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.scripts]
+timinal = "timinal:main"
+
+[project.urls]
+Homepage = "https://remino.net/timinal/"
+Repository = "https://github.com/remino/remutils/tree/main/timinal"
+
+[tool.setuptools]
+py-modules = ["timinal"]

@@ -8,8 +8,7 @@
 
 ## Unreleased
 
-- Add `make install` and `make uninstall` targets.
-
-- Add `make install` and `make uninstall` targets.
+- Package `timinal` for pipx and Python virtual environments.
+- Install `timinal` with Homebrew's Python virtualenv support.
 
 - Add `timinal`, a configurable FIGlet clock migrated from Termino.

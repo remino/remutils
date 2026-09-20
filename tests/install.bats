@@ -14,7 +14,7 @@ teardown() {
 		name="${directory%/}"
 		[ -f "$name/$name" ] || continue
 		case "$name" in
-			comprose | litesite | webshot) continue ;;
+			comprose | litesite | timinal | webshot) continue ;;
 		esac
 
 		run make -C "$name" -n install
@@ -38,13 +38,7 @@ teardown() {
 	[ -L "$PREFIX/bin/movie2gif" ]
 }
 
-@test "installed wrappers resolve their runtime files" {
-	run make -C timinal install "PREFIX=$PREFIX"
-	[ "$status" -eq 0 ]
-
-	run "$PREFIX/bin/timinal" --format %H:%M
-	[ "$status" -eq 0 ]
-
+@test "installed shell wrappers resolve their runtime files" {
 	run make -C mkprj install "PREFIX=$PREFIX"
 	[ "$status" -eq 0 ]
 

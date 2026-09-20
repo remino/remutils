@@ -16,6 +16,31 @@ teardown() {
 	[ "$output" = "1.2.3" ]
 }
 
+@test "uses the project version from pyproject.toml" {
+	PROJECT_DIR="$(mktemp -d)"
+	VERSION_FILE="$PROJECT_DIR/demo"
+	touch "$VERSION_FILE"
+
+	cat > "$PROJECT_DIR/pyproject.toml" << 'EOF'
+[project]
+name = "demo"
+version = "1.2.3"
+EOF
+
+	run ./bin/version show "$VERSION_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "1.2.3" ]
+
+	run ./bin/version patch "$VERSION_FILE"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = "1.2.3 1.2.4 $VERSION_FILE" ]
+	[ "$(awk '$1 == "version" { gsub(/"/, "", $3); print $3 }' "$PROJECT_DIR/pyproject.toml")" = "1.2.4" ]
+
+	rm -rf "$PROJECT_DIR"
+}
+
 @test "updates major version in file" {
 	VERSION_FILE="$(mktemp)"
 	echo 'VERSION=1.1.1' > "$VERSION_FILE"

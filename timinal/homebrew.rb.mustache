@@ -1,5 +1,7 @@
 # vim: set ft=ruby :
 class {{formula_class}} < Formula
+  include Language::Python::Virtualenv
+
   desc "Render a configurable FIGlet clock"
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
@@ -18,8 +20,7 @@ class {{formula_class}} < Formula
   end
 
   def install
-    libexec.install "timinal.py"
-    (bin/"timinal").write_env_script libexec/"timinal.py", PATH: "#{Formula['python@3.14'].opt_bin}:$PATH"
+    virtualenv_install_with_resources
     man1.install "man/timinal.1"
   end
 

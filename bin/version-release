@@ -37,9 +37,23 @@ version_release_main() {
 
 	TAG="$SCRIPT_NAME@$VERSION"
 	TARBALL="$(version-tarball "$SCRIPT_NAME" | tail -1)"
+	RELEASE_ASSETS=("$TARBALL")
+
+	if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
+		_require python3
+		python3 -m build --version > /dev/null 2>&1 || _fatal $E_MISSING_APP "Required: Python build module (install with: python3 -m pip install build)"
+
+		BUILD_DIR="$(mktemp -d)"
+		trap 'rm -rf "$BUILD_DIR"' EXIT
+		python3 -m build --outdir "$BUILD_DIR" "$SCRIPT_DIR"
+
+		while IFS= read -r artifact; do
+			RELEASE_ASSETS+=("$artifact")
+		done < <(find "$BUILD_DIR" -maxdepth 1 -type f | sort)
+	fi
 
 	_changelog | gh release create "$TAG" --notes-file -
-	gh release upload "$TAG" "$TARBALL"
+	gh release upload "$TAG" "${RELEASE_ASSETS[@]}"
 }
 
 _changelog() {

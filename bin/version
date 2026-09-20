@@ -20,6 +20,7 @@ version_main() {
 
 	PACKAGE_JSON="$(_package_json_for "$FILE")"
 	CARGO_TOML="$(_cargo_toml_for "$FILE")"
+	PYPROJECT_TOML="$(_pyproject_toml_for "$FILE")"
 	VERSION_SOURCE="shell"
 
 	if [ -f "$PACKAGE_JSON" ]; then
@@ -28,6 +29,9 @@ version_main() {
 	elif [ -f "$CARGO_TOML" ]; then
 		VERSION="$(_read_cargo_version "$CARGO_TOML")"
 		VERSION_SOURCE="cargo"
+	elif [ -f "$PYPROJECT_TOML" ]; then
+		VERSION="$(_read_pyproject_version "$PYPROJECT_TOML")"
+		VERSION_SOURCE="pyproject"
 	else
 		VERSION="$(_read_shell_version "$FILE")"
 	fi
@@ -63,6 +67,14 @@ _cargo_toml_for() {
 	echo "$dir/Cargo.toml"
 }
 
+_pyproject_toml_for() {
+	local file=$1
+	local dir
+
+	dir="$(dirname "$file")"
+	echo "$dir/pyproject.toml"
+}
+
 _read_package_version() {
 	local package_json=$1
 
@@ -94,6 +106,25 @@ _read_cargo_version() {
 			exit
 		}
 	' "$cargo_toml"
+}
+
+_read_pyproject_version() {
+	local pyproject_toml=$1
+
+	awk '
+		$0 == "[project]" {
+			in_project = 1
+			next
+		}
+		/^\[/ {
+			in_project = 0
+		}
+		in_project && $1 == "version" {
+			gsub(/"/, "", $3)
+			print $3
+			exit
+		}
+	' "$pyproject_toml"
 }
 
 _read_shell_version() {
@@ -135,6 +166,9 @@ _update() {
 		cargo)
 			_write_cargo_version "$CARGO_TOML" "$NEW_VERSION"
 			;;
+		pyproject)
+			_write_pyproject_version "$PYPROJECT_TOML" "$NEW_VERSION"
+			;;
 		package)
 			_write_package_version "$package_json" "$NEW_VERSION"
 			;;
@@ -168,6 +202,16 @@ _write_cargo_version() {
 my $version = $ENV{NEW_VERSION};
 s/(\[package\][\s\S]*?^version\s*=\s*")(\d+\.\d+\.\d+)(")/$1$version$3/m;
 ' "$cargo_toml"
+}
+
+_write_pyproject_version() {
+	local pyproject_toml=$1
+	local new_version=$2
+
+	NEW_VERSION="$new_version" perl -0pi -e '
+my $version = $ENV{NEW_VERSION};
+s/(\[project\][\s\S]*?^version\s*=\s*")(\d+\.\d+\.\d+)(")/$1$version$3/m;
+' "$pyproject_toml"
 }
 
 _write_shell_version() {
