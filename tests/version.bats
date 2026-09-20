@@ -240,7 +240,8 @@ EOF
 
 	cat > "$SCRIPT_DIR/homebrew.rb.mustache" << 'EOF'
 class {{formula_class}} < Formula
-  version "{{version}}"
+  # version {{version}}
+  url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
 end
 EOF
 
@@ -258,6 +259,8 @@ EOF
 
 	[ "$status" -eq 0 ]
 	[ "$(sed -n '1p' "$FORMULA_DIR/test-tool.rb")" = "class TestTool < Formula" ]
+	[ "$(sed -n '2p' "$FORMULA_DIR/test-tool.rb")" = "  # version 1.2.3" ]
+	[ "$(sed -n '3p' "$FORMULA_DIR/test-tool.rb")" = '  url "https://github.com/remino/remutils/releases/download/test-tool@1.2.3/test-tool@1.2.3.tar.gz"' ]
 
 	rm -rf "$WORKDIR"
 }
