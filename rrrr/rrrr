@@ -589,7 +589,7 @@ rrrr_ext4_image_mount() {
 
 		mkdir -p "$(dirname "${STORAGE_IMAGE}")"
 		log "Creating ext4 image: ${STORAGE_IMAGE} (${STORAGE_IMAGE_SIZE_MIB} MiB)"
-		rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count="${STORAGE_IMAGE_SIZE_MIB}"
+		rrrr_storage_privileged dd if=/dev/zero of="${STORAGE_IMAGE}" bs=1M count=0 seek="${STORAGE_IMAGE_SIZE_MIB}"
 		rrrr_storage_privileged mkfs.ext4 -F -O ^metadata_csum_seed "${STORAGE_IMAGE}"
 	fi
 

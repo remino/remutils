@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v2.0.1](#v201)
 - [v2.0.0](#v200)
 - [v1.3.0](#v130)
@@ -10,6 +11,10 @@
 - [v1.0.1](#v101)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Create new ext4 backing images as sparse files.
 
 ## v2.0.1
 

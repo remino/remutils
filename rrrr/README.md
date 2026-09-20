@@ -174,10 +174,11 @@ STORAGE_ELEVATE_USER="admin"
 ```
 
 An image is created and formatted only when `STORAGE_IMAGE` does not yet exist.
-`STORAGE_IMAGE_SIZE_MIB` is required only for that first run. The provider
-requires permission to use `losetup`, `mount`, and `umount`, plus `mkfs.ext4`
-when creating an image. Set `STORAGE_MOUNTPOINT` only if you need a stable mount
-location.
+`STORAGE_IMAGE_SIZE_MIB` is required only for that first run. New images are
+sparse: they have the configured virtual capacity but consume filesystem space
+only as ext4 writes data into them. The provider requires permission to use
+`losetup`, `mount`, and `umount`, plus `mkfs.ext4` when creating an image. Set
+`STORAGE_MOUNTPOINT` only if you need a stable mount location.
 
 Set `STORAGE_ELEVATE_USER` when those operations need a privileged QNAP account.
 rrrr then invokes only the image lifecycle commands with `sudo -n -u` and

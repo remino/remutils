@@ -415,7 +415,7 @@ EOF
 	[ "$status" -eq 0 ]
 	[ -f "$image" ]
 	[ -n "$(_newest_snapshot_path "$RRRR_TEST_MOUNTPOINT")" ]
-	grep -Fx -- "dd if=/dev/zero of=$image bs=1M count=16" "$RRRR_TEST_STORAGE_LOG"
+	grep -Fx -- "dd if=/dev/zero of=$image bs=1M count=0 seek=16" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "mkfs.ext4 -F -O ^metadata_csum_seed $image" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "sudo -n -u admin losetup -f" "$RRRR_TEST_STORAGE_LOG"
 	grep -Fx -- "losetup /dev/loop-test $image" "$RRRR_TEST_STORAGE_LOG"

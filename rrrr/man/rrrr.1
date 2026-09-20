@@ -161,7 +161,9 @@ On Linux systems, set \fBSTORAGE_PROVIDER=ext4-image\fR to store a host's
 snapshots in one ext4 filesystem image. Set \fBSTORAGE_IMAGE\fR to the image
 file. When the image does not exist, \fBSTORAGE_IMAGE_SIZE_MIB\fR is required
 and specifies its creation size in MiB. rrrr attaches the image to a loop
-device for the backup and detaches it when rrrr exits.
+device for the backup and detaches it when rrrr exits. New images are sparse:
+they have the configured virtual capacity but consume filesystem space only as
+ext4 writes data into them.
 .PP
 \fBSTORAGE_MOUNTPOINT\fR is optional. When unset, rrrr creates and removes a
 private temporary mountpoint. The provider requires permission to use
