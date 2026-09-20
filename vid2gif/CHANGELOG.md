@@ -8,6 +8,10 @@
 
 ## Unreleased
 
+- Add `make install` and `make uninstall` targets.
+
+- Add `make install` and `make uninstall` targets.
+
 - Initial `vid2gif` release: the next major version of `movie2gif`.
 - Remove the redundant `convert` command; run conversion directly.
 - Add safe argument handling, overwrite controls, and a Homebrew `movie2gif`

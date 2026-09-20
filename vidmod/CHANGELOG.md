@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v3.2.0](#v320)
 - [v3.1.0](#v310)
 - [v3.0.0](#v300)
@@ -11,6 +12,10 @@
 - [v2.0.0](#v200)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Add `make install` and `make uninstall` targets.
 
 ## v3.2.0
 

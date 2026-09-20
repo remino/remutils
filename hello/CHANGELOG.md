@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Add `make install` and `make uninstall` targets.
+
 ## v1.0.1
 
 - Bump up version for release testing.

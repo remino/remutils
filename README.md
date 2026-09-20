@@ -22,6 +22,17 @@ See `README.md` for the relevant subdirectory of the script you wish to install.
 Most scripts can be installed via Homebrew, simply by cloning the repo,
 downloading its tarball, or the script itself.
 
+Shell-based utilities also provide `make install` and `make uninstall` from
+their own directories. The default prefix is `/usr/local`; use `PREFIX` for a
+user-local installation or `DESTDIR` when staging a package. The Node and Rust
+utilities use their documented npm and Cargo installation flows instead:
+
+```sh
+cd remutils/mkx
+make install PREFIX="$HOME/.local"
+make uninstall PREFIX="$HOME/.local"
+```
+
 ## Development
 
 Every directory except `bin`, `lib`, and `tests` houses a script of its own,
@@ -29,6 +40,7 @@ along with documentation and a test suite. For example:
 
 - `hello`
     - `CHANGELOG.md`
+    - `Makefile`: local `install` and `uninstall` targets.
     - `hello`: executable script named the same than its parent directory.
     - `formula.rb.mustache`: Mustache template of the script's Homebrew formula.
     - `man/hello.1`
