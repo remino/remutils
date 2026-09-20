@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v2.1.0](#v210)
 - [v2.0.1](#v201)
 - [v2.0.0](#v200)
 - [v1.3.0](#v130)
@@ -12,7 +12,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v2.1.0
 
 - Create new ext4 backing images as sparse files.
 - Allow new ext4 images to be fully allocated with `STORAGE_IMAGE_SPARSE=0`.
