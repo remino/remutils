@@ -1,0 +1,571 @@
+#!/bin/sh
+# maconf
+# Get and set various settings in macOS.
+
+VERSION="1.1.1"
+
+maconf_main() {
+	scriptpath="$( realpath "$0" )"
+	scriptname="$( basename "$scriptpath" )"
+
+	e_args=16
+	e_no_defaults=17
+
+	help=0
+
+	while getopts hv opt
+	do
+		case "$opt" in
+			h) maconf_help && return ;;
+			v) maconf_version && return ;;
+			*) _invalid_opt "$opt" ;;
+		esac
+	done
+
+	shift $(( OPTIND - 1 ))
+
+	maconf_process "$@"
+
+	return $?
+}
+
+maconf_process() {
+	[ $# -lt 1 ] && maconf_help && return
+
+	arg1=
+	arg2=
+
+	[ -n "$1" ] && arg1="$1" && shift
+	[ -n "$1" ] && arg2="$1" && shift
+
+	case "${arg1}_$arg2" in
+		dock_|\
+		dock_addspacer|\
+		dock_delay|\
+		dock_hiddenapps|\
+		dock_position|\
+		dock_restart|\
+		finder_|\
+		finder_fullpath|\
+		finder_restart|\
+		screencapture_|\
+		screencapture_format|\
+		screencapture_location|\
+		screencapture_shadow|\
+		users_|\
+		users_show|\
+		users_hide)
+			[ -z "$arg2" ] && "maconf_help_$arg1" "$@" && return
+			[ $help -ne 0 ] && "maconf_help_${arg1}_$arg2" "$@" && return
+			"maconf_${arg1}_$arg2" "$@"
+			;;
+
+		help_*|usage_*)
+			help=1
+			[ -z "$arg2" ] && maconf_process && return
+			maconf_process "$arg2" "$@"
+			;;
+
+		version_*) maconf_version ;;
+		*) _invalid_arg "$arg1" "$arg2" ;;
+	esac
+}
+
+maconf_dock_addspacer() {
+	_echo "Adding spacer to Dock..."
+
+	tile_type=
+	size="$1"
+	[ -z "$size" ] && size=wide
+
+	case "$size" in
+		narrow) tile_type=small-spacer-tile ;;
+		wide) tile_type=spacer-tile ;;
+		*) _invalid_arg "$size" ;;
+	esac
+
+	_write com.apple.dock persistent-apps \
+		-array-add "{tile-data={}; tile-type=\"$tile_type\";}"
+
+	_restart_dock
+}
+
+maconf_dock_delay() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.dock autohide-time-modifier
+		return
+	fi
+
+	args=
+
+	case "$val" in
+		none) args="-int 0" ;;
+		normal|reset) args="" ;;
+		short) args="-float 0.12" ;;
+		*) args="-float $val" ;;
+	esac
+
+	_echo "Setting reveal delay of Dock..."
+
+	if [ -z "$args" ]
+	then
+		defaults delete com.apple.dock autohide-time-modifier
+	else
+		echo "$args" | xargs defaults write com.apple.dock autohide-time-modifier
+	fi
+
+	_restart_dock
+}
+
+maconf_dock_position() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.dock orientation
+		return
+	fi
+
+	args=
+
+	case "$val" in
+		bottom|left|right) args="-string $val" ;;
+		*) _invalid_arg "$val" ;;
+	esac
+
+	_echo "Setting Dock position to $val..."
+
+	echo "$args" | xargs defaults write com.apple.dock orientation
+
+	_restart_dock
+}
+
+maconf_dock_hiddenapps() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.Dock showhidden
+		return
+	fi
+
+	args=
+
+	case "$val" in
+		conceal)
+			_echo 'Setting hidden apps to be shown as opaque icons in Dock...'
+			args='-bool FALSE'
+			;;
+
+		reveal)
+			_echo 'Setting hidden apps to be shown as translucent icons in Dock...'
+			args='-bool TRUE'
+			;;
+
+		*) _invalid_arg "$val" ;;
+	esac
+
+	_write com.apple.Dock showhidden "$args"
+	_restart_dock
+}
+
+maconf_dock_restart() {
+	_restart_dock
+}
+
+maconf_finder_fullpath() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.finder _FXShowPosixPathInTitle
+		return
+	fi
+
+	args=
+
+	case "$val" in
+		hide)
+			_echo "Setting only current folder's name to be shown in Finder's title bar..."
+			args='-bool FALSE'
+			;;
+
+		show)
+			_echo "Setting full path to be shown in Finder's title bar..."
+			args='-bool TRUE'
+			;;
+
+		*) _invalid_arg "$val" ;;
+	esac
+
+	_write com.apple.finder _FXShowPosixPathInTitle "$args"
+	_restart_finder
+}
+
+maconf_finder_restart() {
+	_restart_finder
+}
+
+maconf_screencapture_format() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.screencapture type
+		return
+	fi
+
+	args=
+
+	case "$val" in
+		jpeg) val=jpg ;;
+	esac
+
+	_write com.apple.screencapture type "$val"
+}
+
+maconf_screencapture_location() {
+	val="$1"
+
+	if [ -z "$val" ]
+	then
+		_read com.apple.screencapture location
+		return
+	fi
+
+	_write com.apple.screencapture location "$val"
+}
+
+maconf_screencapture_shadow() {
+	input="$1"
+
+	if [ -z "$input" ]
+	then
+		current="$( _read com.apple.screencapture disable-shadow )"
+		[ "$current" = "false" ] && _echo true && return
+		_echo false
+		return
+	fi
+
+	case "$input" in
+		true|yes|on) val=false ;;
+		false|no|off) val=true ;;
+		*) _invalid_arg "$input" ;;
+	esac
+
+	_write com.apple.screencapture disable-shadow "$val"
+	_restart_ui
+}
+
+maconf_help() {
+cat <<USAGE
+Usage: $scriptname [-hv] command
+
+Get and set various settings in macOS.
+
+Available commands:
+
+	dock
+		Get or set settings related to the Dock.
+
+	finder
+		Get or set settings related to the Finder.
+
+	screencapture
+		Get or set settings related to screen captures.
+
+	help
+		Show this help screen.
+
+	users
+		Manage users.
+
+	version
+		Show version number.
+
+Available options:
+
+	-h         Show this help screen.
+	-v         Show version number.
+
+USAGE
+}
+
+maconf_help_dock() {
+cat <<USAGE
+Usage: $scriptname [options] dock [args...]
+
+Get or set settings related to the Dock.
+
+Available settings:
+
+	addspacer
+		Add spacer to Dock.
+
+	delay
+		Get or set delay before Dock appears in seconds.
+
+	hiddenapps
+		Get or set whether apps hidden in Dock appear as opaque or transparent.
+
+	position
+		Get or set the position of the Dock.
+
+	restart
+		Restart the Dock.
+
+USAGE
+}
+
+maconf_help_dock_addspacer() {
+cat <<USAGE
+Usage: $scriptname [options] dock addspacer [narrow|wide]
+
+Add spacer to Dock.
+
+	narrow      Add narrow space.
+	wide        Add wide space. (Default.)
+
+USAGE
+}
+
+maconf_help_dock_delay() {
+cat <<USAGE
+Usage: $scriptname [options] dock delay [time_in_seconds]
+
+Get or set delay before Dock appears in seconds.
+
+USAGE
+}
+
+maconf_help_dock_hiddenapps() {
+cat <<USAGE
+Usage: $scriptname [options] dock hiddenapps [conceal|reveal]
+
+Get or set whether apps hidden in Dock appear as opaque or transparent.
+
+USAGE
+}
+
+maconf_help_dock_position() {
+cat <<USAGE
+Usage: $scriptname [options] dock position [bottom|left|right]
+
+Get or set the position of the Dock.
+
+USAGE
+}
+
+maconf_help_dock_restart() {
+cat <<USAGE
+Usage: $scriptname [options] dock restart
+
+Restart the Dock.
+
+USAGE
+}
+
+maconf_help_finder() {
+cat <<USAGE
+Usage: $scriptname [options] finder [args...]
+
+Get or set settings related to the Finder.
+
+Available settings:
+
+	fullpath
+		Get or set whether or not the full path is shown.
+
+	restart
+		Restart the Finder.
+
+USAGE
+}
+
+maconf_help_finder_restart() {
+cat <<USAGE
+Usage: $scriptname [options] finder restart
+
+Restart the Finder.
+
+USAGE
+}
+
+maconf_help_screencapture() {
+cat <<USAGE
+Usage: $scriptname [options] screencapture [args...]
+
+Get or set settings related to screen captures.
+
+Available settings:
+
+	format
+		Get or set the format of screen capture files.
+
+	location
+		Get or set the location where screen captures are saved.
+
+	shadow
+		Get or set whether or not a shadow is included in screen captures.
+
+USAGE
+}
+
+maconf_help_screencapture_format() {
+cat <<USAGE
+Usage: $scriptname [options] screencapture format [jpg|png]
+
+Get or set the format of screen capture files.
+
+USAGE
+}
+
+maconf_help_screencapture_location() {
+cat <<USAGE
+Usage: $scriptname [options] screencapture location [path]
+
+Get or set the location where screen captures are saved.
+
+USAGE
+}
+
+maconf_help_screencapture_shadow() {
+cat <<USAGE
+Usage: $scriptname [options] screencapture shadow [true|false]
+
+Get or set whether or not a shadow is included in screen captures.
+
+USAGE
+}
+
+maconf_help_users() {
+cat <<USAGE
+Usage: $scriptname [options] users [args...]
+
+Manage users.
+
+Available settings:
+
+	hide
+		Hide user from the login window.
+
+	show
+		Show user on the login window.
+
+USAGE
+}
+
+maconf_help_users_hide() {
+cat <<USAGE
+Usage: $scriptname [options] users hide [username]
+
+Hide user from the login window.
+
+USAGE
+}
+
+maconf_help_users_show() {
+cat <<USAGE
+Usage: $scriptname [options] users show [username]
+
+Show user on the login window.
+
+USAGE
+}
+
+maconf_users() {
+	action="$1"
+	username="$2"
+	ishidden=0
+
+	[ "$username" = "" ] && _fatal $e_args "Must specify username."
+
+	case "$action" in
+		hide) ishidden=1 ;;
+		show) ishidden=0 ;;
+		*) _invalid_arg "$action" ;;
+	esac
+
+	sudo dscl . create "/Users/$username" IsHidden "$ishidden"
+}
+
+maconf_users_hide() {
+	maconf_users hide "$1"
+}
+
+maconf_users_show() {
+	maconf_users show "$1"
+}
+
+maconf_version() {
+	_echo "$scriptname $VERSION"
+}
+
+_defaults() {
+	_require_defaults
+	defaults "$@"
+}
+
+_delete() {
+	_defaults delete "$@"
+}
+
+_read() {
+	_defaults read "$@"
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_fatal() {
+	exit_code="$1"
+	shift
+	_error "$@"
+	exit "$exit_code"
+}
+
+_invalid_arg() {
+	_error "Invalid argument: $*"
+	_echo
+	exit $e_args
+}
+
+_invalid_opt() {
+	_error "Invalid option: $1"
+	_echo
+	exit $e_args
+}
+
+_require_defaults() {
+	which defaults > /dev/null 2>&1 && return
+	_fatal $e_no_defaults "The defaults program is missing. Are you running this on macOS?"
+}
+
+_restart_dock() {
+	_echo "Restarting Dock..."
+	killall Dock
+}
+
+_restart_finder() {
+	_echo "Restarting Finder..."
+	killall Finder
+}
+
+_restart_ui() {
+	_echo "Restarting UI..."
+	killall SystemUIServer
+}
+
+_write() {
+	_defaults write "$@"
+}
+
+maconf_main "$@"
