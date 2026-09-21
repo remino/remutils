@@ -1,35 +1,49 @@
-maconf
-======
+# maconf
 
-```
-Usage: maconf [-hv] command
+Get and set common macOS preferences from the command line.
 
-Get and set various settings in macOS.
+- <https://remino.net/maconf/>
+- [Source code](https://github.com/remino/remutils/tree/main/maconf)
 
-Available commands:
+2026 Rémino Rem <https://remino.net/>
 
-	dock
-		Get or set settings related to the Dock.
+---
 
-	finder
-		Get or set settings related to the Finder.
+<!-- mtoc-start -->
 
-	screencapture
-		Get or set settings related to screen captures.
+- [Installation](#installation)
+- [Usage](#usage)
 
-	help
-		Show this help screen.
+<!-- mtoc-end -->
 
-	users
-		Manage users.
+## Installation
 
-	version
-		Show version number.
-
-Available options:
-
-	-h         Show this help screen.
-	-v         Show version number.
-
+```sh
+brew install remino/remino/maconf
 ```
 
+Or run it directly from a clone:
+
+```sh
+git clone git@github.com:remino/remutils.git
+cd remutils/maconf
+./maconf -h
+```
+
+## Usage
+
+Run `man maconf` or `maconf -h` for the complete command reference.
+
+Settings without a final value read their current preference; supply a value to
+change it. For example:
+
+```sh
+maconf dock position left
+maconf dock delay short
+maconf finder fullpath show
+maconf screencapture location "$HOME/Desktop"
+```
+
+Some commands restart Finder, the Dock, or SystemUIServer so the change applies
+immediately. `maconf users hide` and `maconf users show` require administrator
+privileges.

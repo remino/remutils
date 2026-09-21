@@ -1,0 +1,87 @@
+.TH MACONF 1 "September 2026" "maconf 1.1.1" "User Commands"
+.SH NAME
+maconf \- get and set common macOS preferences
+.SH SYNOPSIS
+.B maconf
+.RI [ \-hv ] " command " [ arguments ]
+.SH DESCRIPTION
+.B maconf
+reads and writes selected macOS preferences using
+.BR defaults (1)
+and restarts affected processes when required.
+.SH COMMANDS
+.TP
+.B dock addspacer [narrow|wide]
+Add a narrow or wide spacer to the Dock. The default is wide.
+.TP
+.B dock delay [seconds|none|normal|reset|short]
+Read or set the Dock auto-hide reveal delay.
+.TP
+.B dock hiddenapps [conceal|reveal]
+Read or set whether hidden Dock applications are opaque or translucent.
+.TP
+.B dock position [bottom|left|right]
+Read or set the Dock position.
+.TP
+.B dock restart
+Restart the Dock.
+.TP
+.B finder fullpath [hide|show]
+Read or set whether Finder's title bar shows the full POSIX path.
+.TP
+.B finder restart
+Restart Finder.
+.TP
+.B screencapture format [jpg|png]
+Read or set the screen-capture file format.
+.TP
+.B screencapture location [path]
+Read or set the directory where screen captures are saved.
+.TP
+.B screencapture shadow [true|false]
+Read or set whether screen captures include a window shadow. The aliases
+.BR yes / on
+and
+.BR no / off
+are also accepted.
+.TP
+.B users hide username
+Hide a user from the macOS login window.
+.TP
+.B users show username
+Show a user on the macOS login window.
+.TP
+.B help [command [setting]]
+Show command-specific help.
+.TP
+.B version
+Print the maconf version.
+.SH OPTIONS
+.TP
+.B \-h
+Show help.
+.TP
+.B \-v
+Print the version.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 16
+Invalid option or argument.
+.TP
+.B 17
+The macOS
+.B defaults
+utility is unavailable.
+.SH EXAMPLES
+.EX
+maconf dock position left
+maconf dock delay short
+maconf finder fullpath show
+maconf screencapture location "$HOME/Desktop"
+.EE
+.SH SEE ALSO
+.BR defaults (1),
+.BR dscl (1)

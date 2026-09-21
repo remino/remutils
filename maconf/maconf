@@ -5,24 +5,23 @@
 VERSION="1.1.1"
 
 maconf_main() {
-	scriptpath="$( realpath "$0" )"
-	scriptname="$( basename "$scriptpath" )"
+	scriptpath="$(realpath "$0")"
+	scriptname="$(basename "$scriptpath")"
 
 	e_args=16
 	e_no_defaults=17
 
 	help=0
 
-	while getopts hv opt
-	do
+	while getopts hv opt; do
 		case "$opt" in
-			h) maconf_help && return ;;
-			v) maconf_version && return ;;
-			*) _invalid_opt "$opt" ;;
+		h) maconf_help && return ;;
+		v) maconf_version && return ;;
+		*) _invalid_opt "$opt" ;;
 		esac
 	done
 
-	shift $(( OPTIND - 1 ))
+	shift $((OPTIND - 1))
 
 	maconf_process "$@"
 
@@ -39,35 +38,35 @@ maconf_process() {
 	[ -n "$1" ] && arg2="$1" && shift
 
 	case "${arg1}_$arg2" in
-		dock_|\
-		dock_addspacer|\
-		dock_delay|\
-		dock_hiddenapps|\
-		dock_position|\
-		dock_restart|\
-		finder_|\
-		finder_fullpath|\
-		finder_restart|\
-		screencapture_|\
-		screencapture_format|\
-		screencapture_location|\
-		screencapture_shadow|\
-		users_|\
-		users_show|\
+	dock_ | \
+		dock_addspacer | \
+		dock_delay | \
+		dock_hiddenapps | \
+		dock_position | \
+		dock_restart | \
+		finder_ | \
+		finder_fullpath | \
+		finder_restart | \
+		screencapture_ | \
+		screencapture_format | \
+		screencapture_location | \
+		screencapture_shadow | \
+		users_ | \
+		users_show | \
 		users_hide)
-			[ -z "$arg2" ] && "maconf_help_$arg1" "$@" && return
-			[ $help -ne 0 ] && "maconf_help_${arg1}_$arg2" "$@" && return
-			"maconf_${arg1}_$arg2" "$@"
-			;;
+		[ -z "$arg2" ] && "maconf_help_$arg1" "$@" && return
+		[ $help -ne 0 ] && "maconf_help_${arg1}_$arg2" "$@" && return
+		"maconf_${arg1}_$arg2" "$@"
+		;;
 
-		help_*|usage_*)
-			help=1
-			[ -z "$arg2" ] && maconf_process && return
-			maconf_process "$arg2" "$@"
-			;;
+	help_* | usage_*)
+		help=1
+		[ -z "$arg2" ] && maconf_process && return
+		maconf_process "$arg2" "$@"
+		;;
 
-		version_*) maconf_version ;;
-		*) _invalid_arg "$arg1" "$arg2" ;;
+	version_*) maconf_version ;;
+	*) _invalid_arg "$arg1" "$arg2" ;;
 	esac
 }
 
@@ -79,9 +78,9 @@ maconf_dock_addspacer() {
 	[ -z "$size" ] && size=wide
 
 	case "$size" in
-		narrow) tile_type=small-spacer-tile ;;
-		wide) tile_type=spacer-tile ;;
-		*) _invalid_arg "$size" ;;
+	narrow) tile_type=small-spacer-tile ;;
+	wide) tile_type=spacer-tile ;;
+	*) _invalid_arg "$size" ;;
 	esac
 
 	_write com.apple.dock persistent-apps \
@@ -93,8 +92,7 @@ maconf_dock_addspacer() {
 maconf_dock_delay() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.dock autohide-time-modifier
 		return
 	fi
@@ -102,16 +100,15 @@ maconf_dock_delay() {
 	args=
 
 	case "$val" in
-		none) args="-int 0" ;;
-		normal|reset) args="" ;;
-		short) args="-float 0.12" ;;
-		*) args="-float $val" ;;
+	none) args="-int 0" ;;
+	normal | reset) args="" ;;
+	short) args="-float 0.12" ;;
+	*) args="-float $val" ;;
 	esac
 
 	_echo "Setting reveal delay of Dock..."
 
-	if [ -z "$args" ]
-	then
+	if [ -z "$args" ]; then
 		defaults delete com.apple.dock autohide-time-modifier
 	else
 		echo "$args" | xargs defaults write com.apple.dock autohide-time-modifier
@@ -123,8 +120,7 @@ maconf_dock_delay() {
 maconf_dock_position() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.dock orientation
 		return
 	fi
@@ -132,8 +128,8 @@ maconf_dock_position() {
 	args=
 
 	case "$val" in
-		bottom|left|right) args="-string $val" ;;
-		*) _invalid_arg "$val" ;;
+	bottom | left | right) args="-string $val" ;;
+	*) _invalid_arg "$val" ;;
 	esac
 
 	_echo "Setting Dock position to $val..."
@@ -146,8 +142,7 @@ maconf_dock_position() {
 maconf_dock_hiddenapps() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.Dock showhidden
 		return
 	fi
@@ -155,17 +150,17 @@ maconf_dock_hiddenapps() {
 	args=
 
 	case "$val" in
-		conceal)
-			_echo 'Setting hidden apps to be shown as opaque icons in Dock...'
-			args='-bool FALSE'
-			;;
+	conceal)
+		_echo 'Setting hidden apps to be shown as opaque icons in Dock...'
+		args='-bool FALSE'
+		;;
 
-		reveal)
-			_echo 'Setting hidden apps to be shown as translucent icons in Dock...'
-			args='-bool TRUE'
-			;;
+	reveal)
+		_echo 'Setting hidden apps to be shown as translucent icons in Dock...'
+		args='-bool TRUE'
+		;;
 
-		*) _invalid_arg "$val" ;;
+	*) _invalid_arg "$val" ;;
 	esac
 
 	_write com.apple.Dock showhidden "$args"
@@ -179,8 +174,7 @@ maconf_dock_restart() {
 maconf_finder_fullpath() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.finder _FXShowPosixPathInTitle
 		return
 	fi
@@ -188,17 +182,17 @@ maconf_finder_fullpath() {
 	args=
 
 	case "$val" in
-		hide)
-			_echo "Setting only current folder's name to be shown in Finder's title bar..."
-			args='-bool FALSE'
-			;;
+	hide)
+		_echo "Setting only current folder's name to be shown in Finder's title bar..."
+		args='-bool FALSE'
+		;;
 
-		show)
-			_echo "Setting full path to be shown in Finder's title bar..."
-			args='-bool TRUE'
-			;;
+	show)
+		_echo "Setting full path to be shown in Finder's title bar..."
+		args='-bool TRUE'
+		;;
 
-		*) _invalid_arg "$val" ;;
+	*) _invalid_arg "$val" ;;
 	esac
 
 	_write com.apple.finder _FXShowPosixPathInTitle "$args"
@@ -212,8 +206,7 @@ maconf_finder_restart() {
 maconf_screencapture_format() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.screencapture type
 		return
 	fi
@@ -221,7 +214,7 @@ maconf_screencapture_format() {
 	args=
 
 	case "$val" in
-		jpeg) val=jpg ;;
+	jpeg) val=jpg ;;
 	esac
 
 	_write com.apple.screencapture type "$val"
@@ -230,8 +223,7 @@ maconf_screencapture_format() {
 maconf_screencapture_location() {
 	val="$1"
 
-	if [ -z "$val" ]
-	then
+	if [ -z "$val" ]; then
 		_read com.apple.screencapture location
 		return
 	fi
@@ -242,18 +234,17 @@ maconf_screencapture_location() {
 maconf_screencapture_shadow() {
 	input="$1"
 
-	if [ -z "$input" ]
-	then
-		current="$( _read com.apple.screencapture disable-shadow )"
+	if [ -z "$input" ]; then
+		current="$(_read com.apple.screencapture disable-shadow)"
 		[ "$current" = "false" ] && _echo true && return
 		_echo false
 		return
 	fi
 
 	case "$input" in
-		true|yes|on) val=false ;;
-		false|no|off) val=true ;;
-		*) _invalid_arg "$input" ;;
+	true | yes | on) val=false ;;
+	false | no | off) val=true ;;
+	*) _invalid_arg "$input" ;;
 	esac
 
 	_write com.apple.screencapture disable-shadow "$val"
@@ -261,7 +252,7 @@ maconf_screencapture_shadow() {
 }
 
 maconf_help() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [-hv] command
 
 Get and set various settings in macOS.
@@ -295,7 +286,7 @@ USAGE
 }
 
 maconf_help_dock() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock [args...]
 
 Get or set settings related to the Dock.
@@ -321,7 +312,7 @@ USAGE
 }
 
 maconf_help_dock_addspacer() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock addspacer [narrow|wide]
 
 Add spacer to Dock.
@@ -333,7 +324,7 @@ USAGE
 }
 
 maconf_help_dock_delay() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock delay [time_in_seconds]
 
 Get or set delay before Dock appears in seconds.
@@ -342,7 +333,7 @@ USAGE
 }
 
 maconf_help_dock_hiddenapps() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock hiddenapps [conceal|reveal]
 
 Get or set whether apps hidden in Dock appear as opaque or transparent.
@@ -351,7 +342,7 @@ USAGE
 }
 
 maconf_help_dock_position() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock position [bottom|left|right]
 
 Get or set the position of the Dock.
@@ -360,7 +351,7 @@ USAGE
 }
 
 maconf_help_dock_restart() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] dock restart
 
 Restart the Dock.
@@ -369,7 +360,7 @@ USAGE
 }
 
 maconf_help_finder() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] finder [args...]
 
 Get or set settings related to the Finder.
@@ -386,7 +377,7 @@ USAGE
 }
 
 maconf_help_finder_restart() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] finder restart
 
 Restart the Finder.
@@ -395,7 +386,7 @@ USAGE
 }
 
 maconf_help_screencapture() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] screencapture [args...]
 
 Get or set settings related to screen captures.
@@ -415,7 +406,7 @@ USAGE
 }
 
 maconf_help_screencapture_format() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] screencapture format [jpg|png]
 
 Get or set the format of screen capture files.
@@ -424,7 +415,7 @@ USAGE
 }
 
 maconf_help_screencapture_location() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] screencapture location [path]
 
 Get or set the location where screen captures are saved.
@@ -433,7 +424,7 @@ USAGE
 }
 
 maconf_help_screencapture_shadow() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] screencapture shadow [true|false]
 
 Get or set whether or not a shadow is included in screen captures.
@@ -442,7 +433,7 @@ USAGE
 }
 
 maconf_help_users() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] users [args...]
 
 Manage users.
@@ -459,7 +450,7 @@ USAGE
 }
 
 maconf_help_users_hide() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] users hide [username]
 
 Hide user from the login window.
@@ -468,7 +459,7 @@ USAGE
 }
 
 maconf_help_users_show() {
-cat <<USAGE
+	cat <<USAGE
 Usage: $scriptname [options] users show [username]
 
 Show user on the login window.
@@ -484,9 +475,9 @@ maconf_users() {
 	[ "$username" = "" ] && _fatal $e_args "Must specify username."
 
 	case "$action" in
-		hide) ishidden=1 ;;
-		show) ishidden=0 ;;
-		*) _invalid_arg "$action" ;;
+	hide) ishidden=1 ;;
+	show) ishidden=0 ;;
+	*) _invalid_arg "$action" ;;
 	esac
 
 	sudo dscl . create "/Users/$username" IsHidden "$ishidden"
@@ -545,7 +536,7 @@ _invalid_opt() {
 }
 
 _require_defaults() {
-	which defaults > /dev/null 2>&1 && return
+	which defaults >/dev/null 2>&1 && return
 	_fatal $e_no_defaults "The defaults program is missing. Are you running this on macOS?"
 }
 
