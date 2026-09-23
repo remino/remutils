@@ -42,11 +42,11 @@ Use `-l` to list all matching README files in that order:
 readme -l
 ```
 
-Pass a filename or pattern to restrict the search:
+Pass a filename to open it directly, or a directory to open its README:
 
 ```sh
 readme README.md
-readme -l 'README.*'
+readme timinal
 ```
 
 Run `readme -h` or `man readme` for the full reference.

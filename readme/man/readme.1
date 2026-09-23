@@ -21,12 +21,14 @@ otherwise.
 .PP
 When supplied,
 .I filename
-restricts the search to that filename or pattern.
+is opened directly when it is a file. When it is a directory,
+.B readme
+opens the first README in that directory.
 .SH ARGUMENTS
 .TP
 .I filename
-A README filename or pattern to search for in the current directory and its
-immediate child directories.
+A file to open directly, or a directory whose README to open. Relative paths
+are resolved from the current directory.
 .SH OPTIONS
 .TP
 .B -h
@@ -39,14 +41,14 @@ List matching README files instead of opening one.
 Show the version number.
 .SH EXAMPLES
 .TP
-Open the current directory's README.md, or one in an immediate child directory:
+Open a README in an immediate child directory:
 .nf
-.B readme README.md
+.B readme timinal
 .fi
 .TP
-List all Markdown README files:
+List matching README files:
 .nf
-.B readme -l 'README.*'
+.B readme -l
 .fi
 .SH AUTHOR
 Written by Rémino Rem: <https://remino.net/>

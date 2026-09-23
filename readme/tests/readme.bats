@@ -36,14 +36,28 @@ teardown() {
 	[ "$output" = $'./README.md\n./alpha/readme.txt\n./zulu/README' ]
 }
 
-@test "uses a filename argument to restrict the search" {
-	mkdir -p "$TMP_DIR/child"
-	touch "$TMP_DIR/README.md" "$TMP_DIR/child/README.txt"
+@test "opens a README from a directory argument" {
+	mkdir -p "$TMP_DIR/bin" "$TMP_DIR/child"
+	touch "$TMP_DIR/child/README.txt"
+	printf '#!/usr/bin/env bash\nprintf "glow: %%s\\n" "$2"\n' > "$TMP_DIR/bin/glow"
+	chmod +x "$TMP_DIR/bin/glow"
 
-	run bash -c 'cd "$1" && "$2" -l README.txt' -- "$TMP_DIR" "$TOOL"
+	run bash -c 'cd "$1" && PATH="$1/bin:$PATH" "$2" child' -- "$TMP_DIR" "$TOOL"
 
 	[ "$status" -eq 0 ]
-	[ "$output" = './child/README.txt' ]
+	[ "$output" = 'glow: child/README.txt' ]
+}
+
+@test "opens a file argument directly" {
+	mkdir -p "$TMP_DIR/bin" "$TMP_DIR/child"
+	touch "$TMP_DIR/child/notes.md"
+	printf '#!/usr/bin/env bash\nprintf "glow: %%s\\n" "$2"\n' > "$TMP_DIR/bin/glow"
+	chmod +x "$TMP_DIR/bin/glow"
+
+	run bash -c 'cd "$1" && PATH="$1/bin:$PATH" "$2" child/notes.md' -- "$TMP_DIR" "$TOOL"
+
+	[ "$status" -eq 0 ]
+	[ "$output" = 'glow: child/notes.md' ]
 }
 
 @test "opens the first README with glow when available" {
@@ -63,4 +77,11 @@ teardown() {
 
 	[ "$status" -eq 1 ]
 	[ "$output" = 'readme: no matching README file found' ]
+}
+
+@test "fails when the filename argument is not a file or directory" {
+	run bash -c 'cd "$1" && "$2" missing.md' -- "$TMP_DIR" "$TOOL"
+
+	[ "$status" -eq 1 ]
+	[ "$output" = 'readme: not a file or directory: missing.md' ]
 }

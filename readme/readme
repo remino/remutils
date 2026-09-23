@@ -20,7 +20,7 @@ usage() {
 		'  -v    Show the version number.' \
 		'' \
 		'ARGUMENTS:' \
-		'  filename    Restrict the search to a README filename or pattern.'
+		'  filename    File to open, or directory whose README to open.'
 }
 
 version() {
@@ -32,18 +32,12 @@ error() {
 }
 
 find_readmes() {
-	local filename="${1:-}"
+	local directory="${1:-.}"
 	local -a find_args
 
-	if [[ -n "$filename" ]]; then
-		find_args=(-type f -iname "$filename")
-	else
-		find_args=(-type f \( -iname 'readme' -o -iname 'readme.*' \))
-	fi
+	find_args=(-type f \( -iname 'readme' -o -iname 'readme.*' \))
 
-	# Prefer this directory's README, then list immediate child directories.
-	find . -maxdepth 1 "${find_args[@]}" -print | sort -f
-	find . -mindepth 2 -maxdepth 2 "${find_args[@]}" -print | sort -f
+	find "$directory" -maxdepth 1 "${find_args[@]}" -print | sort -f
 }
 
 main() {
@@ -81,16 +75,43 @@ main() {
 	fi
 	(($#)) && filename="$1"
 
-	if "$list"; then
-		find_readmes "$filename"
-		return
-	fi
+	if [[ -n "$filename" ]]; then
+		if [[ -f "$filename" ]]; then
+			readmefile="$filename"
+		elif [[ -d "$filename" ]]; then
+			readmes="$(find_readmes "$filename")"
+			readmefile="${readmes%%$'\n'*}"
+			if [[ -z "$readmefile" ]]; then
+				error "no matching README file found in: $filename"
+				return 1
+			fi
+		else
+			error "not a file or directory: $filename"
+			return 1
+		fi
 
-	readmes="$(find_readmes "$filename")"
-	readmefile="${readmes%%$'\n'*}"
-	if [[ -z "$readmefile" ]]; then
-		error 'no matching README file found'
-		return 1
+		if "$list"; then
+			printf '%s\n' "$readmefile"
+			return
+		fi
+
+	else
+		if "$list"; then
+			# Prefer this directory's README, then list immediate child directories.
+			find_readmes
+			find . -mindepth 2 -maxdepth 2 -type f \( -iname 'readme' -o -iname 'readme.*' \) -print | sort -f
+			return
+		fi
+
+		readmes="$(
+			find_readmes
+			find . -mindepth 2 -maxdepth 2 -type f \( -iname 'readme' -o -iname 'readme.*' \) -print | sort -f
+		)"
+		readmefile="${readmes%%$'\n'*}"
+		if [[ -z "$readmefile" ]]; then
+			error 'no matching README file found'
+			return 1
+		fi
 	fi
 
 	if command -v glow > /dev/null 2>&1; then
