@@ -1,0 +1,59 @@
+.TH IFTTTNOTIFY 1 "September 2026" "iftttnotify 1.0.1" "User Commands"
+.SH NAME
+iftttnotify \- send IFTTT Webhooks notifications from the command line
+.SH SYNOPSIS
+.B iftttnotify
+.RI [ options ] " value1 " [ value2 " [ value3 ]]
+.SH DESCRIPTION
+.B iftttnotify
+sends up to three values to an IFTTT Webhooks event. It reads the Webhooks key
+from
+.B IFTTT_WEBHOOKS_KEY
+or, in order, from
+.IR ~/.ifttt-webhooks-key ,
+.IR ~/.config/ifttt-webhooks-key ,
+or
+.IR /etc/ifttt-webhooks-key .
+.SH OPTIONS
+.TP
+.BI \-e " event"
+Set the IFTTT trigger event. The default is
+.BR notify .
+.TP
+.B \-g
+Print the configured Webhooks key.
+.TP
+.B \-h
+Show help.
+.TP
+.B \-m
+Also send a copy of the notification message to the local mail inbox.
+.TP
+.B \-r
+Use the
+.B rich_notify
+event.
+.TP
+.B \-v
+Print the version.
+.SH EXIT STATUS
+.TP
+.B 0
+The IFTTT request succeeded.
+.TP
+.B 16
+Invalid command-line option or command.
+.TP
+.B 17
+A required executable is missing.
+.TP
+.B 18
+No IFTTT Webhooks key was configured.
+.SH EXAMPLES
+.EX
+IFTTT_WEBHOOKS_KEY=... iftttnotify "Build complete" "main" "success"
+iftttnotify -e deploy "Production deploy complete"
+iftttnotify -r "A richer notification"
+.EE
+.SH SEE ALSO
+.BR curl (1)

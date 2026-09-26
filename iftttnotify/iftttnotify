@@ -13,33 +13,30 @@ iftttnotify_main() {
 
 	_require realpath
 
-	scriptpath="$( realpath "$0" )"
-	scriptname="$( basename "$scriptpath" )"
+	scriptpath="$(realpath "$0")"
+	scriptname="$(basename "$scriptpath")"
 
 	cmd=
 	event="notify"
 	key=
 	localmail=0
 
-	while getopts e:ghk:mrv opt
-	do
+	while getopts e:ghk:mrv opt; do
 		case $opt in
-			e|k) event="$OPTARG" ;;
-			g) cmd="get_key" ;;
-			h) cmd="help" ;;
-			m) localmail=1 ;;
-			r) event="rich_notify" ;;
-			v) cmd="version" ;;
-			*) _invalid_opt ;;
+		e | k) event="$OPTARG" ;;
+		g) cmd="get_key" ;;
+		h) cmd="help" ;;
+		m) localmail=1 ;;
+		r) event="rich_notify" ;;
+		v) cmd="version" ;;
+		*) _invalid_opt ;;
 		esac
 	done
 
-	shift "$(( OPTIND - 1 ))"
+	shift "$((OPTIND - 1))"
 
-	if [ -z "$cmd" ]
-	then
-		if [ $# -gt 0 ]
-		then
+	if [ -z "$cmd" ]; then
+		if [ $# -gt 0 ]; then
 			cmd="send"
 		else
 			cmd="help"
@@ -47,15 +44,15 @@ iftttnotify_main() {
 	fi
 
 	case "$cmd" in
-		get_key|help|send|version) "iftttnotify_$cmd" "$@" ;;
-		*) _invalid_cmd ;;
+	get_key | help | send | version) "iftttnotify_$cmd" "$@" ;;
+	*) _invalid_cmd ;;
 	esac
 
 	_exit
 }
 
 iftttnotify_help() {
-cat <<USAGE
+	cat <<USAGE
 $scriptname $VERSION
 
 USAGE: $scriptname [<options>] <val1> [<val2> [<val3>]]
@@ -87,13 +84,13 @@ iftttnotify_send() {
 	_load_key
 
 	res=
-	now="$( date +'%Y-%m-%dT%H:%M:%S%z' )"
-	res="$( _req "$event" "$@" )"
+	now="$(date +'%Y-%m-%dT%H:%M:%S%z')"
+	res="$(_req "$event" "$@")"
 
 	[ $localmail -ne 0 ] && _mail "$now" "$event" "$@"
 
 	echo "$res"
-	echo "$res" | grep '^Congratulations' > /dev/null 2>&1
+	echo "$res" | grep '^Congratulations' >/dev/null 2>&1
 }
 
 iftttnotify_version() {
@@ -128,8 +125,7 @@ _get_key_from_file() {
 	for file in \
 		$HOME/.ifttt-webhooks-key \
 		$HOME/.config/ifttt-webhooks-key \
-		/etc/ifttt-webhooks-key
-	do
+		/etc/ifttt-webhooks-key; do
 		[ -f "$file" ] || continue
 		cat "$file"
 		break
@@ -152,12 +148,12 @@ _invalid_opt() {
 
 _load_key() {
 	key="$IFTTT_WEBHOOKS_KEY"
-	[ -z "$key" ] && key="$( _get_key_from_file )"
+	[ -z "$key" ] && key="$(_get_key_from_file)"
 	_require_key || return $?
 }
 
 _mail() {
-cat <<BODY | mail -s "[$scriptname] $2" "$USER"
+	cat <<BODY | mail -s "[$scriptname] $2" "$USER"
 Time:
 $1
 
@@ -181,26 +177,23 @@ _req() {
 	curl -s \
 		-X POST \
 		-H "Content-Type: application/json" \
-		-d "{\"value1\":\"$( _escape "$2" )\",\
-			\"value2\":\"$( _escape "$3" )\",\
-			\"value3\":\"$( _escape "$4" )\"}" \
+		-d "{\"value1\":\"$(_escape "$2")\",\
+			\"value2\":\"$(_escape "$3")\",\
+			\"value3\":\"$(_escape "$4")\"}" \
 		"https://maker.ifttt.com/trigger/$1/with/key/$key"
 }
 
 _require() {
 	missing_bin=0
 
-	for bin in "$@"
-	do
-		if ! which "$bin" > /dev/null 2>&1
-		then
+	for bin in "$@"; do
+		if ! which "$bin" >/dev/null 2>&1; then
 			missing_bin=1
 			_error "Required: $bin"
 		fi
 	done
 
-	if [ $missing_bin -ne 0 ]
-	then
+	if [ $missing_bin -ne 0 ]; then
 		_fatal $e_missing_app "One or more executables or apps are missing."
 	fi
 }
