@@ -24,9 +24,8 @@ ZSH_COMPLETIONS ?=
 FISH_COMPLETIONS ?=
 
 TOOL_LIBEXECDIR = $(DESTDIR)$(LIBEXECDIR)/$(TOOL)
-INSTALL_MAKEFILE := $(firstword $(MAKEFILE_LIST))
 
-.PHONY: install uninstall install-after
+.PHONY: install uninstall
 
 install:
 	@if test -n "$(BINARIES) $(LIBEXEC_BINARIES)"; then \
@@ -72,10 +71,6 @@ install:
 		$(INSTALL) -d "$(DESTDIR)$(SHAREDIR)/fish/vendor_completions.d"; \
 		for file in $(FISH_COMPLETIONS); do $(INSTALL) -m 644 "$$file" "$(DESTDIR)$(SHAREDIR)/fish/vendor_completions.d/$$(basename "$$file")"; done; \
 	fi
-	@$(MAKE) --no-print-directory -f "$(INSTALL_MAKEFILE)" install-after
-
-install-after:
-
 uninstall:
 	@for binary in $(BINARIES) $(LIBEXEC_BINARIES); do rm -f "$(DESTDIR)$(BINDIR)/$$(basename "$$binary")"; done
 	@for alias in $(ALIASES); do rm -f "$(DESTDIR)$(BINDIR)/$${alias%%:*}"; done
