@@ -24,6 +24,7 @@ ZSH_COMPLETIONS ?=
 FISH_COMPLETIONS ?=
 
 TOOL_LIBEXECDIR = $(DESTDIR)$(LIBEXECDIR)/$(TOOL)
+INSTALL_MAKEFILE := $(firstword $(MAKEFILE_LIST))
 
 .PHONY: install uninstall install-after
 
@@ -71,7 +72,7 @@ install:
 		$(INSTALL) -d "$(DESTDIR)$(SHAREDIR)/fish/vendor_completions.d"; \
 		for file in $(FISH_COMPLETIONS); do $(INSTALL) -m 644 "$$file" "$(DESTDIR)$(SHAREDIR)/fish/vendor_completions.d/$$(basename "$$file")"; done; \
 	fi
-	@$(MAKE) --no-print-directory install-after
+	@$(MAKE) --no-print-directory -f "$(INSTALL_MAKEFILE)" install-after
 
 install-after:
 
