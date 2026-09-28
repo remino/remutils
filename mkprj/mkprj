@@ -291,7 +291,7 @@ _run_setup() {
 		export PROJECT_DATE="$(_format_date "$project_date")"
 		export PROJECTS_DIR TEMPLATES_DIR
 		cd "$project_dir" || exit "$?"
-		"$setup"
+		./.mkprj/setup
 	)
 }
 

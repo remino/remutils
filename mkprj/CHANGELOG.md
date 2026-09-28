@@ -12,6 +12,7 @@
 
 ## Unreleased
 
+- Fix setup scripts for projects created from relative paths.
 - Add `make install` and `make uninstall` targets.
 
 ## v3.0.3

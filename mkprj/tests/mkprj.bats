@@ -108,6 +108,22 @@ teardown() {
 	[ "$(< "$PROJECTS_DIR/20201231 test/result")" = '2020-12-31:test' ]
 }
 
+@test "runs a setup script for a relative project path" {
+	local setup="$TEMPLATES_DIR/default/.mkprj/setup"
+	local today="$(date +%Y%m%d)"
+
+	mkdir -p "$(dirname "$setup")"
+	printf '#!/usr/bin/env bash\nprintf "%%s" "$PROJECT_DIR:$PWD" > result\n' > "$setup"
+	chmod +x "$setup"
+
+	pushd "$TMP_DIR" > /dev/null
+	run "$TOOL" -t "$TEMPLATES_DIR/default" ./hello
+	popd > /dev/null
+
+	[ "$status" -eq 0 ]
+	[ "$(< "$TMP_DIR/$today hello/result")" = "./$today hello:$TMP_DIR/$today hello" ]
+}
+
 @test "dry run does not create the project directory" {
 	run "$TOOL" -n '20201231 test'
 
