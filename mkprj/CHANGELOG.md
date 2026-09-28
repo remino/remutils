@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v3.0.4](#v304)
 - [v3.0.3](#v303)
 - [v3.0.2](#v302)
 - [v3.0.1](#v301)
@@ -10,7 +10,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v3.0.4
 
 - Fix setup scripts for projects created from relative paths.
 - Add `make install` and `make uninstall` targets.
