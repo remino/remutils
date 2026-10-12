@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v4.0.0](#v400)
 - [v3.0.4](#v304)
 - [v3.0.3](#v303)
 - [v3.0.2](#v302)
@@ -11,7 +11,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v4.0.0
 
 - Rename `mkprj` to `prj` and retain `mkprj` as a deprecated compatibility
   command.
