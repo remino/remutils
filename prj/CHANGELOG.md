@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v3.0.4](#v304)
 - [v3.0.3](#v303)
 - [v3.0.2](#v302)
@@ -9,6 +10,15 @@
 - [v3.0.0](#v300)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Rename `mkprj` to `prj` and retain `mkprj` as a deprecated compatibility
+  command.
+- Add `new`, `mk`, `make`, `list`, `templates`, `doctor`, `version`, and `help`
+  commands.
+- Add canonical `PRJ_*` configuration and deprecated compatibility warnings for
+  previous `mkprj` paths and environment variables.
 
 ## v3.0.4
 

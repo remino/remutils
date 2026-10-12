@@ -1,0 +1,97 @@
+.TH PRJ 1 "October 2026" "prj 3.0.4"
+.SH NAME
+prj \- create and manage dated project directories
+.SH SYNOPSIS
+.B prj
+.RB [ -h | -v ]
+.br
+.B prj
+.BR help " [" command "]"
+.br
+.B prj
+.BR new " [" -hnv "] [" -t " " template "] [" --var " " key=value "] " project
+.br
+.B prj
+.IR command " [" -h "]"
+.SH DESCRIPTION
+.B prj
+creates dated project directories from Mustache templates and lists configured
+project roots. With no arguments it shows help.
+.SH COMMANDS
+.TP
+.BR new , " mk" , " make" , " n"
+Create a dated project directory. See \fBNEW\fR.
+.TP
+.BR list , " ls" , " l"
+Print absolute paths for immediate child directories in each configured project
+root. It accepts no arguments other than \fB-h\fR. Roots are processed in
+configured order; entries within a root are sorted.
+.TP
+.BR templates , " t"
+Print available named template names, one per line, using template lookup
+precedence. It accepts no arguments other than \fB-h\fR.
+.TP
+.BR doctor , " d"
+Report project-root, template-source, deprecated-setting, and renderer status.
+It accepts no arguments other than \fB-h\fR.
+.TP
+.BR info , " i"
+Print the current effective project-root and template configuration. It accepts
+no arguments other than \fB-h\fR.
+.TP
+.BR version , " v" , " -v"
+Show the command version. It accepts no arguments other than \fB-h\fR.
+.TP
+.BR help , " h" , " -h"
+Show general help or help for one command. \fBprj help \fIcommand\fR is
+equivalent to \fBprj \fIcommand\fB -h\fR. The command argument may be a
+canonical command name or an alias.
+.SH NEW
+.B prj new
+accepts the following arguments:
+.TP
+.I project
+Required project name. A name prefixed with \fBYYYY-MM-DD\fR or
+\fBYYYYMMDD\fR uses that date; otherwise today is used. A path selects the
+destination project root.
+.TP
+.BR -n , " --dry-run"
+Print the directory that would be created without creating it.
+.TP
+.BI -t " template"
+Use a named template or a template directory path.
+.TP
+.BI --var " key=value"
+Add a template variable. This option may be repeated.
+.TP
+.BR -h , " --help"
+Show help for \fBnew\fR.
+.TP
+.BR -v , " --version"
+Show the command version.
+.SH ENVIRONMENT
+.TP
+.B PRJ_PROJECTS_DIR
+Default project root for creation.
+.TP
+.B PRJ_PROJECTS_DIRS
+Colon-separated project roots. The first root is used for creation when
+\fBPRJ_PROJECTS_DIR\fR is unset.
+.TP
+.B PRJ_TEMPLATE_DIR
+Parent directory for bundled or installed named templates.
+.TP
+.B PRJ_TEMPLATES_DIR
+Parent directory for user named templates. It defaults to
+\fB$XDG_CONFIG_HOME/prj/templates\fR or \fB~/.config/prj/templates\fR.
+.SH DEPRECATION
+.B mkprj
+is a compatibility command for \fBprj new\fR. The old \fBPROJECTS_DIR\fR,
+\fBPROJECTS_DIRS\fR, \fBMKPRJ_TEMPLATE_DIR\fR, \fBTEMPLATES_DIR\fR, and
+\fBmkprj\fR template paths remain supported with warnings.
+.SH AUTHOR
+Written by Rémino Rem: <https://remino.net/>.
+.SH COPYRIGHT
+Copyright © 2024-2026 Rémino Rem.
+
+License ISC: <https://opensource.org/licenses/ISC>

@@ -1,0 +1,521 @@
+#!/usr/bin/env bash
+# prj
+# Create and manage dated project directories from optional templates.
+
+VERSION='3.0.4'
+
+prj_main() {
+	trap _exit INT TERM
+	E_ARGS=16 E_EXISTS=17 E_NOT_DIR=18 E_CANNOT_MKDIR=19 E_INVALID_DATE=20
+	SCRIPT_INV="$(basename -- "$0")"
+	SCRIPT_PATH="$(realpath "$0")"
+	SCRIPT_NAME="$(basename -- "$SCRIPT_PATH")"
+	SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
+	INSTALL_DIR="$SCRIPT_DIR/../libexec"
+	MO="$(_find_mo)"
+	DEPRECATION_WARNED=0
+	_configure_project_roots
+	_configure_template_roots
+
+	if [ "$SCRIPT_INV" = mkprj ]; then
+		_warn_deprecated 'mkprj is deprecated; use prj new.'
+		prj_new "$@"
+		return
+	fi
+
+	case "${1:-}" in
+		'') prj_help ;;
+		-h | --help) prj_help ;;
+		help | h)
+			shift
+			[ $# -le 1 ] || _fatal "$E_ARGS" 'The help command accepts at most one command name.'
+			prj_command_help "${1:-}"
+			;;
+		-v | --version | version | v)
+			shift
+			if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then prj_version_help; elif [ $# -eq 0 ]; then prj_version; else _fatal "$E_ARGS" 'The version command does not accept arguments.'; fi
+			;;
+		new | mk | make | n)
+			shift
+			prj_new "$@"
+			;;
+		list | ls | l)
+			shift
+			if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then prj_list_help; elif [ $# -eq 0 ]; then prj_list; else _fatal "$E_ARGS" 'The list command does not accept arguments.'; fi
+			;;
+		templates | t)
+			shift
+			if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then prj_templates_help; elif [ $# -eq 0 ]; then prj_templates; else _fatal "$E_ARGS" 'The templates command does not accept arguments.'; fi
+			;;
+		doctor | d)
+			shift
+			if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then prj_doctor_help; elif [ $# -eq 0 ]; then prj_doctor; else _fatal "$E_ARGS" 'The doctor command does not accept arguments.'; fi
+			;;
+		info | i)
+			shift
+			if [ "${1:-}" = -h ] || [ "${1:-}" = --help ]; then prj_info_help; elif [ $# -eq 0 ]; then prj_info; else _fatal "$E_ARGS" 'The info command does not accept arguments.'; fi
+			;;
+		*) _fatal "$E_ARGS" "Unknown command: $1" ;;
+	esac
+}
+
+prj_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_INV <command> [<args>]
+
+Create and manage dated project directories.
+
+COMMANDS:
+
+	new, mk, make, n [options] <project>
+		Create a dated project directory from a template.
+	list, ls, l
+		List project directories in configured project roots.
+	templates, t
+		List available named templates.
+	doctor, d
+		Check project-root and template configuration.
+	info, i
+		Show the current effective configuration.
+	version, v
+		Show the command version.
+	help, h
+		Show this help screen.
+
+Run '$SCRIPT_NAME new --help' for creation options.
+USAGE
+}
+
+prj_new() {
+	DRY_RUN=0 TEMPLATE_NAME=''
+	while [ $# -gt 0 ]; do
+		case $1 in
+			-h | --help)
+				prj_new_help
+				return
+				;;
+			-n | --dry-run) DRY_RUN=1 ;;
+			-t | --template)
+				shift
+				[ $# -gt 0 ] || _fatal "$E_ARGS" 'Missing template name.'
+				TEMPLATE_NAME="$1"
+				;;
+			--var)
+				shift
+				[ $# -gt 0 ] || _fatal "$E_ARGS" 'Missing template variable.'
+				_set_template_var "$1"
+				;;
+			-v | --version)
+				prj_version
+				return
+				;;
+			--)
+				shift
+				break
+				;;
+			-*) _fatal "$E_ARGS" "Invalid option: $1" ;;
+			*) break ;;
+		esac
+		shift
+	done
+	[ $# -eq 1 ] || _fatal "$E_ARGS" 'Specify exactly one project name.'
+	_process "$1"
+}
+
+prj_new_help() {
+	cat << USAGE
+$SCRIPT_NAME $VERSION
+
+USAGE: $SCRIPT_INV new [-hnv] [-t <template>] [--var <key=value>] <project>
+
+Create a dated project directory. When <project> is not prefixed by a date
+(YYYY-MM-DD or YYYYMMDD), prj prefixes it with today’s date. A path in
+<project> selects its parent directory.
+
+OPTIONS:
+
+	-h              Show this help screen.
+	-n              Dry run; print the directory that would be created.
+	-t <template>   Use a Mustache template directory by name or path.
+	--var <key=value>
+	                Add a template variable. This option may be repeated.
+	-v              Show script name and version number.
+
+ENVIRONMENT VARIABLES:
+
+	PRJ_PROJECTS_DIR
+		Default directory containing project directories.
+	PRJ_PROJECTS_DIRS
+		Colon-separated project roots. Its first entry is the creation default
+		when PRJ_PROJECTS_DIR is unset.
+	PRJ_TEMPLATE_DIR
+		Directory containing installed templates. Defaults to bundled templates.
+	PRJ_TEMPLATES_DIR
+		Directory containing user templates. Defaults to the XDG prj template directory.
+USAGE
+}
+
+prj_list_help() {
+	cat << USAGE
+USAGE: $SCRIPT_INV list
+
+List immediate project directories in configured project roots as absolute
+paths. Roots are processed in configured order and entries are sorted.
+USAGE
+}
+
+prj_templates_help() {
+	cat << USAGE
+USAGE: $SCRIPT_INV templates
+
+List effective named templates, one name per line, using creation lookup
+precedence.
+USAGE
+}
+
+prj_doctor_help() {
+	cat << USAGE
+USAGE: $SCRIPT_INV doctor
+
+Report project-root, template-source, deprecated-setting, and renderer status.
+USAGE
+}
+
+prj_info_help() {
+	cat << USAGE
+USAGE: $SCRIPT_INV info
+
+Show the current effective project-root and template configuration.
+USAGE
+}
+
+prj_version_help() {
+	cat << USAGE
+USAGE: $SCRIPT_INV version
+
+Show the command version.
+USAGE
+}
+
+prj_command_help() {
+	case "$1" in
+		'') prj_help ;;
+		new | mk | make | n) prj_new_help ;;
+		list | ls | l) prj_list_help ;;
+		templates | t) prj_templates_help ;;
+		doctor | d) prj_doctor_help ;;
+		info | i) prj_info_help ;;
+		version | v) prj_version_help ;;
+		help | h) prj_help ;;
+		*) _fatal "$E_ARGS" "Unknown command: $1" ;;
+	esac
+}
+
+prj_list() {
+	local root child valid_roots=0
+	local -a roots=()
+	_collect_project_roots roots
+	for root in "${roots[@]}"; do
+		if [ ! -d "$root" ]; then
+			_warn "Project root is not a directory: $root"
+			continue
+		fi
+		valid_roots=1
+		while IFS= read -r child; do _echo "$child"; done < <(find "$(realpath "$root")" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
+	done
+	[ "$valid_roots" -ne 0 ] || return 0
+}
+
+prj_templates() {
+	local root template name
+	local -A seen=()
+	local -a roots=()
+	_collect_template_roots roots
+	for root in "${roots[@]}"; do
+		[ -d "$root" ] || continue
+		while IFS= read -r template; do
+			name="$(basename -- "$template")"
+			[ -n "${seen[$name]+x}" ] && continue
+			seen["$name"]=1
+			_echo "$name"
+		done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
+	done
+}
+
+prj_doctor() {
+	local root template_root status=0
+	local -a roots=() template_roots=()
+	if [ -x "$MO" ]; then _echo "PASS: Mustache renderer: $MO"; else
+		_echo 'FAIL: Mustache renderer not found.'
+		status=1
+	fi
+	_collect_project_roots roots
+	for root in "${roots[@]}"; do
+		if [ -d "$root" ]; then _echo "PASS: Project root: $(realpath "$root")"; else _echo "WARN: Project root is not a directory: $root"; fi
+	done
+	_collect_template_roots template_roots
+	for template_root in "${template_roots[@]}"; do
+		if [ -d "$template_root" ]; then _echo "PASS: Template source: $template_root"; else _echo "WARN: Template source is not a directory: $template_root"; fi
+	done
+	return "$status"
+}
+
+prj_info() {
+	local root
+	local -a roots=()
+
+	_echo "Version: $SCRIPT_NAME $VERSION"
+	_echo "Project root: $PROJECTS_DIR"
+	_echo "Project roots: ${PROJECTS_DIRS:-<none>}"
+	_echo "Template root: $TEMPLATE_DIR"
+	_echo "Template directory: $PRJ_TEMPLATES_DIR"
+	_collect_project_roots roots
+	for root in "${roots[@]}"; do
+		_echo "Configured root: $root"
+	done
+}
+
+_configure_project_roots() {
+	local legacy_projects_dir="${PROJECTS_DIR-}" legacy_projects_dirs="${PROJECTS_DIRS-}"
+	if [ -n "${PRJ_PROJECTS_DIR+x}" ] || [ -n "${PRJ_PROJECTS_DIRS+x}" ]; then
+		[ -z "${PROJECTS_DIR+x}${PROJECTS_DIRS+x}" ] || _warn_deprecated 'PROJECTS_DIR and PROJECTS_DIRS are deprecated; use PRJ_PROJECTS_DIR and PRJ_PROJECTS_DIRS.'
+		PROJECTS_DIR="${PRJ_PROJECTS_DIR-}" PROJECTS_DIRS="${PRJ_PROJECTS_DIRS-}"
+	else
+		[ -z "${PROJECTS_DIR+x}${PROJECTS_DIRS+x}" ] || _warn_deprecated 'PROJECTS_DIR and PROJECTS_DIRS are deprecated; use PRJ_PROJECTS_DIR and PRJ_PROJECTS_DIRS.'
+		PROJECTS_DIR="$legacy_projects_dir" PROJECTS_DIRS="$legacy_projects_dirs"
+	fi
+	if [ -z "$PROJECTS_DIR" ] && [ -n "$PROJECTS_DIRS" ]; then PROJECTS_DIR="${PROJECTS_DIRS%%:*}"; fi
+	: "${PROJECTS_DIR:=$(pwd)}"
+}
+
+_configure_template_roots() {
+	LEGACY_TEMPLATE_DIR="${MKPRJ_TEMPLATE_DIR-}"
+	LEGACY_TEMPLATES_DIR="${TEMPLATES_DIR-}"
+	PRJ_TEMPLATES_DIR="${PRJ_TEMPLATES_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/prj/templates}"
+	TEMPLATE_DIR="${PRJ_TEMPLATE_DIR:-$(_template_root)}"
+	if [ -n "${MKPRJ_TEMPLATE_DIR+x}${TEMPLATES_DIR+x}" ]; then
+		_warn_deprecated 'MKPRJ_TEMPLATE_DIR and TEMPLATES_DIR are deprecated; use PRJ_TEMPLATE_DIR and PRJ_TEMPLATES_DIR.'
+	fi
+}
+
+_collect_project_roots() {
+	local target="$1" root root_key
+	local -A seen=()
+	local -a candidates=("$PROJECTS_DIR") extra_roots=()
+	local -n results="$target"
+	IFS=: read -r -a extra_roots <<< "$PROJECTS_DIRS"
+	candidates+=("${extra_roots[@]}")
+	for root in "${candidates[@]}"; do
+		[ -n "$root" ] || continue
+		if [ -d "$root" ]; then root_key="$(realpath "$root")"; else root_key="$root"; fi
+		[ -n "${seen[$root_key]+x}" ] && continue
+		seen["$root_key"]=1
+		results+=("$root")
+	done
+}
+
+_collect_template_roots() {
+	local target="$1" lookup_dir="$(pwd)" root
+	local -A seen=()
+	local -a candidates=("$TEMPLATE_DIR" "$PRJ_TEMPLATES_DIR")
+	local -n results="$target"
+	while :; do
+		candidates+=("$lookup_dir/.prj/templates" "$lookup_dir/.config/prj/templates")
+		[ "$lookup_dir" = / ] && break
+		lookup_dir="$(dirname -- "$lookup_dir")"
+	done
+	[ -z "$LEGACY_TEMPLATE_DIR" ] || candidates+=("$LEGACY_TEMPLATE_DIR")
+	[ -z "$LEGACY_TEMPLATES_DIR" ] || candidates+=("$LEGACY_TEMPLATES_DIR")
+	lookup_dir="$(pwd)"
+	while :; do
+		candidates+=("$lookup_dir/.mkprj/templates" "$lookup_dir/.config/mkprj/templates")
+		[ "$lookup_dir" = / ] && break
+		lookup_dir="$(dirname -- "$lookup_dir")"
+	done
+	for root in "${candidates[@]}"; do
+		[ -n "$root" ] || continue
+		[ -n "${seen[$root]+x}" ] && continue
+		seen["$root"]=1
+		results+=("$root")
+	done
+}
+
+_process() {
+	local project="$1" project_date project_dir project_name template_dir=''
+	if [[ "$project" == */* ]]; then
+		PROJECTS_DIR="$(dirname -- "$project")"
+		project="$(basename -- "$project")"
+	fi
+	if [[ "$project" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})\ (.+)$ ]]; then
+		project_date="${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+		project_name="${BASH_REMATCH[4]}"
+	elif [[ "$project" =~ ^([0-9]{8})\ (.+)$ ]]; then
+		project_date="${BASH_REMATCH[1]}"
+		project_name="${BASH_REMATCH[2]}"
+	else
+		project_date="$(date +%Y%m%d)"
+		project_name="$project"
+	fi
+	_validate_date "$project_date"
+	project_dir="$PROJECTS_DIR/$project_date $project_name"
+	if [ "$DRY_RUN" -ne 0 ]; then
+		_echo "$project_dir"
+		return
+	fi
+	_prepare_projects_dir
+	if [ -e "$project_dir" ]; then
+		_echo "$project_dir"
+		_fatal "$E_EXISTS" 'Project directory or file already exists.'
+	fi
+	_resolve_template "${TEMPLATE_NAME:-default}"
+	template_dir="$RESOLVED_TEMPLATE_DIR"
+	[ -n "$template_dir" ] || _fatal "$E_NOT_DIR" "Template directory does not exist: ${TEMPLATE_NAME:-default}"
+	_project_template_vars "$project_dir" "$project_name" "$project_date"
+	_render_template "$template_dir" "$project_dir"
+	_run_setup "$project_dir" "$project_name" "$project_date"
+	_echo "$project_dir"
+}
+
+_resolve_template() {
+	local template_name="$1" root candidate
+	local -a roots=()
+	RESOLVED_TEMPLATE_DIR=''
+	if [[ "$template_name" != */* ]]; then
+		_collect_template_roots roots
+		for root in "${roots[@]}"; do
+			candidate="$root/$template_name"
+			if [ -d "$candidate" ]; then
+				case "$root" in
+					*/.mkprj/templates | */.config/mkprj/templates | "$LEGACY_TEMPLATE_DIR" | "$LEGACY_TEMPLATES_DIR") _warn_deprecated 'mkprj template paths are deprecated; use prj template paths.' ;;
+				esac
+				RESOLVED_TEMPLATE_DIR="$candidate"
+				return
+			fi
+		done
+	fi
+	[ -d "$template_name" ] && RESOLVED_TEMPLATE_DIR="$template_name"
+}
+
+_find_mo() {
+	local candidate
+	for candidate in "$SCRIPT_DIR/lib/mo" "$INSTALL_DIR/prj/lib/mo" "$INSTALL_DIR/lib/mo"; do [ -x "$candidate" ] && _echo "$candidate" && return; done
+}
+
+_template_root() {
+	if [ -d "$SCRIPT_DIR/templates" ]; then _echo "$SCRIPT_DIR/templates"; else _echo "$INSTALL_DIR/prj/templates"; fi
+}
+
+_project_template_vars() {
+	project_dir="$1" project_name="$2" project_date="$3"
+	export project_dir project_name project_date projects_dir="$PROJECTS_DIR" name="$project_name"
+	export date="$(_format_date "$project_date")" year="${project_date:0:4}" slug="$(_slugify "$project_name")"
+}
+
+_set_template_var() {
+	local assignment="$1" key="${assignment%%=*}" value="${assignment#*=}"
+	[[ "$assignment" == *=* ]] || _fatal "$E_ARGS" "Template variable must use key=value: $assignment"
+	[[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || _fatal "$E_ARGS" "Invalid template variable name: $key"
+	case "$key" in project_dir | project_name | project_date | projects_dir | name | date | year | slug) _fatal "$E_ARGS" "Template variable is reserved: $key" ;; esac
+	printf -v "$key" '%s' "$value"
+	export "$key"
+}
+
+_slugify() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed -E 's/^-+|-+$//g'; }
+
+_render_template() {
+	local template_dir="$1" project_dir="$2" source relative destination
+	[ -x "$MO" ] || _fatal "$E_NOT_DIR" "Mustache renderer not found: $MO"
+	mkdir -p "$project_dir" || _fatal "$E_CANNOT_MKDIR" "Failed to create project directory: $project_dir"
+	while IFS= read -r -d '' source; do
+		relative="${source#"$template_dir"/}"
+		case "$relative" in
+			.prj.json) continue ;;
+			.mkprj.json)
+				_warn_deprecated '.mkprj.json is deprecated; use .prj.json.'
+				continue
+				;;
+		esac
+		destination="$project_dir/$(_render_path "$relative")"
+		_safe_template_path "$destination" "$project_dir"
+		mkdir -p "$(dirname -- "$destination")" || _fatal "$E_CANNOT_MKDIR" "Failed to create project directory: $project_dir"
+		if [[ "$source" == *.mustache ]]; then
+			(
+				source "$MO"
+				cd "$template_dir"
+				mo < "$relative"
+			) > "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to render template: $source"
+		else
+			cp "$source" "$destination" || _fatal "$E_CANNOT_MKDIR" "Failed to copy template file: $source"
+		fi
+	done < <(find "$template_dir" -type f -print0)
+}
+
+_render_path() {
+	local path="${1%.mustache}" key value
+	for key in project_dir project_name project_date projects_dir name date year slug; do
+		value="${!key}"
+		path="${path//"[$key]"/$value}"
+	done
+	while IFS= read -r key; do
+		value="${!key}"
+		path="${path//"[$key]"/$value}"
+	done < <(compgen -v)
+	_echo "$path"
+}
+
+_safe_template_path() {
+	local destination="$1" project_dir="$2"
+	[[ "$destination" == "$project_dir"/* ]] || _fatal "$E_ARGS" "Template output escapes project directory: $destination"
+	[[ "$destination" != *'/../'* && "$destination" != */.. ]] || _fatal "$E_ARGS" "Template output escapes project directory: $destination"
+}
+
+_prepare_projects_dir() {
+	[ -d "$PROJECTS_DIR" ] && return
+	[ ! -e "$PROJECTS_DIR" ] || _fatal "$E_NOT_DIR" "Projects directory is not a directory: $PROJECTS_DIR"
+	mkdir -p "$PROJECTS_DIR" || _fatal "$E_CANNOT_MKDIR" "Failed to create projects directory: $PROJECTS_DIR"
+}
+
+_run_setup() {
+	local project_dir="$1" project_name="$2" project_date="$3" setup='.prj/setup'
+	if [ ! -x "$project_dir/$setup" ] && [ -x "$project_dir/.mkprj/setup" ]; then
+		setup='.mkprj/setup'
+		_warn_deprecated '.mkprj/setup is deprecated; use .prj/setup.'
+	fi
+	[ -x "$project_dir/$setup" ] || return
+	(
+		export PROJECT_DIR="$project_dir" PROJECT_NAME="$project_name" PROJECT_DATE="$(_format_date "$project_date")" PRJ_PROJECTS_DIR="$PROJECTS_DIR" PRJ_TEMPLATES_DIR
+		cd "$project_dir" || exit "$?"
+		"./$setup"
+	)
+}
+
+_validate_date() {
+	local formatted
+	formatted="$(_format_date "$1")" || _fatal "$E_INVALID_DATE" "Invalid project date: $1"
+	[ "${formatted//-/}" = "$1" ] || _fatal "$E_INVALID_DATE" "Invalid project date: $1"
+}
+
+_format_date() { date -j -f '%Y%m%d' "$1" '+%Y-%m-%d' 2> /dev/null || date -d "$1" '+%Y-%m-%d' 2> /dev/null; }
+prj_version() { _echo "$SCRIPT_NAME $VERSION"; }
+_warn_deprecated() {
+	[ "$DEPRECATION_WARNED" -eq 0 ] || return
+	_error "Warning: $*"
+	DEPRECATION_WARNED=1
+}
+_warn() { _error "Warning: $*"; }
+_echo() { echo "$@"; }
+_error() { _echo "$@" >&2; }
+_exit() {
+	local status=$?
+	exit "${1:-$status}"
+}
+_fatal() {
+	local status="$1"
+	shift
+	_error "$@"
+	_exit "$status"
+}
+
+prj_main "$@"

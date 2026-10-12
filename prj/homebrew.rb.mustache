@@ -1,6 +1,6 @@
 # vim: set ft=ruby :
 class {{formula_class}} < Formula
-  desc "Create dated project directories from optional templates."
+  desc "Create and manage dated project directories from optional templates."
   url "https://github.com/remino/remutils/releases/download/{{tag}}/{{tag}}.tar.gz"
   sha256 "{{sha256}}"
   license "ISC"
@@ -18,11 +18,14 @@ class {{formula_class}} < Formula
 
   def install
     bin.install "{{name}}"
+    bin.install "mkprj"
     libexec.install "lib", "templates"
     man1.install "man/{{name}}.1"
+    man1.install "man/mkprj.1"
   end
 
   test do
     system "#{bin}/{{name}}", "-v"
+    system "#{bin}/mkprj", "-v"
   end
 end

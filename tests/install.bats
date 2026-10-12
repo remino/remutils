@@ -39,7 +39,10 @@ teardown() {
 }
 
 @test "installed shell wrappers resolve their runtime files" {
-	run make -C mkprj install "PREFIX=$PREFIX"
+	run make -C prj install "PREFIX=$PREFIX"
+	[ "$status" -eq 0 ]
+
+	run "$PREFIX/bin/prj" --version
 	[ "$status" -eq 0 ]
 
 	run "$PREFIX/bin/mkprj" --version
