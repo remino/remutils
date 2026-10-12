@@ -74,5 +74,7 @@ receive `project_dir`, `project_name`, `project_date`, `projects_dir`, `name`,
 `date`, `year`, and `slug`.
 
 Use `.prj/setup` for an executable setup script and `.prj.json` for template
-metadata. The old `mkprj` paths and `MKPRJ_TEMPLATE_DIR`/`TEMPLATES_DIR`
-variables remain supported with a warning.
+metadata. Setup scripts receive `PRJ_PROJECT_DIR`, `PRJ_PROJECT_NAME`,
+`PRJ_PROJECT_DATE`, `PRJ_PROJECTS_DIR`, and `PRJ_TEMPLATES_DIR`. The old `mkprj`
+paths and `MKPRJ_TEMPLATE_DIR`/`TEMPLATES_DIR` variables remain supported with a
+warning; legacy setup variables are also exported for compatibility.

@@ -267,9 +267,9 @@ prj_info() {
 	local -a roots=()
 
 	_echo "Version: $SCRIPT_NAME $VERSION"
-	_echo "Project root: $PROJECTS_DIR"
-	_echo "Project roots: ${PROJECTS_DIRS:-<none>}"
-	_echo "Template root: $TEMPLATE_DIR"
+	_echo "Project root: $PRJ_PROJECTS_DIR"
+	_echo "Project roots: ${PRJ_PROJECTS_DIRS:-<none>}"
+	_echo "Template root: $PRJ_TEMPLATE_ROOT"
 	_echo "Template directory: $PRJ_TEMPLATES_DIR"
 	_collect_project_roots roots
 	for root in "${roots[@]}"; do
@@ -281,20 +281,20 @@ _configure_project_roots() {
 	local legacy_projects_dir="${PROJECTS_DIR-}" legacy_projects_dirs="${PROJECTS_DIRS-}"
 	if [ -n "${PRJ_PROJECTS_DIR+x}" ] || [ -n "${PRJ_PROJECTS_DIRS+x}" ]; then
 		[ -z "${PROJECTS_DIR+x}${PROJECTS_DIRS+x}" ] || _warn_deprecated 'PROJECTS_DIR and PROJECTS_DIRS are deprecated; use PRJ_PROJECTS_DIR and PRJ_PROJECTS_DIRS.'
-		PROJECTS_DIR="${PRJ_PROJECTS_DIR-}" PROJECTS_DIRS="${PRJ_PROJECTS_DIRS-}"
+		PRJ_PROJECTS_DIR="${PRJ_PROJECTS_DIR-}" PRJ_PROJECTS_DIRS="${PRJ_PROJECTS_DIRS-}"
 	else
 		[ -z "${PROJECTS_DIR+x}${PROJECTS_DIRS+x}" ] || _warn_deprecated 'PROJECTS_DIR and PROJECTS_DIRS are deprecated; use PRJ_PROJECTS_DIR and PRJ_PROJECTS_DIRS.'
-		PROJECTS_DIR="$legacy_projects_dir" PROJECTS_DIRS="$legacy_projects_dirs"
+		PRJ_PROJECTS_DIR="$legacy_projects_dir" PRJ_PROJECTS_DIRS="$legacy_projects_dirs"
 	fi
-	if [ -z "$PROJECTS_DIR" ] && [ -n "$PROJECTS_DIRS" ]; then PROJECTS_DIR="${PROJECTS_DIRS%%:*}"; fi
-	: "${PROJECTS_DIR:=$(pwd)}"
+	if [ -z "$PRJ_PROJECTS_DIR" ] && [ -n "$PRJ_PROJECTS_DIRS" ]; then PRJ_PROJECTS_DIR="${PRJ_PROJECTS_DIRS%%:*}"; fi
+	: "${PRJ_PROJECTS_DIR:=$(pwd)}"
 }
 
 _configure_template_roots() {
 	LEGACY_TEMPLATE_DIR="${MKPRJ_TEMPLATE_DIR-}"
 	LEGACY_TEMPLATES_DIR="${TEMPLATES_DIR-}"
 	PRJ_TEMPLATES_DIR="${PRJ_TEMPLATES_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/prj/templates}"
-	TEMPLATE_DIR="${PRJ_TEMPLATE_DIR:-$(_template_root)}"
+	PRJ_TEMPLATE_ROOT="${PRJ_TEMPLATE_DIR:-$(_template_root)}"
 	if [ -n "${MKPRJ_TEMPLATE_DIR+x}${TEMPLATES_DIR+x}" ]; then
 		_warn_deprecated 'MKPRJ_TEMPLATE_DIR and TEMPLATES_DIR are deprecated; use PRJ_TEMPLATE_DIR and PRJ_TEMPLATES_DIR.'
 	fi
@@ -303,9 +303,9 @@ _configure_template_roots() {
 _collect_project_roots() {
 	local target="$1" root root_key
 	local -A seen=()
-	local -a candidates=("$PROJECTS_DIR") extra_roots=()
+	local -a candidates=("$PRJ_PROJECTS_DIR") extra_roots=()
 	local -n results="$target"
-	IFS=: read -r -a extra_roots <<< "$PROJECTS_DIRS"
+	IFS=: read -r -a extra_roots <<< "$PRJ_PROJECTS_DIRS"
 	candidates+=("${extra_roots[@]}")
 	for root in "${candidates[@]}"; do
 		[ -n "$root" ] || continue
@@ -319,7 +319,7 @@ _collect_project_roots() {
 _collect_template_roots() {
 	local target="$1" lookup_dir="$(pwd)" root
 	local -A seen=()
-	local -a candidates=("$TEMPLATE_DIR" "$PRJ_TEMPLATES_DIR")
+	local -a candidates=("$PRJ_TEMPLATE_ROOT" "$PRJ_TEMPLATES_DIR")
 	local -n results="$target"
 	while :; do
 		candidates+=("$lookup_dir/.prj/templates" "$lookup_dir/.config/prj/templates")
@@ -345,7 +345,7 @@ _collect_template_roots() {
 _process() {
 	local project="$1" project_date project_dir project_name template_dir=''
 	if [[ "$project" == */* ]]; then
-		PROJECTS_DIR="$(dirname -- "$project")"
+		PRJ_PROJECTS_DIR="$(dirname -- "$project")"
 		project="$(basename -- "$project")"
 	fi
 	if [[ "$project" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})\ (.+)$ ]]; then
@@ -359,7 +359,7 @@ _process() {
 		project_name="$project"
 	fi
 	_validate_date "$project_date"
-	project_dir="$PROJECTS_DIR/$project_date $project_name"
+	project_dir="$PRJ_PROJECTS_DIR/$project_date $project_name"
 	if [ "$DRY_RUN" -ne 0 ]; then
 		_echo "$project_dir"
 		return
@@ -409,7 +409,7 @@ _template_root() {
 
 _project_template_vars() {
 	project_dir="$1" project_name="$2" project_date="$3"
-	export project_dir project_name project_date projects_dir="$PROJECTS_DIR" name="$project_name"
+	export project_dir project_name project_date projects_dir="$PRJ_PROJECTS_DIR" name="$project_name"
 	export date="$(_format_date "$project_date")" year="${project_date:0:4}" slug="$(_slugify "$project_name")"
 }
 
@@ -472,9 +472,9 @@ _safe_template_path() {
 }
 
 _prepare_projects_dir() {
-	[ -d "$PROJECTS_DIR" ] && return
-	[ ! -e "$PROJECTS_DIR" ] || _fatal "$E_NOT_DIR" "Projects directory is not a directory: $PROJECTS_DIR"
-	mkdir -p "$PROJECTS_DIR" || _fatal "$E_CANNOT_MKDIR" "Failed to create projects directory: $PROJECTS_DIR"
+	[ -d "$PRJ_PROJECTS_DIR" ] && return
+	[ ! -e "$PRJ_PROJECTS_DIR" ] || _fatal "$E_NOT_DIR" "Projects directory is not a directory: $PRJ_PROJECTS_DIR"
+	mkdir -p "$PRJ_PROJECTS_DIR" || _fatal "$E_CANNOT_MKDIR" "Failed to create projects directory: $PRJ_PROJECTS_DIR"
 }
 
 _run_setup() {
@@ -485,7 +485,9 @@ _run_setup() {
 	fi
 	[ -x "$project_dir/$setup" ] || return
 	(
-		export PROJECT_DIR="$project_dir" PROJECT_NAME="$project_name" PROJECT_DATE="$(_format_date "$project_date")" PRJ_PROJECTS_DIR="$PROJECTS_DIR" PRJ_TEMPLATES_DIR
+		export PRJ_PROJECT_DIR="$project_dir" PRJ_PROJECT_NAME="$project_name" PRJ_PROJECT_DATE="$(_format_date "$project_date")" PRJ_PROJECTS_DIR PRJ_TEMPLATES_DIR
+		# Keep setup-script variables from mkprj for compatibility.
+		export PROJECT_DIR="$project_dir" PROJECT_NAME="$project_name" PROJECT_DATE="$(_format_date "$project_date")"
 		cd "$project_dir" || exit "$?"
 		"./$setup"
 	)

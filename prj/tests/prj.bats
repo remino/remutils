@@ -178,7 +178,7 @@ $(realpath "$two")/bravo" ]
 @test "runs a prj setup script for a relative project path" {
 	local template="$TMP_DIR/template"
 	mkdir -p "$template/.prj"
-	printf '#!/usr/bin/env bash\nprintf "%%s" "$PROJECT_DIR:$PWD" > result\n' > "$template/.prj/setup"
+	printf '#!/usr/bin/env bash\nprintf "%%s" "$PRJ_PROJECT_DIR:$PWD" > result\n' > "$template/.prj/setup"
 	chmod +x "$template/.prj/setup"
 
 	pushd "$TMP_DIR" > /dev/null

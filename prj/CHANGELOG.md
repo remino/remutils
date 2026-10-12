@@ -2,6 +2,7 @@
 
 <!-- mtoc-start -->
 
+- [Unreleased](#unreleased)
 - [v4.0.0](#v400)
 - [v3.0.4](#v304)
 - [v3.0.3](#v303)
@@ -10,6 +11,11 @@
 - [v3.0.0](#v300)
 
 <!-- mtoc-end -->
+
+## Unreleased
+
+- Use canonical `PRJ_*` variables internally and expose them to template setup
+  scripts; retain legacy setup variables only for compatibility.
 
 ## v4.0.0
 
