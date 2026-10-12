@@ -33,6 +33,12 @@ teardown() {
 	[ "$status" -eq 0 ]
 }
 
+@test "runs under the system Bash interpreter" {
+	run /bin/bash "$TOOL" info
+	[ "$status" -eq 0 ]
+	[[ "$output" == *'Version: prj '* ]]
+}
+
 @test "shows the same version through version and -v" {
 	run "$TOOL" version
 	[ "$status" -eq 0 ]

@@ -216,7 +216,8 @@ prj_command_help() {
 prj_list() {
 	local root child valid_roots=0
 	local -a roots=()
-	_collect_project_roots roots
+	_collect_project_roots
+	roots=("${COLLECTED_PROJECT_ROOTS[@]}")
 	for root in "${roots[@]}"; do
 		if [ ! -d "$root" ]; then
 			_warn "Project root is not a directory: $root"
@@ -230,15 +231,15 @@ prj_list() {
 
 prj_templates() {
 	local root template name
-	local -A seen=()
-	local -a roots=()
-	_collect_template_roots roots
+	local -a roots=() seen=()
+	_collect_template_roots
+	roots=("${COLLECTED_TEMPLATE_ROOTS[@]}")
 	for root in "${roots[@]}"; do
 		[ -d "$root" ] || continue
 		while IFS= read -r template; do
 			name="$(basename -- "$template")"
-			[ -n "${seen[$name]+x}" ] && continue
-			seen["$name"]=1
+			_array_contains "$name" "${seen[@]}" && continue
+			seen+=("$name")
 			_echo "$name"
 		done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
 	done
@@ -251,11 +252,13 @@ prj_doctor() {
 		_echo 'FAIL: Mustache renderer not found.'
 		status=1
 	fi
-	_collect_project_roots roots
+	_collect_project_roots
+	roots=("${COLLECTED_PROJECT_ROOTS[@]}")
 	for root in "${roots[@]}"; do
 		if [ -d "$root" ]; then _echo "PASS: Project root: $(realpath "$root")"; else _echo "WARN: Project root is not a directory: $root"; fi
 	done
-	_collect_template_roots template_roots
+	_collect_template_roots
+	template_roots=("${COLLECTED_TEMPLATE_ROOTS[@]}")
 	for template_root in "${template_roots[@]}"; do
 		if [ -d "$template_root" ]; then _echo "PASS: Template source: $template_root"; else _echo "WARN: Template source is not a directory: $template_root"; fi
 	done
@@ -271,7 +274,8 @@ prj_info() {
 	_echo "Project roots: ${PRJ_PROJECTS_DIRS:-<none>}"
 	_echo "Template root: $PRJ_TEMPLATE_ROOT"
 	_echo "Template directory: $PRJ_TEMPLATES_DIR"
-	_collect_project_roots roots
+	_collect_project_roots
+	roots=("${COLLECTED_PROJECT_ROOTS[@]}")
 	for root in "${roots[@]}"; do
 		_echo "Configured root: $root"
 	done
@@ -301,26 +305,26 @@ _configure_template_roots() {
 }
 
 _collect_project_roots() {
-	local target="$1" root root_key
-	local -A seen=()
+	local root root_key
+	local -a seen=()
 	local -a candidates=("$PRJ_PROJECTS_DIR") extra_roots=()
-	local -n results="$target"
+	COLLECTED_PROJECT_ROOTS=()
 	IFS=: read -r -a extra_roots <<< "$PRJ_PROJECTS_DIRS"
 	candidates+=("${extra_roots[@]}")
 	for root in "${candidates[@]}"; do
 		[ -n "$root" ] || continue
 		if [ -d "$root" ]; then root_key="$(realpath "$root")"; else root_key="$root"; fi
-		[ -n "${seen[$root_key]+x}" ] && continue
-		seen["$root_key"]=1
-		results+=("$root")
+		_array_contains "$root_key" "${seen[@]}" && continue
+		seen+=("$root_key")
+		COLLECTED_PROJECT_ROOTS+=("$root")
 	done
 }
 
 _collect_template_roots() {
-	local target="$1" lookup_dir="$(pwd)" root
-	local -A seen=()
+	local lookup_dir="$(pwd)" root
+	local -a seen=()
 	local -a candidates=("$PRJ_TEMPLATE_ROOT" "$PRJ_TEMPLATES_DIR")
-	local -n results="$target"
+	COLLECTED_TEMPLATE_ROOTS=()
 	while :; do
 		candidates+=("$lookup_dir/.prj/templates" "$lookup_dir/.config/prj/templates")
 		[ "$lookup_dir" = / ] && break
@@ -336,10 +340,19 @@ _collect_template_roots() {
 	done
 	for root in "${candidates[@]}"; do
 		[ -n "$root" ] || continue
-		[ -n "${seen[$root]+x}" ] && continue
-		seen["$root"]=1
-		results+=("$root")
+		_array_contains "$root" "${seen[@]}" && continue
+		seen+=("$root")
+		COLLECTED_TEMPLATE_ROOTS+=("$root")
 	done
+}
+
+_array_contains() {
+	local needle="$1" value
+	shift
+	for value in "$@"; do
+		[ "$value" = "$needle" ] && return 0
+	done
+	return 1
 }
 
 _process() {
@@ -383,7 +396,8 @@ _resolve_template() {
 	local -a roots=()
 	RESOLVED_TEMPLATE_DIR=''
 	if [[ "$template_name" != */* ]]; then
-		_collect_template_roots roots
+		_collect_template_roots
+		roots=("${COLLECTED_TEMPLATE_ROOTS[@]}")
 		for root in "${roots[@]}"; do
 			candidate="$root/$template_name"
 			if [ -d "$candidate" ]; then
