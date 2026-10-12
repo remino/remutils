@@ -219,10 +219,7 @@ prj_list() {
 	_collect_project_roots
 	roots=("${COLLECTED_PROJECT_ROOTS[@]}")
 	for root in "${roots[@]}"; do
-		if [ ! -d "$root" ]; then
-			_warn "Project root is not a directory: $root"
-			continue
-		fi
+		[ -d "$root" ] || continue
 		valid_roots=1
 		while IFS= read -r child; do _echo "$child"; done < <(find "$(realpath "$root")" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
 	done

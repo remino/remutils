@@ -128,14 +128,14 @@ $(realpath "$one")/zulu
 $(realpath "$two")/bravo" ]
 }
 
-@test "list warns and continues past an invalid root" {
+@test "list skips invalid roots" {
 	local valid="$TMP_DIR/valid"
 	mkdir -p "$valid/project"
 
 	run --separate-stderr env PRJ_PROJECTS_DIRS="$TMP_DIR/missing:$valid" "$TOOL" list
 	[ "$status" -eq 0 ]
 	[ "$output" = "$(realpath "$valid")/project" ]
-	[[ "$stderr" == *"Project root is not a directory: $TMP_DIR/missing"* ]]
+	[ -z "$stderr" ]
 }
 
 @test "list aliases match list" {
