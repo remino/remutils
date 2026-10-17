@@ -19,7 +19,7 @@ class {{formula_class}} < Formula
   def install
     bin.install "{{name}}"
     bin.install "mkprj"
-    libexec.install "lib" => "prj/lib", "templates" => "prj/templates"
+    (libexec / "prj").install "lib", "templates"
     man1.install "man/{{name}}.1"
     man1.install "man/mkprj.1"
   end
