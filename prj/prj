@@ -415,7 +415,13 @@ _find_mo() {
 }
 
 _template_root() {
-	if [ -d "$SCRIPT_DIR/templates" ]; then _echo "$SCRIPT_DIR/templates"; else _echo "$INSTALL_DIR/prj/templates"; fi
+	if [ -d "$SCRIPT_DIR/templates" ]; then
+		_echo "$SCRIPT_DIR/templates"
+	elif [ -d "$INSTALL_DIR/templates" ]; then
+		_echo "$INSTALL_DIR/templates"
+	else
+		_echo "$INSTALL_DIR/prj/templates"
+	fi
 }
 
 _project_template_vars() {

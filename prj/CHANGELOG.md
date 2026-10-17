@@ -18,6 +18,7 @@
 - Restore compatibility with macOS system Bash 3.2, including SSH and Shortcuts
   invocations.
 - Make `list` skip missing project roots silently; use `doctor` for diagnostics.
+- Resolve bundled templates from both Homebrew and Makefile installation layouts.
 
 ## v4.0.1
 

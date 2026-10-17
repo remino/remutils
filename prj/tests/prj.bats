@@ -65,9 +65,9 @@ teardown() {
 	local cellar_dir="$install_dir/Cellar/prj"
 	local today="$(date +%Y%m%d)"
 
-	mkdir -p "$install_dir/bin" "$cellar_dir/bin" "$cellar_dir/libexec/prj"
+	mkdir -p "$install_dir/bin" "$cellar_dir/bin" "$cellar_dir/libexec"
 	cp "$TOOL" "$cellar_dir/bin/prj"
-	cp -R "$BATS_TEST_DIRNAME/../lib" "$BATS_TEST_DIRNAME/../templates" "$cellar_dir/libexec/prj"
+	cp -R "$BATS_TEST_DIRNAME/../lib" "$BATS_TEST_DIRNAME/../templates" "$cellar_dir/libexec"
 	ln -s prj "$cellar_dir/bin/mkprj"
 	ln -s '../Cellar/prj/bin/prj' "$install_dir/bin/prj"
 	ln -s '../Cellar/prj/bin/mkprj' "$install_dir/bin/mkprj"
