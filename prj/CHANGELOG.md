@@ -2,7 +2,7 @@
 
 <!-- mtoc-start -->
 
-- [Unreleased](#unreleased)
+- [v4.0.2](#v402)
 - [v4.0.1](#v401)
 - [v4.0.0](#v400)
 - [v3.0.4](#v304)
@@ -13,7 +13,7 @@
 
 <!-- mtoc-end -->
 
-## Unreleased
+## v4.0.2
 
 - Restore compatibility with macOS system Bash 3.2, including SSH and Shortcuts
   invocations.
